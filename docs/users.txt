@@ -1,0 +1,7 @@
+test users in db
+	
+	password: generic
+		
+		
+		
+		
