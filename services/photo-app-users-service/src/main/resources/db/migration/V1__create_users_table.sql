@@ -5,6 +5,7 @@ CREATE TABLE users
     email         VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255)        NOT NULL,
     active_user   BOOLEAN   DEFAULT TRUE,
+    version       BIGINT    DEFAULT 0 NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

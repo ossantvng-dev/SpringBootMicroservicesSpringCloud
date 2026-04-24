@@ -5,6 +5,7 @@ CREATE TABLE photos
     file_name    VARCHAR(255) NOT NULL,
     file_url     VARCHAR(500) NOT NULL,
     active_photo BOOLEAN   DEFAULT TRUE,
+    version      BIGINT NOT NULL DEFAULT 0,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums (id)
