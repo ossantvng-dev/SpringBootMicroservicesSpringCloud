@@ -1,4 +1,4 @@
-package com.photoapp.users.entity;
+package com.photoapp.commons.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

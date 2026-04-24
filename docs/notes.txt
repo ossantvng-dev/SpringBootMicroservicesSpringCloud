@@ -73,7 +73,7 @@ Roles y authorities con @PreAuthorize en los servicios.
 Configuración sensible encriptada con Spring Cloud Config.
 
 4. Comunicación entre micros
-Usar Feign Clients para llamadas entre servicios (ej. Albums → Users).
+Usar Feign Clients para llamadas entre servicios (ej. Albums �?Users).
 
 Integrar Resilience4J para circuit breakers y retries.
 
@@ -132,13 +132,13 @@ Reescritura de paths (RewritePath) para que los microservicios reciban rutas lim
 3. Users Service
 Endpoints principales:
 
-POST /users → crear usuario.
+POST /users �?crear usuario.
 
-GET /users/{id} → obtener usuario.
+GET /users/{id} �?obtener usuario.
 
-DELETE /users/{id} → borrar usuario.
+DELETE /users/{id} �?borrar usuario.
 
-GET /users/status/check → health check.
+GET /users/status/check �?health check.
 
 Seguridad con roles y authorities (@PreAuthorize).
 
@@ -153,11 +153,11 @@ Gestión de roles y permisos.
 
 Endpoints:
 
-POST /accounts → crear cuenta/rol.
+POST /accounts �?crear cuenta/rol.
 
-GET /accounts/{id} → obtener cuenta/rol.
+GET /accounts/{id} �?obtener cuenta/rol.
 
-DELETE /accounts/{id} → borrar cuenta/rol.
+DELETE /accounts/{id} �?borrar cuenta/rol.
 
 Integración con Spring Security para roles a nivel de método.
 
@@ -168,9 +168,9 @@ Podría proveer authorities como PROFILE_DELETE, ADMIN, etc.
 5. Albums Service
 Endpoints:
 
-GET /users/{id}/albums → obtener álbumes de un usuario.
+GET /users/{id}/albums �?obtener álbumes de un usuario.
 
-POST /users/{id}/albums → crear álbum para un usuario.
+POST /users/{id}/albums �?crear álbum para un usuario.
 
 Persistencia en MySQL.
 
@@ -225,7 +225,7 @@ Configurar en Spring Boot 4.0.5.
 
 Asegurar que todos los servicios se registren correctamente.
 
-Desactivar prefer-ip-address inconsistencias → usar localhost o IP fija.
+Desactivar prefer-ip-address inconsistencias �?usar localhost o IP fija.
 
 API Gateway (Spring Cloud Gateway)
 
@@ -235,7 +235,7 @@ Definir rutas explícitas en application.properties (/users-service/**, /account
 
 Usar RewritePath para limpiar paths.
 
-Probar comunicación básica: cliente → Gateway → Users Service.
+Probar comunicación básica: cliente �?Gateway �?Users Service.
 
 Fase 2: Seguridad JWT
 Incluir tu photo-app-jwt-lib en el pom.xml de Gateway y servicios.
@@ -298,7 +298,7 @@ Definir docker-compose para entorno local.
 
 Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
 
-Configurar múltiples instancias de cada servicio → Gateway balancea automáticamente.
+Configurar múltiples instancias de cada servicio �?Gateway balancea automáticamente.
 
 
 ---------------------------------------------------------------------------------------------------------------
@@ -328,9 +328,9 @@ Servicios Finales:
    - Genera tokens JWT con userId y roles.
 
 5. Users Service (photo-app-users-service)
-   - Registro y gestión de usuarios.
+   - Registro y gestion de usuarios.
    - CRUD de usuarios (crear, consultar, actualizar, desactivar).
-   - Al registrar un usuario, se le crea automáticamente al menos una cuenta activa.
+   - Al registrar un usuario, se le crea automaticamente al menos una cuenta activa.
    - Expone endpoints para perfil de usuario.
    - Flyway inicializa todas las tablas en photo_app_db.
 
