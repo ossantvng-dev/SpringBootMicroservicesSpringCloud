@@ -82,8 +82,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserDTO> findAll(Map<String, String> filters) {
-        return userRepository.findAll(fromFilter(mapToFilter(filters, UserFilterDTO.class)), mapToPageable(filters))
-                .map(user -> modelMapper.map(user, UserDTO.class));
+        return userRepository.findAll(
+                fromFilter(mapToFilter(filters, UserFilterDTO.class)),
+                mapToPageable(filters)
+        ).map(user -> modelMapper.map(user, UserDTO.class));
     }
 
     @Override

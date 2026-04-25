@@ -1,4 +1,4 @@
-package com.photoapp.users;
+package com.photoapp.accounts;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,10 +10,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableDiscoveryClient
 @EnableJpaAuditing
 @ComponentScan(basePackages = {"com.photoapp.commons"})
-public class PhotoAppUsersServiceApplication {
+public class PhotoAppAccountsServiceApplication {
 
-	static void main(String[] args) {
-		SpringApplication.run(PhotoAppUsersServiceApplication.class, args);
-	}
+	static void main(String[] args) { SpringApplication.run(PhotoAppAccountsServiceApplication.class, args); }
 
 }

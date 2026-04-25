@@ -338,7 +338,7 @@ Servicios Finales:
    - Gesti®Æn de cuentas de usuario.
    - Un usuario puede tener varias cuentas.
    - CRUD de cuentas (crear, listar, activar/desactivar).
-   - Asociaci√≥n de roles a cuentas.
+   - Asociaci®Æn de roles a cuentas.
 
 7. Albums Service (photo-app-albums-service)
    - Gesti®Æn de ®¢lbumes de fotos.
@@ -350,3 +350,6 @@ Servicios Finales:
    - CRUD de fotos (subir, listar, eliminar, desactivar).
    - Almacenamiento binario en AWS S3 bucket (o MinIO en local).
    - La base guarda solo metadatos: nombre, URL, estado, timestamps.
+
+
+En resumen: primero terminamos todos los servicios sin seguridad, luego Config Server y Gateway, y finalmente seguridad + tests.
