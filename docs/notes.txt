@@ -306,9 +306,9 @@ Configurar m煤ltiples instancias de cada servicio 鈫?Gateway balancea autom谩tic
 Servicios Finales:
 
 1. Config Server
-   - Centraliza la configuraci贸n de todos los microservicios.
+   - Centraliza la configuración de todos los microservicios.
    - Permite manejar perfiles (local, dev, prod) desde un repositorio Git.
-   - Cada servicio obtiene su configuraci贸n al arrancar.
+   - Cada servicio obtiene su configuración al arrancar.
 
 2. Eureka Server
    - Registro y descubrimiento de servicios.
@@ -316,13 +316,13 @@ Servicios Finales:
    - Facilita balanceo de carga y resiliencia.
 
 3. API Gateway
-   - Punto de entrada 煤nico.
+   - Punto de entrada único.
    - Valida JWT en cada request.
    - Enruta hacia el microservicio correspondiente.
    - Aplica rate limiting, logging y tracing.
 
 4. Authorization Service (photo-app-auth-service)
-   - Login y emisi贸n de JWT.
+   - Login y emisión de JWT.
    - Valida credenciales contra la tabla users.
    - Consulta roles asociados a las cuentas.
    - Genera tokens JWT con userId y roles.
@@ -335,18 +335,18 @@ Servicios Finales:
    - Flyway inicializa todas las tablas en photo_app_db.
 
 6. Accounts Service (photo-app-accounts-service)
-   - Gesti贸n de cuentas de usuario.
+   - Gestión de cuentas de usuario.
    - Un usuario puede tener varias cuentas.
    - CRUD de cuentas (crear, listar, activar/desactivar).
    - Asociaci贸n de roles a cuentas.
 
 7. Albums Service (photo-app-albums-service)
-   - Gesti贸n de 谩lbumes de fotos.
-   - CRUD de 谩lbumes (crear, listar, actualizar, desactivar).
-   - Relaci贸n 1:N entre cuentas y 谩lbumes.
+   - Gestión de álbumes de fotos.
+   - CRUD de álbumes (crear, listar, actualizar, desactivar).
+   - Relación 1:N entre cuentas y álbumes.
 
 8. Photos Service (photo-app-photos-service)
-   - Gesti贸n de fotos dentro de un 谩lbum.
+   - Gestión de fotos dentro de un álbum.
    - CRUD de fotos (subir, listar, eliminar, desactivar).
    - Almacenamiento binario en AWS S3 bucket (o MinIO en local).
    - La base guarda solo metadatos: nombre, URL, estado, timestamps.

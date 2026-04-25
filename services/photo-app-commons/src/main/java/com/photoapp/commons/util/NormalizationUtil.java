@@ -1,5 +1,8 @@
 package com.photoapp.commons.util;
 
+import com.photoapp.commons.exception.ApplicationException;
+import org.springframework.http.HttpStatus;
+
 import java.lang.reflect.Field;
 
 public class NormalizationUtil {
@@ -19,7 +22,7 @@ public class NormalizationUtil {
                 }
             }
         } catch (IllegalAccessException e) {
-            throw new RuntimeException("Error normalizing DTO", e);
+            throw new ApplicationException("Error normalizing DTO", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return dto;
     }

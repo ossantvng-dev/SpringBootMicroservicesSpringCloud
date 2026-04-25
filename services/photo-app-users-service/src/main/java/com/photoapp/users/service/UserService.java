@@ -20,7 +20,7 @@ public interface UserService {
 
     UserDTO findByUsername(String username);
 
-    Page<UserDTO> findAll(Map<String, String> filters, Pageable pageable);
+    Page<UserDTO> findAll(Map<String, String> filters);
 
     UserDTO activateOrDeactivate(Long id, boolean active);
 

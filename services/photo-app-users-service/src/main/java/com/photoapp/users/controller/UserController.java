@@ -45,8 +45,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters, Pageable pageable) {
-        return new ResponseEntity<>(userService.findAll(filters, pageable), HttpStatus.OK);
+    public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
+        return new ResponseEntity<>(userService.findAll(filters), HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/active")

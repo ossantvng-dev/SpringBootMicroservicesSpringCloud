@@ -255,3 +255,69 @@ public class Role extends BaseEntity {
 
 }
 
+---------------------------------------------------------------------------------------------------------------
+
+package com.photoapp.users.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Set;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AccountDTO {
+
+    private Long id;
+    private String accountName;
+    private Boolean activeAccount;
+    private Set<String> roles;
+
+}
+
+package com.photoapp.users.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AlbumDTO {
+
+    private Long id;
+    private String title;
+    private String description;
+    private Boolean activeAlbum;
+
+}
+
+package com.photoapp.users.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PhotoDTO {
+
+    private Long id;
+    private String fileName;
+    private String fileUrl;
+    private Boolean activePhoto;
+
+}
+
+
+

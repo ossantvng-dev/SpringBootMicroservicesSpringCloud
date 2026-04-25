@@ -11,7 +11,6 @@ import com.photoapp.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +20,7 @@ import java.util.Map;
 
 import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
 import static com.photoapp.commons.util.NormalizationUtil.normalizeInputDTO;
+import static com.photoapp.commons.util.PaginationUtil.mapToPageable;
 import static com.photoapp.users.repository.specification.UserSpecification.fromFilter;
 
 @Service
@@ -81,8 +81,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserDTO> findAll(Map<String, String> filters, Pageable pageable) {
-        return userRepository.findAll(fromFilter(mapToFilter(filters, UserFilterDTO.class)), pageable)
+    public Page<UserDTO> findAll(Map<String, String> filters) {
+        return userRepository.findAll(fromFilter(mapToFilter(filters, UserFilterDTO.class)), mapToPageable(filters))
                 .map(user -> modelMapper.map(user, UserDTO.class));
     }
 
