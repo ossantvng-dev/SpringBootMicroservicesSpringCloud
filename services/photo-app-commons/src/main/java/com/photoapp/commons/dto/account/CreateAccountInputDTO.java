@@ -1,4 +1,4 @@
-package com.photoapp.accounts.dto;
+package com.photoapp.commons.dto.account;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,5 +20,8 @@ public class CreateAccountInputDTO {
     @NotBlank(message = "Account name is required")
     @Size(max = 100, message = "Account must not exceed 100 characters")
     private String accountName;
+
+    @NotNull(message = "Account type is required")
+    private AccountType accountType;
 
 }

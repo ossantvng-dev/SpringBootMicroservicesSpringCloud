@@ -1,11 +1,11 @@
-package com.photoapp.accounts.dto;
+package com.photoapp.commons.dto.account;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +15,8 @@ public class AccountDTO {
     private Long id;
     private Long userId;
     private String accountName;
+    private AccountType accountType;
     private Boolean activeAccount;
-    private Set<String> roles;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

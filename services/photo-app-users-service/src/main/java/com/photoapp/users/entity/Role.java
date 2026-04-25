@@ -1,9 +1,7 @@
-package com.photoapp.accounts.entity;
+package com.photoapp.users.entity;
 
 import com.photoapp.commons.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -15,7 +13,9 @@ import lombok.*;
 @Builder
 public class Role extends BaseEntity {
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "name", nullable = false, unique = true)
-    private String name;
+    private RoleName name;
 
 }
+

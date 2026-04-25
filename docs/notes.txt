@@ -303,53 +303,85 @@ Configurar m繳ltiples instancias de cada servicio ��?Gateway balancea autom獺tic
 
 ---------------------------------------------------------------------------------------------------------------
 
-Servicios Finales:
+Servicios Finales (actualizados)
 
-1. Config Server
-   - Centraliza la configuraci車n de todos los microservicios.
-   - Permite manejar perfiles (local, dev, prod) desde un repositorio Git.
-   - Cada servicio obtiene su configuraci車n al arrancar.
+Config Server
 
-2. Eureka Server
-   - Registro y descubrimiento de servicios.
-   - Cada micro se registra con nombre y puerto.
-   - Facilita balanceo de carga y resiliencia.
+	Centraliza la configuraci車n de todos los microservicios.
 
-3. API Gateway
-   - Punto de entrada 迆nico.
-   - Valida JWT en cada request.
-   - Enruta hacia el microservicio correspondiente.
-   - Aplica rate limiting, logging y tracing.
+	Maneja perfiles (local, dev, prod) desde un repositorio Git.
 
-4. Authorization Service (photo-app-auth-service)
-   - Login y emisi車n de JWT.
-   - Valida credenciales contra la tabla users.
-   - Consulta roles asociados a las cuentas.
-   - Genera tokens JWT con userId y roles.
+	Cada servicio obtiene su configuraci車n al arrancar.
 
-5. Users Service (photo-app-users-service)
-   - Registro y gestion de usuarios.
-   - CRUD de usuarios (crear, consultar, actualizar, desactivar).
-   - Al registrar un usuario, se le crea automaticamente al menos una cuenta activa.
-   - Expone endpoints para perfil de usuario.
-   - Flyway inicializa todas las tablas en photo_app_db.
+Eureka Server
 
-6. Accounts Service (photo-app-accounts-service)
-   - Gesti車n de cuentas de usuario.
-   - Un usuario puede tener varias cuentas.
-   - CRUD de cuentas (crear, listar, activar/desactivar).
-   - Asociaci車n de roles a cuentas.
+	Registro y descubrimiento de servicios.
 
-7. Albums Service (photo-app-albums-service)
-   - Gesti車n de 芍lbumes de fotos.
-   - CRUD de 芍lbumes (crear, listar, actualizar, desactivar).
-   - Relaci車n 1:N entre cuentas y 芍lbumes.
+	Cada micro se registra con nombre y puerto.
 
-8. Photos Service (photo-app-photos-service)
-   - Gesti車n de fotos dentro de un 芍lbum.
-   - CRUD de fotos (subir, listar, eliminar, desactivar).
-   - Almacenamiento binario en AWS S3 bucket (o MinIO en local).
-   - La base guarda solo metadatos: nombre, URL, estado, timestamps.
+	Facilita balanceo de carga y resiliencia.
+
+API Gateway
+
+	Punto de entrada 迆nico.
+
+	Valida JWT en cada request.
+
+	Enruta hacia el microservicio correspondiente.
+
+	Aplica rate limiting, logging y tracing.
+
+	Authorization Service (photo-app-auth-service)
+
+	Login y emisi車n de JWT.
+
+	Valida credenciales contra la tabla users.
+
+	Consulta roles asociados al usuario (no a cuentas).
+
+	Genera tokens JWT con userId y roles.
+
+Users Service (photo-app-users-service)
+
+	Registro y gesti車n de usuarios.
+
+	CRUD de usuarios (crear, consultar, actualizar, desactivar).
+
+	Al registrar un usuario, se le crea autom芍ticamente al menos una cuenta activa (tipo BASIC).
+
+	Expone endpoints para perfil de usuario.
+
+	Flyway inicializa todas las tablas en photo_app_db.
+
+	Accounts Service (photo-app-accounts-service)
+
+	Gesti車n de cuentas de usuario.
+
+	Un usuario puede tener varias cuentas.
+
+	CRUD de cuentas (crear, listar, activar/desactivar, cambiar tipo).
+
+	Ya no maneja roles: solo atributos propios de la cuenta (accountName, accountType, activeAccount).
+
+Albums Service (photo-app-albums-service)
+
+	Gesti車n de 芍lbumes de fotos.
+
+	CRUD de 芍lbumes (crear, listar, actualizar, desactivar).
+
+	Relaci車n 1:N entre cuentas y 芍lbumes.
+
+	Cada 芍lbum pertenece a una cuenta espec赤fica.
+
+	Photos Service (photo-app-photos-service)
+
+	Gesti車n de fotos dentro de un 芍lbum.
+
+	CRUD de fotos (subir, listar, eliminar, desactivar).
+
+	Almacenamiento binario en AWS S3 bucket (o MinIO en local).
+
+	La base guarda solo metadatos: nombre, URL, estado, timestamps.
 
 
 En resumen: primero terminamos todos los servicios sin seguridad, luego Config Server y Gateway, y finalmente seguridad + tests.

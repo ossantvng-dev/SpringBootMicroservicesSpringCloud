@@ -17,6 +17,12 @@ public class AccountSpecification {
                 );
             }
 
+            if (filter.getAccountType() != null) {
+                predicates.getExpressions().add(
+                        cb.equal(root.get(Account_.accountType), filter.getAccountType())
+                );
+            }
+
             if (filter.getActiveAccount() != null) {
                 predicates.getExpressions().add(
                         cb.equal(root.get(Account_.activeAccount), filter.getActiveAccount())

@@ -2,6 +2,7 @@ package com.photoapp.users.controller;
 
 import com.photoapp.users.dto.CreateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
+import com.photoapp.users.dto.UpdateUserRolesInputDTO;
 import com.photoapp.users.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,12 @@ public class UserController {
     @PatchMapping("/{id}/active")
     public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean active) {
         return new ResponseEntity<>(userService.activateOrDeactivate(id, active), HttpStatus.OK);
+    }
+
+    @PatchMapping("/{id}/roles")
+    public ResponseEntity<?> assignOrRemoveRole(
+            @PathVariable Long id, @RequestBody @Valid UpdateUserRolesInputDTO inputDTO) {
+        return new ResponseEntity<>(userService.assignOrRemoveRole(id, inputDTO), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")

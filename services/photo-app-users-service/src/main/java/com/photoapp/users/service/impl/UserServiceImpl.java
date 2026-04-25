@@ -1,11 +1,15 @@
 package com.photoapp.users.service.impl;
 
+import com.photoapp.commons.dto.account.AccountDTO;
+import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.exception.ApplicationException;
-import com.photoapp.users.dto.CreateUserInputDTO;
-import com.photoapp.users.dto.UpdateUserInputDTO;
-import com.photoapp.users.dto.UserDTO;
-import com.photoapp.users.dto.UserFilterDTO;
+import com.photoapp.users.dto.*;
+import com.photoapp.users.entity.Role;
+import com.photoapp.users.entity.RoleAction;
+import com.photoapp.users.entity.RoleName;
 import com.photoapp.users.entity.User;
+import com.photoapp.users.feign.AccountFeignClient;
+import com.photoapp.users.repository.RoleRepository;
 import com.photoapp.users.repository.UserRepository;
 import com.photoapp.users.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
 import static com.photoapp.commons.util.NormalizationUtil.normalizeInputDTO;
@@ -28,8 +34,10 @@ import static com.photoapp.users.repository.specification.UserSpecification.from
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AccountFeignClient accountFeignClient;
 
     @Override
     @Transactional
@@ -39,9 +47,30 @@ public class UserServiceImpl implements UserService {
                 inputDTO.getUsername())) {
             throw new ApplicationException("User already registered", HttpStatus.BAD_REQUEST);
         } else {
+            Role defaultRole = roleRepository.findByName(RoleName.ROLE_USER)
+                    .orElseThrow(() -> new ApplicationException("Default role not found", HttpStatus.NOT_FOUND));
+
+            Set<Role> roles = (createUserInputDTO.getRoles() != null && !createUserInputDTO.getRoles().isEmpty())
+                    ? mapRoleNamesToRoles(createUserInputDTO.getRoles())
+                    : Set.of(defaultRole);
+
             User newUser = modelMapper.map(inputDTO, User.class);
+            newUser.setRoles(roles);
             newUser.setPasswordHash(passwordEncoder.encode(inputDTO.getPassword()));
-            return modelMapper.map(userRepository.save(newUser), UserDTO.class);
+            User savedUser = userRepository.save(newUser);
+
+            CreateAccountInputDTO accountInput = CreateAccountInputDTO.builder()
+                    .userId(savedUser.getId())
+                    .accountName("Default Account")
+                    .accountType(inputDTO.getAccountType())
+                    .build();
+
+            AccountDTO accountDTO = accountFeignClient.createAccount(accountInput);
+
+            UserDTO userDTO = modelMapper.map(savedUser, UserDTO.class);
+            userDTO.setAccountDTO(accountDTO);
+
+            return userDTO;
         }
     }
 
@@ -99,6 +128,25 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserDTO assignOrRemoveRole(Long id, UpdateUserRolesInputDTO updateUserRolesInputDTO) {
+        return userRepository.findById(id)
+                .map(existingUser -> {
+                    Set<Role> roles = mapRoleNamesToRoles(updateUserRolesInputDTO.getRoles());
+                    if (updateUserRolesInputDTO.getAction() == RoleAction.ASSIGN) {
+                        existingUser.getRoles().addAll(roles);
+                    } else if (updateUserRolesInputDTO.getAction() == RoleAction.REMOVE) {
+                        existingUser.getRoles().removeAll(roles);
+                        if (existingUser.getRoles().isEmpty()) {
+                            throw new ApplicationException("User must have at least one role", HttpStatus.BAD_REQUEST);
+                        }
+                    }
+                    return modelMapper.map(userRepository.save(existingUser), UserDTO.class);
+                })
+                .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
     public void deleteById(Long id) {
         if (userRepository.existsById(id)) {
             userRepository.deleteById(id);
@@ -141,5 +189,14 @@ public class UserServiceImpl implements UserService {
 
         return existingUser;
     }
+
+    private Set<Role> mapRoleNamesToRoles(Set<RoleName> roleNames) {
+        return roleNames.stream()
+                .map(roleName -> roleRepository.findByName(roleName)
+                        .orElseThrow(() -> new ApplicationException("Role not found: " + roleName.name(),
+                                HttpStatus.NOT_FOUND)))
+                .collect(Collectors.toSet());
+    }
+
 
 }

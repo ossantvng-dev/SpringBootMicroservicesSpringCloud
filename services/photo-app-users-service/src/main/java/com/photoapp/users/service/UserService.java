@@ -1,10 +1,10 @@
 package com.photoapp.users.service;
 
 import com.photoapp.users.dto.CreateUserInputDTO;
-import com.photoapp.users.dto.UserDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
+import com.photoapp.users.dto.UpdateUserRolesInputDTO;
+import com.photoapp.users.dto.UserDTO;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.Map;
 
@@ -23,6 +23,8 @@ public interface UserService {
     Page<UserDTO> findAll(Map<String, String> filters);
 
     UserDTO activateOrDeactivate(Long id, boolean active);
+
+    UserDTO assignOrRemoveRole(Long userId, UpdateUserRolesInputDTO updateUserRolesInputDTO);
 
     void deleteById(Long id);
 

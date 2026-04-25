@@ -1,5 +1,6 @@
 package com.photoapp.accounts.dto;
 
+import com.photoapp.commons.dto.account.AccountType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public class AccountFilterDTO {
     private String accountName;
+    private AccountType accountType;
     private Boolean activeAccount;
     private Long userId;
     private LocalDateTime createdStart;

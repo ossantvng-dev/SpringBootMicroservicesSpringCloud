@@ -1,15 +1,12 @@
 package com.photoapp.accounts.service.impl;
 
-import com.photoapp.accounts.dto.AccountDTO;
 import com.photoapp.accounts.dto.AccountFilterDTO;
-import com.photoapp.accounts.dto.CreateAccountInputDTO;
 import com.photoapp.accounts.entity.Account;
-import com.photoapp.accounts.entity.AccountRole;
-import com.photoapp.accounts.entity.AccountRoleId;
 import com.photoapp.accounts.repository.AccountRepository;
-import com.photoapp.accounts.repository.AccountRoleRepository;
-import com.photoapp.accounts.repository.RoleRepository;
 import com.photoapp.accounts.service.AccountService;
+import com.photoapp.commons.dto.account.AccountDTO;
+import com.photoapp.commons.dto.account.AccountType;
+import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -19,20 +16,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Set;
 
+import static com.photoapp.accounts.repository.specification.AccountSpecification.fromFilter;
 import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
 import static com.photoapp.commons.util.NormalizationUtil.normalizeInputDTO;
 import static com.photoapp.commons.util.PaginationUtil.mapToPageable;
-import static com.photoapp.accounts.repository.specification.AccountSpecification.fromFilter;
 
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final AccountRoleRepository accountRoleRepository;
-    private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -67,6 +61,17 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
+    public AccountDTO changeAccountType(Long accountId, AccountType accountType) {
+        return accountRepository.findById(accountId)
+                .map(account -> {
+                    account.setAccountType(accountType);
+                    return modelMapper.map(accountRepository.save(account), AccountDTO.class);
+                })
+                .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Page<AccountDTO> findAll(Map<String, String> filters) {
         return accountRepository.findAll(
@@ -96,37 +101,4 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-    @Override
-    @Transactional
-    public AccountDTO assignRoles(Long accountId, Set<Long> roleIds) {
-        return accountRepository.findById(accountId)
-                .map(account -> {
-                    roleIds.forEach(roleId -> {
-                        roleRepository.findById(roleId)
-                                .orElseThrow(() -> new ApplicationException("Role not found", HttpStatus.NOT_FOUND));
-                        AccountRoleId id = new AccountRoleId(account.getId(), roleId);
-                        if (!accountRoleRepository.existsById(id)) {
-                            accountRoleRepository.save(new AccountRole(id));
-                        }
-                    });
-                    return modelMapper.map(account, AccountDTO.class);
-                })
-                .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
-    }
-
-    @Override
-    @Transactional
-    public AccountDTO removeRoles(Long accountId, Set<Long> roleIds) {
-        return accountRepository.findById(accountId)
-                .map(account -> {
-                    roleIds.forEach(roleId -> {
-                        AccountRoleId id = new AccountRoleId(account.getId(), roleId);
-                        if (accountRoleRepository.existsById(id)) {
-                            accountRoleRepository.deleteById(id);
-                        }
-                    });
-                    return modelMapper.map(account, AccountDTO.class);
-                })
-                .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
-    }
 }

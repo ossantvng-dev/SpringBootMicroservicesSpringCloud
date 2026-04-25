@@ -1,9 +1,7 @@
 package com.photoapp.accounts.entity;
 
 import com.photoapp.commons.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -17,6 +15,11 @@ public class Account extends BaseEntity {
 
     @Column(name = "account_name", nullable = false)
     private String accountName;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "account_type", nullable = false)
+    private com.photoapp.commons.dto.account.AccountType accountType = com.photoapp.commons.dto.account.AccountType.BASIC;
 
     @Builder.Default
     @Column(name = "active_account", nullable = false)

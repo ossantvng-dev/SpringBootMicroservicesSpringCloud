@@ -1,7 +1,8 @@
 package com.photoapp.accounts.controller;
 
-import com.photoapp.accounts.dto.CreateAccountInputDTO;
 import com.photoapp.accounts.service.AccountService;
+import com.photoapp.commons.dto.account.AccountType;
+import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/accounts")
@@ -28,6 +28,11 @@ public class AccountController {
         return new ResponseEntity<>(accountService.changeAccountName(id, accountName), HttpStatus.OK);
     }
 
+    @PatchMapping("/{id}/type")
+    public ResponseEntity<?> changeAccountType(@PathVariable Long id, @RequestParam AccountType accountType) {
+        return new ResponseEntity<>(accountService.changeAccountType(id, accountType), HttpStatus.OK);
+    }
+
     @GetMapping
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(accountService.findAll(filters), HttpStatus.OK);
@@ -42,16 +47,6 @@ public class AccountController {
     public ResponseEntity<?> deleteAccountById(@PathVariable Long id) {
         accountService.deleteAccountById(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{id}/roles")
-    public ResponseEntity<?> assignRoles(@PathVariable Long id, @RequestBody Set<Long> roleIds) {
-        return new ResponseEntity<>(accountService.assignRoles(id, roleIds), HttpStatus.OK);
-    }
-
-    @DeleteMapping("/{id}/roles")
-    public ResponseEntity<?> removeRoles(@PathVariable Long id, @RequestBody Set<Long> roleIds) {
-        return new ResponseEntity<>(accountService.removeRoles(id, roleIds), HttpStatus.OK);
     }
 
 }
