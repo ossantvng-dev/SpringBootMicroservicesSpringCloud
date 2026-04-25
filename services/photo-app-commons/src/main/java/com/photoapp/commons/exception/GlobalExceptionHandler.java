@@ -1,6 +1,7 @@
 package com.photoapp.commons.exception;
 
 import com.photoapp.commons.dto.ApiErrorDTO;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
@@ -56,6 +57,15 @@ public class GlobalExceptionHandler {
             DataAccessException dataAccessException, HttpServletRequest httpServletRequest) {
         return new ResponseEntity<>(apiErrorBuilder(dataAccessException.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR,
                 httpServletRequest.getRequestURI()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<?> optimisticLockExceptionHandler(
+            OptimisticLockException optimisticLockException,
+            HttpServletRequest httpServletRequest) {
+        String error = "Concurrent update detected. Please retry. " + optimisticLockException.getMessage();
+        return new ResponseEntity<>(apiErrorBuilder(error, HttpStatus.CONFLICT,
+                httpServletRequest.getRequestURI()), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)

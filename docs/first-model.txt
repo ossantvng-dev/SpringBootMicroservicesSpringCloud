@@ -1,0 +1,257 @@
+si, se me esta complicando pero su idea es muy buena... primero ayudeme a refactorizar commons. Todavia estoy pensando en el modelo de entidades... es que me parece que todo es compartido. Mira lo que tengo. Ya sabes cuales son los servicios que pienso crear .... package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.Hibernate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+@MappedSuperclass
+@Getter
+@Setter
+public abstract class BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    private Long id;
+
+    @Version
+    private Long version;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        // Same reference → definitely equal
+        if (this == o) return true;
+
+        // Null check → cannot be equal to null
+        if (o == null) return false;
+
+        /*
+            Use Hibernate.getClass to handle proxy instances correctly.
+            This avoids issues where Hibernate creates proxy subclasses.
+        */
+        if (Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+
+        // Safe cast after type check
+        BaseEntity that = (BaseEntity) o;
+
+        /*
+            If either ID is null, the entity is not yet persisted.
+            Two transient (new) entities should NEVER be considered equal.
+        */
+        if (this.id == null || that.id == null) return false;
+
+        // Equality is based solely on the database identifier.
+        return Objects.equals(this.id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        /*
+            Constant hash code to avoid issues when the ID changes
+            from null → assigned (after persistence).
+            Ensures stable behavior in hash-based collections.
+        */
+        return 31;
+    }
+}
+
+package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User extends BaseEntity {
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "active_user", nullable = false)
+    private Boolean activeUser = true;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Account> accounts = new ArrayList<>();
+
+    public void addAccount(Account account) {
+        accounts.add(account);
+        account.setUser(this);
+    }
+
+    public void removeAccount(Account account) {
+        accounts.remove(account);
+        account.setUser(null);
+    }
+}
+package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "accounts")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Account extends BaseEntity {
+
+    @Column(name = "account_name", nullable = false)
+    private String accountName;
+
+    @Column(name = "active_account", nullable = false)
+    private Boolean activeAccount = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "account_roles",
+            joinColumns = @JoinColumn(name = "account_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
+    public void addRole(Role role) {
+        roles.add(role);
+        role.getAccounts().add(this);
+    }
+
+    public void removeRole(Role role) {
+        roles.remove(role);
+        role.getAccounts().remove(this);
+    }
+
+}
+package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "albums")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Album extends BaseEntity {
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private String description;
+
+    @Column(name = "active_album", nullable = false)
+    private Boolean activeAlbum = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Photo> photos = new ArrayList<>();
+
+    public void addPhoto(Photo photo) {
+        photos.add(photo);
+        photo.setAlbum(this);
+    }
+
+    public void removePhoto(Photo photo) {
+        photos.remove(photo);
+        photo.setAlbum(null);
+    }
+}
+package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "photos")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Photo extends BaseEntity {
+
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
+
+    @Column(name = "file_url", nullable = false)
+    private String fileUrl;
+
+    @Column(name = "active_photo", nullable = false)
+    private Boolean activePhoto = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "album_id", nullable = false)
+    private Album album;
+
+}
+
+package com.photoapp.commons.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "roles")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Role extends BaseEntity {
+
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    private Set<Account> accounts = new HashSet<>();
+
+}
+

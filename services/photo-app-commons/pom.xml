@@ -15,6 +15,7 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hibernate.version>7.2.7.Final</hibernate.version>
     </properties>
 
     <dependencies>
@@ -23,6 +24,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <version>4.0.5</version>
+        </dependency>
+        <!-- JPA Metamodel -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-processor</artifactId>
+            <version>${hibernate.version}</version>
+            <scope>provided</scope>
         </dependency>
         <!-- Web -->
         <dependency>
@@ -43,7 +51,6 @@
             <version>1.18.44</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- ModelMapper -->
         <dependency>
             <groupId>org.modelmapper</groupId>
@@ -76,6 +83,12 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>1.18.44</version>
+                        </path>
+                        <!-- Metamodel -->
+                        <path>
+                            <groupId>org.hibernate.orm</groupId>
+                            <artifactId>hibernate-processor</artifactId>
+                            <version>${hibernate.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

@@ -1,5 +1,6 @@
-package com.photoapp.commons.entity;
+package com.photoapp.users.entity;
 
+import com.photoapp.commons.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +16,12 @@ import java.util.List;
 @Builder
 public class User extends BaseEntity {
 
+    @Column(name = "first_name", nullable = false, unique = true)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false, unique = true)
+    private String lastName;
+
     @Column(nullable = false, unique = true)
     private String username;
 
@@ -24,19 +31,8 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Builder.Default
     @Column(name = "active_user", nullable = false)
     private Boolean activeUser = true;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Account> accounts = new ArrayList<>();
-
-    public void addAccount(Account account) {
-        accounts.add(account);
-        account.setUser(this);
-    }
-
-    public void removeAccount(Account account) {
-        accounts.remove(account);
-        account.setUser(null);
-    }
 }

@@ -1,4 +1,4 @@
-package com.photoapp.commons.dto;
+package com.photoapp.users.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,11 +15,12 @@ import java.util.List;
 public class UserDTO {
 
     private Long id;
+    private String firstName;
+    private String lastName;
     private String username;
     private String email;
     private Boolean activeUser;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<AccountDTO> accounts;
 
 }
