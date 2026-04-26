@@ -19,7 +19,7 @@ public interface AlbumService {
 
     AlbumDTO activateOrDeactivate(Long id, boolean active);
 
-    void delete(Long id);
+    void deleteById(Long id);
 
 }
 

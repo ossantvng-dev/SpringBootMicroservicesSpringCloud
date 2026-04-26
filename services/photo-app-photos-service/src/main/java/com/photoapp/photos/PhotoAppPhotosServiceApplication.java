@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @ComponentScan(basePackages = {"com.photoapp.commons"})
 public class PhotoAppPhotosServiceApplication {
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		SpringApplication.run(PhotoAppPhotosServiceApplication.class, args);
 	}
 

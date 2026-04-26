@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static com.photoapp.albums.repository.specification.AlbumSpecification.fromFilter;
 import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
+import static com.photoapp.commons.util.NormalizationUtil.normalizeInputDTO;
 import static com.photoapp.commons.util.PaginationUtil.mapToPageable;
 
 @Service
@@ -36,7 +37,9 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional
     public AlbumDTO create(CreateAlbumInputDTO input) {
-        AccountDTO account = accountFeignClient.findById(input.getAccountId());
+        CreateAlbumInputDTO normalizedInput = normalizeInputDTO(input);
+
+        AccountDTO account = accountFeignClient.findById(normalizedInput.getAccountId());
         if (account == null || !account.getActiveAccount()) {
             throw new ApplicationException("Account not found or inactive", HttpStatus.NOT_FOUND);
         }
@@ -50,7 +53,7 @@ public class AlbumServiceImpl implements AlbumService {
             }
         }
 
-        Album album = modelMapper.map(input, Album.class);
+        Album album = modelMapper.map(normalizedInput, Album.class);
         album.setAccountId(account.getId());
         album.setActiveAlbum(true);
 
@@ -77,10 +80,12 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional
     public AlbumDTO update(Long id, UpdateAlbumInputDTO input) {
+        UpdateAlbumInputDTO normalizedInput = normalizeInputDTO(input);
+
         return albumRepository.findById(id)
                 .map(existing -> {
-                    existing.setTitle(input.getTitle());
-                    existing.setDescription(input.getDescription());
+                    existing.setTitle(normalizedInput.getTitle());
+                    existing.setDescription(normalizedInput.getDescription());
                     Album updated = albumRepository.save(existing);
                     return modelMapper.map(updated, AlbumDTO.class);
                 })
@@ -101,7 +106,7 @@ public class AlbumServiceImpl implements AlbumService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
+    public void deleteById(Long id) {
         if (albumRepository.existsById(id)) {
             albumRepository.deleteById(id);
         } else {

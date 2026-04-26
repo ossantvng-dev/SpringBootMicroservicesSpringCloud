@@ -21,7 +21,7 @@ public interface AccountService {
 
     AccountDTO activateOrDeactivate(Long accountId, boolean active);
 
-    void deleteAccountById(Long accountId);
+    void deleteById(Long accountId);
 
 }
 

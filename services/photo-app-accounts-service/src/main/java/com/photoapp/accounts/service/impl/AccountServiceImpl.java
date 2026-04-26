@@ -40,21 +40,17 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public AccountDTO changeAccountName(Long accountId, String accountName) {
+        String normalizedName = accountName != null ? accountName.trim() : null;
         return accountRepository.findById(accountId)
                 .map(existingAccount -> {
-                    String normalizedName = accountName != null ? accountName.trim() : null;
-
                     if (normalizedName == null || normalizedName.isBlank()) {
                         throw new ApplicationException("Account name cannot be blank", HttpStatus.BAD_REQUEST);
                     }
-
                     if (existingAccount.getAccountName().equalsIgnoreCase(normalizedName)) {
                         throw new ApplicationException("No changes detected", HttpStatus.BAD_REQUEST);
                     }
-
                     existingAccount.setAccountName(normalizedName);
                     Account updated = accountRepository.save(existingAccount);
-
                     return modelMapper.map(updated, AccountDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
@@ -101,12 +97,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void deleteAccountById(Long accountId) {
+    public void deleteById(Long accountId) {
         if (accountRepository.existsById(accountId)) {
             accountRepository.deleteById(accountId);
         } else {
             throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
         }
     }
-
 }
