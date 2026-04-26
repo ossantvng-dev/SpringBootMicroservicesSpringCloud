@@ -15,6 +15,8 @@ public interface AccountService {
 
     AccountDTO changeAccountType(Long accountId, AccountType accountType);
 
+    AccountDTO findById(Long accountId);
+
     Page<AccountDTO> findAll(Map<String, String> filters);
 
     AccountDTO activateOrDeactivate(Long accountId, boolean active);

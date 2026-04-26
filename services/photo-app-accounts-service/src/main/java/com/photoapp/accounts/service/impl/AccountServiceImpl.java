@@ -73,6 +73,14 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(readOnly = true)
+    public AccountDTO findById(Long accountId) {
+        return accountRepository.findById(accountId)
+                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<AccountDTO> findAll(Map<String, String> filters) {
         return accountRepository.findAll(
                 fromFilter(mapToFilter(filters, AccountFilterDTO.class)),

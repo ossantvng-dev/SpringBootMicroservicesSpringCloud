@@ -1,21 +1,19 @@
-package com.photoapp.users;
+package com.photoapp.photos;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableJpaAuditing
-@EnableFeignClients(basePackages = "com.photoapp.commons.feign")
 @ComponentScan(basePackages = {"com.photoapp.commons"})
-public class PhotoAppUsersServiceApplication {
+public class PhotoAppPhotosServiceApplication {
 
-	static void main(String[] args) {
-		SpringApplication.run(PhotoAppUsersServiceApplication.class, args);
+	public static void main(String[] args) {
+		SpringApplication.run(PhotoAppPhotosServiceApplication.class, args);
 	}
 
 }

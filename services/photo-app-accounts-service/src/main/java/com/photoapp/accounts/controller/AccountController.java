@@ -33,6 +33,11 @@ public class AccountController {
         return new ResponseEntity<>(accountService.changeAccountType(id, accountType), HttpStatus.OK);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> findById(@PathVariable Long id) {
+        return new ResponseEntity<>(accountService.findById(id), HttpStatus.OK);
+    }
+
     @GetMapping
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(accountService.findAll(filters), HttpStatus.OK);
