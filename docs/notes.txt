@@ -1,304 +1,200 @@
-https://github.com/simplyi/SpringCloudVideoCourse/tree/update-spring-boot-v4.0.2
+﻿https://github.com/simplyi/SpringCloudVideoCourse/tree/update-spring-boot-v4.0.2
 
 
-Perfecto, Oscar. Ya tenemos claro que vienes de una arquitectura vieja con Zuul y servicios en Spring Boot más antiguo, y quieres migrar todo 
-a Spring Boot 4.0.5 + Spring Cloud, con buenas prácticas y despliegue en AWS.
+Perfecto, Oscar. Ya tenemos claro que vienes de una arquitectura vieja con Zuul y servicios en Spring Boot mas antiguo, y quieres migrar todo 
+a Spring Boot 4.0.5 + Spring Cloud, con buenas practicas y despliegue en AWS.
 
-📌 Arquitectura Vieja
-JwtAuthorities (seguridad centralizada)
+Arquitectura Vieja
 
-PhotoAppApiConfigServer
+	JwtAuthorities (seguridad centralizada)
 
-PhotoAppApiAccountManagement
+	PhotoAppApiConfigServer
 
-PhotoAppApiAlbums
+	PhotoAppApiAccountManagement
 
-PhotoAppApiUsers
+	PhotoAppApiAlbums
 
-PhotoAppApiZuulApiGateway
+	PhotoAppApiUsers
 
-PhotoAppDiscoveryService (Eureka)
+	PhotoAppApiZuulApiGateway
 
-📌 Tecnologías que quieres integrar en la nueva arquitectura
-ConfigServer para múltiples repos Git
+	PhotoAppDiscoveryService (Eureka)
 
-Spring Cloud Bus (propagación de cambios de configuración)
+Tecnologías que quieres integrar en la nueva arquitectura
 
-Actuator (monitoring endpoints)
+	ConfigServer para múltiples repos Git
 
-RabbitMQ (mensajería/eventos)
+	Spring Cloud Bus (propagación de cambios de configuración)
 
-MySQL (persistencia)
+	Actuator (monitoring endpoints)
 
-Spring Security con roles y anotaciones a nivel de método
+	RabbitMQ (mensajería/eventos)
 
-Spring Cloud Config con encriptación/decriptación de propiedades sensibles
+	MySQL (persistencia)
 
-Comunicación entre micros con Feign
+	Spring Security con roles y anotaciones a nivel de método
 
-Resilience4J (circuit breakers, retries, rate limiting)
+	Spring Cloud Config con encriptación/decriptación de propiedades sensibles
 
-Micrometer + Zipkin (metrics + tracing distribuido)
+	Comunicación entre micros con Feign
 
-Logs centralizados con ELK Stack
+	Resilience4J (circuit breakers, retries, rate limiting)
 
-Docker (contenedores)
+	Micrometer + Zipkin (metrics + tracing distribuido)
 
-Múltiples entornos (DEV y PROD)
+	Logs centralizados con ELK Stack
 
-Escalabilidad: correr múltiples instancias de cada microservicio
+	Docker (contenedores)
 
-🚀 Plan de trabajo propuesto
-1. Base de microservicios
-Migrar cada servicio (Users, Accounts, Albums) a Spring Boot 4.0.5.
+	Múltiples entornos (DEV y PROD)
 
-Configurar Eureka Discovery Service actualizado.
+	Escalabilidad: correr múltiples instancias de cada microservicio
 
-Configurar Spring Cloud Gateway en lugar de Zuul, con rutas explícitas y RewritePath.
+Plan de trabajo propuesto
 
-2. Configuración centralizada
-Levantar un Spring Cloud Config Server conectado a repos Git.
+	1. Base de microservicios
+	Migrar cada servicio (Users, Accounts, Albums) a Spring Boot 4.0.5.
 
-Definir application-dev.properties y application-prod.properties en Git.
+	Configurar Eureka Discovery Service actualizado.
 
-Integrar Spring Cloud Bus + RabbitMQ para refrescar configuración en caliente.
+	Configurar Spring Cloud Gateway en lugar de Zuul, con rutas explícitas y RewritePath.
 
-3. Seguridad
-Centralizar JWT en el Gateway con un filtro global.
+	2. Configuración centralizada
+	Levantar un Spring Cloud Config Server conectado a repos Git.
 
-Usar tu librería (JwtTokenProvider, JwtClaimsParser).
+	Definir application-dev.properties y application-prod.properties en Git.
 
-Roles y authorities con @PreAuthorize en los servicios.
+	Integrar Spring Cloud Bus + RabbitMQ para refrescar configuración en caliente.
 
-Configuración sensible encriptada con Spring Cloud Config.
+	3. Seguridad
+	Centralizar JWT en el Gateway con un filtro global.
 
-4. Comunicación entre micros
-Usar Feign Clients para llamadas entre servicios (ej. Albums �?Users).
+	Usar tu librería (JwtTokenProvider, JwtClaimsParser).
 
-Integrar Resilience4J para circuit breakers y retries.
+	Roles y authorities con @PreAuthorize en los servicios.
 
-5. Observabilidad
-Actuator en todos los servicios.
+	Configuración sensible encriptada con Spring Cloud Config.
 
-Micrometer + Zipkin para métricas y tracing distribuido.
+	4. Comunicación entre micros
+	Usar Feign Clients para llamadas entre servicios.
 
-Logs enviados a ELK Stack (ElasticSearch, Logstash, Kibana).
+	Integrar Resilience4J para circuit breakers y retries.
 
-6. Persistencia
-MySQL como base de datos principal.
+	5. Observabilidad
+	Actuator en todos los servicios.
 
-Configuración en Config Server (con credenciales encriptadas).
+	Micrometer + Zipkin para métricas y tracing distribuido.
 
-7. Infraestructura
-Dockerizar todos los servicios.
+	Logs enviados a ELK Stack (ElasticSearch, Logstash, Kibana).
 
-Definir docker-compose para entorno local.
+	6. Persistencia
+	MySQL como base de datos principal.
 
-Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
+	Configuración en Config Server (con credenciales encriptadas).
 
-8. Entornos
-DEV: configuración simple, una instancia por servicio.
+	7. Infraestructura
+	Dockerizar todos los servicios.
 
-PROD: múltiples instancias por servicio, balanceadas por el Gateway.
+	Definir docker-compose para entorno local.
+
+	Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
+
+	8. Entornos
+	DEV: configuración simple, una instancia por servicio.
+
+	PROD: múltiples instancias por servicio, balanceadas por el Gateway.
 
 
 ----------------------------------------------------------------------------------------
 
-📌 Funcionalidades por servicio
-1. Discovery Service (Eureka)
-Registro y descubrimiento de microservicios.
+Plan de Implementación
 
-Permite al Gateway y a los servicios encontrarse dinámicamente.
+	Fase 1: Infraestructura base (local)
+		
+		Discovery Service (Eureka)
 
-No expone lógica de negocio, solo infraestructura.
+		Configurar en Spring Boot 4.0.5.
 
-2. API Gateway (Spring Cloud Gateway)
-Punto único de entrada al sistema.
+		Asegurar que todos los servicios se registren correctamente.
 
-Rutas explícitas y limpias (/users-service/**, /accounts-service/**, /albums-service/**).
+		Desactivar prefer-ip-address inconsistencias usar localhost o IP fija.
 
-Filtros globales:
+		API Gateway (Spring Cloud Gateway)
 
-Validación JWT.
+		Migrar de Zuul a Gateway.
 
-Logging y métricas.
+		Definir rutas explícitas en application.properties (/users-service/**, /accounts-service/**).
 
-Rate limiting.
+		Usar RewritePath para limpiar paths.
 
-Load balancing entre múltiples instancias de cada microservicio.
+		Probar comunicación básica
 
-Reescritura de paths (RewritePath) para que los microservicios reciban rutas limpias.
+	Fase 2: Seguridad JW
+	
+		Incluir tu photo-app-jwt-lib en el pom.xml de Gateway y servicios.
 
-3. Users Service
-Endpoints principales:
+		Implementar un Global Filter en el Gateway que:
 
-POST /users �?crear usuario.
+		Intercepte el Authorization header.
 
-GET /users/{id} �?obtener usuario.
+		Valide el token con JwtTokenProvider.
 
-DELETE /users/{id} �?borrar usuario.
+		Extraiga claims con JwtClaimsParser.
 
-GET /users/status/check �?health check.
+		Rechace con 401 si no es válido.
 
-Seguridad con roles y authorities (@PreAuthorize).
+		Configurar roles y authorities en los servicios con @PreAuthorize.
 
-Persistencia en MySQL.
+	Fase 3: Persistencia y comunicación
+	
+		Users Service
 
-Exposición de métricas vía Actuator.
+		Conectar a MySQL.
 
-Comunicación con otros servicios (ej. Accounts o Albums) vía Feign.
+		Implementar CRUD básico de usuarios.
 
-4. Accounts Management Service
-Gestión de roles y permisos.
+		Accounts Management Service
 
-Endpoints:
+		Conectar a MySQL.
 
-POST /accounts �?crear cuenta/rol.
+		CRUD de roles y permisos.
 
-GET /accounts/{id} �?obtener cuenta/rol.
+		Integración con Spring Security.
 
-DELETE /accounts/{id} �?borrar cuenta/rol.
+		Albums Service (cuando lo incorporemos)
 
-Integración con Spring Security para roles a nivel de método.
+		CRUD de álbumes.
 
-Persistencia en MySQL.
+		Comunicación con Users Service vía Feign Client para validar usuarios.
 
-Podría proveer authorities como PROFILE_DELETE, ADMIN, etc.
+		Fase 4: Configuración centralizada
+		Levantar Config Server con repos Git.
 
-5. Albums Service
-Endpoints:
+		Definir application-dev.properties y application-prod.properties.
 
-GET /users/{id}/albums �?obtener álbumes de un usuario.
+		Integrar Spring Cloud Bus + RabbitMQ para refrescar configuración en caliente.
 
-POST /users/{id}/albums �?crear álbum para un usuario.
+		Configurar encriptación/decriptación de propiedades sensibles (ej. DB credentials, JWT secret).
 
-Persistencia en MySQL.
+	Fase 5: Observabilidad y resiliencia
+	
+		Activar Actuator en todos los servicios.
 
-Comunicación con Users Service vía Feign para validar existencia de usuario.
+		Integrar Micrometer + Zipkin para métricas y tracing distribuido.
 
-Exposición de métricas vía Actuator.
+		Configurar Resilience4J en Feign Clients (circuit breakers, retries).
 
-6. Config Server
-Centraliza configuración de todos los servicios.
+		Centralizar logs en ELK Stack.
 
-Usa repos Git para almacenar application-dev.properties y application-prod.properties.
+	Fase 6: Contenedores y despliegue
+	
+		Dockerizar todos los servicios.
 
-Integra con Spring Cloud Bus + RabbitMQ para refrescar configuración en caliente.
+		Definir docker-compose para entorno local.
 
-Soporta encriptación/decriptación de propiedades sensibles (ej. credenciales DB, secretos JWT).
+		Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
 
-7. Infraestructura y soporte
-RabbitMQ: mensajería/eventos entre servicios.
-
-Resilience4J: circuit breakers, retries, rate limiting.
-
-Micrometer + Zipkin: métricas y tracing distribuido.
-
-ELK Stack: centralización de logs.
-
-Docker: empaquetar y desplegar servicios.
-
-Entornos DEV/PROD: configuración diferenciada en Config Server.
-
-🚀 Conclusión
-La nueva arquitectura tendrá:
-
-Gateway como entrada única, con seguridad JWT y balanceo.
-
-Users Service para gestión de usuarios.
-
-Accounts Service para roles y permisos.
-
-Albums Service para álbumes asociados a usuarios.
-
-Config Server + Eureka como infraestructura base.
-
-Observabilidad, resiliencia y despliegue en contenedores.
-
------------------------------------------------------------------------------
-
-🚀 Plan de Implementación
-Fase 1: Infraestructura base (local)
-Discovery Service (Eureka)
-
-Configurar en Spring Boot 4.0.5.
-
-Asegurar que todos los servicios se registren correctamente.
-
-Desactivar prefer-ip-address inconsistencias �?usar localhost o IP fija.
-
-API Gateway (Spring Cloud Gateway)
-
-Migrar de Zuul a Gateway.
-
-Definir rutas explícitas en application.properties (/users-service/**, /accounts-service/**).
-
-Usar RewritePath para limpiar paths.
-
-Probar comunicación básica: cliente �?Gateway �?Users Service.
-
-Fase 2: Seguridad JWT
-Incluir tu photo-app-jwt-lib en el pom.xml de Gateway y servicios.
-
-Implementar un Global Filter en el Gateway que:
-
-Intercepte el Authorization header.
-
-Valide el token con JwtTokenProvider.
-
-Extraiga claims con JwtClaimsParser.
-
-Rechace con 401 si no es válido.
-
-Configurar roles y authorities en los servicios con @PreAuthorize.
-
-Fase 3: Persistencia y comunicación
-Users Service
-
-Conectar a MySQL.
-
-Implementar CRUD básico de usuarios.
-
-Accounts Management Service
-
-Conectar a MySQL.
-
-CRUD de roles y permisos.
-
-Integración con Spring Security.
-
-Albums Service (cuando lo incorporemos)
-
-CRUD de álbumes.
-
-Comunicación con Users Service vía Feign Client para validar usuarios.
-
-Fase 4: Configuración centralizada
-Levantar Config Server con repos Git.
-
-Definir application-dev.properties y application-prod.properties.
-
-Integrar Spring Cloud Bus + RabbitMQ para refrescar configuración en caliente.
-
-Configurar encriptación/decriptación de propiedades sensibles (ej. DB credentials, JWT secret).
-
-Fase 5: Observabilidad y resiliencia
-Activar Actuator en todos los servicios.
-
-Integrar Micrometer + Zipkin para métricas y tracing distribuido.
-
-Configurar Resilience4J en Feign Clients (circuit breakers, retries).
-
-Centralizar logs en ELK Stack.
-
-Fase 6: Contenedores y despliegue
-Dockerizar todos los servicios.
-
-Definir docker-compose para entorno local.
-
-Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
-
-Configurar múltiples instancias de cada servicio �?Gateway balancea automáticamente.
+		Configurar múltiples instancias de cada servicio -> Gateway balancea automáticamente.
 
 
 ---------------------------------------------------------------------------------------------------------------
@@ -307,11 +203,11 @@ Servicios Finales (actualizados)
 
 Config Server
 
-	Centraliza la configuraci��n de todos los microservicios.
+	Centraliza la configuración de todos los microservicios.
 
 	Maneja perfiles (local, dev, prod) desde un repositorio Git.
 
-	Cada servicio obtiene su configuraci��n al arrancar.
+	Cada servicio obtiene su configuración al arrancar.
 
 Eureka Server
 
@@ -323,7 +219,7 @@ Eureka Server
 
 API Gateway
 
-	Punto de entrada ��nico.
+	Punto de entrada único.
 
 	Valida JWT en cada request.
 
@@ -333,7 +229,7 @@ API Gateway
 
 	Authorization Service (photo-app-auth-service)
 
-	Login y emisi��n de JWT.
+	Login y emisión de JWT.
 
 	Valida credenciales contra la tabla users.
 
@@ -343,19 +239,19 @@ API Gateway
 
 Users Service (photo-app-users-service)
 
-	Registro y gesti��n de usuarios.
+	Registro y gestión de usuarios.
 
 	CRUD de usuarios (crear, consultar, actualizar, desactivar).
 
-	Al registrar un usuario, se le crea autom��ticamente al menos una cuenta activa (tipo BASIC).
+	Al registrar un usuario, se le crea automáticamente al menos una cuenta activa (tipo BASIC).
 
 	Expone endpoints para perfil de usuario.
 
 	Flyway inicializa todas las tablas en photo_app_db.
 
-	Accounts Service (photo-app-accounts-service)
+Accounts Service (photo-app-accounts-service)
 
-	Gesti��n de cuentas de usuario.
+	Gestión de cuentas de usuario.
 
 	Un usuario puede tener varias cuentas.
 
@@ -365,17 +261,17 @@ Users Service (photo-app-users-service)
 
 Albums Service (photo-app-albums-service)
 
-	Gesti��n de ��lbumes de fotos.
+	Gestión de álbumes de fotos.
 
-	CRUD de ��lbumes (crear, listar, actualizar, desactivar).
+	CRUD de álbumes (crear, listar, actualizar, desactivar).
 
-	Relaci��n 1:N entre cuentas y ��lbumes.
+	Relación 1:N entre cuentas y álbumes.
 
-	Cada ��lbum pertenece a una cuenta espec��fica.
+	Cada álbum pertenece a una cuenta específica.
 
-	Photos Service (photo-app-photos-service)
+Photos Service (photo-app-photos-service)
 
-	Gesti��n de fotos dentro de un ��lbum.
+	Gestión de fotos dentro de un álbum.
 
 	CRUD de fotos (subir, listar, eliminar, desactivar).
 
@@ -385,3 +281,82 @@ Albums Service (photo-app-albums-service)
 
 
 En resumen: primero terminamos todos los servicios sin seguridad, luego Config Server y Gateway, y finalmente seguridad + tests.
+
+Pensando en resiliencia (Resilience4j)
+Cuando un microservicio llama a otro, siempre existe el riesgo de que el otro esté caído o lento.
+
+Resilience4j te da circuit breakers, retries y fallbacks.
+
+En este caso, si al registrar un usuario falla la creación de la cuenta, tienes que decidir:
+
+Reintentar (si el fallo es temporal).
+
+Fallback: por ejemplo, marcar al usuario como creado pero sin cuenta, y enviar un mensaje a una cola (Kafka, RabbitMQ) para crear la cuenta después.
+
+Fail fast: abortar el registro y devolver error.
+
+--------------------------------------------------------------------------------------
+
+Perfecto, Oscar. Hagamos un repaso ordenado de dónde estamos y qué sigue, para que tengas un punto de partida claro cuando retomes:
+
+Estado actual
+
+	Servicios codificados y registrados en Eureka:
+
+	Users (8081)
+
+	Accounts (8082)
+
+	Albums (8083)
+
+	Photos (8084)
+
+	API Gateway (8080)
+
+	Commons: DTOs, excepciones, utilidades (NormalizationUtil, FilterBuilderUtil, PaginationUtil).
+
+	Integración Feign: ya tenemos AlbumFeignClient y AccountFeignClient funcionando.
+
+	Normalización de DTOs: aplicada en users, photos, albums, accounts.
+
+	Controladores REST: patrón consistente (create, findById, findAll, update, activateOrDeactivate, delete).
+
+Pendientes inmediatos
+
+	Colección Postman
+
+	Armar una colección con todos los endpoints (users, accounts, albums, photos) para probar end-to-end.
+
+	Validar flujo completo: crear usuario → crear cuenta → crear álbum → subir foto.
+
+	Commons / Feign-lib / JWT-lib
+
+	commons está sobrecargado, pero ya tenemos plan de migración hacia un feign-lib.
+
+	Crear un jwt-lib o photo-app-security para centralizar seguridad.
+
+	App-Security (photo-app-security)
+
+	Estructura inicial:
+
+	Code
+	photo-app-security
+	 ├── JwtProvider          // genera y valida tokens
+	 ├── JwtFilter            // intercepta requests y valida JWT
+	 ├── SecurityUtils        // helpers para roles, claims, etc.
+	 ├── CurrentUserService   // obtiene el usuario logueado del contexto
+	 ├── SecurityConfig       // configuración de Spring Security
+	 └── CustomUserPrincipal  // implementación de UserDetails
+	Esto se integrará con el Gateway y los servicios para validar roles y claims.
+
+Próximos pasos sugeridos
+
+	Colección Postman: documentar y probar todos los endpoints.
+
+	Seguridad: levantar photo-app-security y empezar con JWT.
+
+	Refactorización: mover Feign a feign-lib cuando tengamos estabilidad.
+
+	Pruebas de integración: validar que Feign + Eureka + Gateway funcionan correctamente.
+
+	Roles y granularidad: usar repositorios (findByAccountId, findByAccountIdAndActiveAlbumTrue) cuando tengamos seguridad activa.
