@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableJpaAuditing
-@ComponentScan(basePackages = {"com.photoapp.commons"})
+@ComponentScan(basePackages = {"com.photoapp.accounts", "com.photoapp.commons"})
 public class PhotoAppAccountsServiceApplication {
 
 	static void main(String[] args) { SpringApplication.run(PhotoAppAccountsServiceApplication.class, args); }

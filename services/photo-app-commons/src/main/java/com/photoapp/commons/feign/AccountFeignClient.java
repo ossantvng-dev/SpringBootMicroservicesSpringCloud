@@ -14,7 +14,7 @@ public interface AccountFeignClient {
     @PostMapping("/accounts")
     AccountDTO createAccount(@RequestBody CreateAccountInputDTO input);
 
-    @GetMapping("/{id}")
-    AccountDTO findById(@PathVariable Long id);
+    @GetMapping("/accounts/{id}")
+    AccountDTO findById(@PathVariable("id") Long id);
 
 }

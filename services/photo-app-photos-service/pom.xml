@@ -60,11 +60,11 @@
         </dependency>
 
         <!-- Internal libs -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.photoapp.jwt</groupId>
             <artifactId>photo-app-jwt-lib</artifactId>
             <version>1.0-SNAPSHOT</version>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>com.photoapp.commons</groupId>
