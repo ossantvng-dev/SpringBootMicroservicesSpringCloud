@@ -360,3 +360,8 @@ Próximos pasos sugeridos
 	Pruebas de integración: validar que Feign + Eureka + Gateway funcionan correctamente.
 
 	Roles y granularidad: usar repositorios (findByAccountId, findByAccountIdAndActiveAlbumTrue) cuando tengamos seguridad activa.
+	
+	
+// 05-07-2026
+
+Creamos coleccion de postman y probamos el flujo de registrar.

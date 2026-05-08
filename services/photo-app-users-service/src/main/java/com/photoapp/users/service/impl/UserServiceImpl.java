@@ -41,7 +41,6 @@ public class UserServiceImpl implements UserService {
     private final AccountFeignClient accountFeignClient;
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UserDTO register(CreateUserInputDTO createUserInputDTO) {
         CreateUserInputDTO inputDTO = normalizeInputDTO(createUserInputDTO);
         if (userRepository.existsByEmailAndUsername(inputDTO.getEmail(),
@@ -58,7 +57,8 @@ public class UserServiceImpl implements UserService {
             User newUser = modelMapper.map(inputDTO, User.class);
             newUser.setRoles(roles);
             newUser.setPasswordHash(passwordEncoder.encode(inputDTO.getPassword()));
-            User savedUser = userRepository.save(newUser);
+
+            User savedUser = saveUser(newUser);
 
             CreateAccountInputDTO accountInput = CreateAccountInputDTO.builder()
                     .userId(savedUser.getId())
@@ -73,6 +73,11 @@ public class UserServiceImpl implements UserService {
 
             return userDTO;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private User saveUser(User newUser) {
+        return userRepository.save(newUser);
     }
 
     @Override
