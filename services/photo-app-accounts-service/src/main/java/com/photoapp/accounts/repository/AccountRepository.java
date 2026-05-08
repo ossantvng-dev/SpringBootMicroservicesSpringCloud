@@ -12,4 +12,8 @@ public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpec
 
     Page<Account> findByUserId(Long userId, Pageable pageable);
 
+    boolean existsByUserId(Long userId);
+
+    void deleteByUserId(Long userId);
+
 }

@@ -35,6 +35,7 @@ public class User extends BaseEntity {
     @Column(name = "active_user", nullable = false)
     private Boolean activeUser = true;
 
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

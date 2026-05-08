@@ -43,14 +43,20 @@ public class AccountController {
         return new ResponseEntity<>(accountService.findAll(filters), HttpStatus.OK);
     }
 
-    @PatchMapping("/{id}/active")
-    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean active) {
-        return new ResponseEntity<>(accountService.activateOrDeactivate(id, active), HttpStatus.OK);
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
+        return new ResponseEntity<>(accountService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAccountById(@PathVariable Long id) {
         accountService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/byUser/{userId}")
+    public ResponseEntity<?> deleteAccountByUserId(@PathVariable Long userId) {
+        accountService.deleteByUserId(userId);
         return ResponseEntity.noContent().build();
     }
 

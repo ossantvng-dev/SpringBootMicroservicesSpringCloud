@@ -328,6 +328,9 @@ Pendientes inmediatos
 	Armar una colección con todos los endpoints (users, accounts, albums, photos) para probar end-to-end.
 
 	Validar flujo completo: crear usuario → crear cuenta → crear álbum → subir foto.
+	
+	API Gateway: La configuracion de seguridad del curso en los servicios (user en este caso), permite solo que los requests vengan del gateway. Por el momento no tenenos seguridad.
+	Estan usando un WebExpressionAuthorizationManager.
 
 	Commons / Feign-lib / JWT-lib
 
@@ -364,4 +367,8 @@ Próximos pasos sugeridos
 	
 // 05-07-2026
 
-Creamos coleccion de postman y probamos el flujo de registrar.
+Creamos coleccion de postman y probamos el flujo de registrar. Estamos haciendo pruebas sin seguridad.
+
+// 05-08-2026
+
+Terminamos de probar todo el users api

@@ -10,10 +10,6 @@ import java.util.List;
 @Repository
 public interface PhotoRepository extends JpaRepository<Photo, Long>, JpaSpecificationExecutor<Photo> {
 
-    List<Photo> findByAlbumId(Long albumId);
-
-    List<Photo> findByAlbumIdAndActivePhotoTrue(Long albumId);
-
-    long countByAlbumIdAndActivePhotoTrue(Long albumId);
+    void deleteByAlbumIdIn(List<Long> albumIds);
 
 }

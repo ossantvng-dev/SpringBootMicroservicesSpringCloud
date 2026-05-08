@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.photoapp.albums.repository.specification.AlbumSpecification.fromFilter;
@@ -94,10 +95,10 @@ public class AlbumServiceImpl implements AlbumService {
 
     @Override
     @Transactional
-    public AlbumDTO activateOrDeactivate(Long id, boolean active) {
+    public AlbumDTO activateOrDeactivate(Long id, boolean activate) {
         return albumRepository.findById(id)
                 .map(existing -> {
-                    existing.setActiveAlbum(active);
+                    existing.setActiveAlbum(activate);
                     Album updated = albumRepository.save(existing);
                     return modelMapper.map(updated, AlbumDTO.class);
                 })
@@ -113,4 +114,10 @@ public class AlbumServiceImpl implements AlbumService {
             throw new ApplicationException("Album not found", HttpStatus.NOT_FOUND);
         }
     }
+
+    @Override
+    public void deleteByAccountIds(List<Long> accountIds) {
+        albumRepository.deleteByAccountIdIn(accountIds);
+    }
+
 }

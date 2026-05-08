@@ -7,6 +7,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class AlbumSpecification {
@@ -15,8 +16,12 @@ public class AlbumSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (filter.getAccountId() != null) {
-                predicates.add(cb.equal(root.get(Album_.accountId), filter.getAccountId()));
+            if (filter.getAccountIds() != null && !filter.getAccountIds().isBlank()) {
+                List<Long> accountIds = Arrays.stream(filter.getAccountIds().split(","))
+                        .map(String::trim)
+                        .map(Long::valueOf)
+                        .toList();
+                predicates.add(root.get(Album_.accountId).in(accountIds));
             }
 
             if (filter.getTitle() != null && !filter.getTitle().isBlank()) {

@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -38,9 +39,9 @@ public class AlbumController {
         return new ResponseEntity<>(albumService.update(id, input), HttpStatus.OK);
     }
 
-    @PatchMapping("/{id}/active")
-    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean active) {
-        return new ResponseEntity<>(albumService.activateOrDeactivate(id, active), HttpStatus.OK);
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
+        return new ResponseEntity<>(albumService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
@@ -48,4 +49,11 @@ public class AlbumController {
         albumService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/byAccountIds")
+    public ResponseEntity<Void> deleteByAccountIds(@RequestParam List<Long> accountIds) {
+        albumService.deleteByAccountIds(accountIds);
+        return ResponseEntity.noContent().build();
+    }
+
 }

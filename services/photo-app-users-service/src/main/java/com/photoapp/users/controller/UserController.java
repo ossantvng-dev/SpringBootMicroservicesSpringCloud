@@ -49,9 +49,9 @@ public class UserController {
         return new ResponseEntity<>(userService.findAll(filters), HttpStatus.OK);
     }
 
-    @PatchMapping("/{id}/active")
-    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean active) {
-        return new ResponseEntity<>(userService.activateOrDeactivate(id, active), HttpStatus.OK);
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
+        return new ResponseEntity<>(userService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/roles")

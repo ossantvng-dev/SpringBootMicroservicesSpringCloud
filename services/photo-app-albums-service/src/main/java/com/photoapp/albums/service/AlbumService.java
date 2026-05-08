@@ -5,6 +5,7 @@ import com.photoapp.albums.dto.UpdateAlbumInputDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
 import java.util.Map;
 
 public interface AlbumService {
@@ -17,9 +18,11 @@ public interface AlbumService {
 
     AlbumDTO update(Long id, UpdateAlbumInputDTO input);
 
-    AlbumDTO activateOrDeactivate(Long id, boolean active);
+    AlbumDTO activateOrDeactivate(Long id, boolean activate);
 
     void deleteById(Long id);
+
+    void deleteByAccountIds(List<Long> accountIds);
 
 }
 

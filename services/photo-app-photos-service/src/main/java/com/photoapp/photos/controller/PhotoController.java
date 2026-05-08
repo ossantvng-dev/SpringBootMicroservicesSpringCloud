@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -44,8 +45,8 @@ public class PhotoController {
     @PatchMapping("/{id}/activate")
     public ResponseEntity<PhotoDTO> activateOrDeactivate(
             @PathVariable Long id,
-            @RequestParam boolean active) {
-        return ResponseEntity.ok(photoService.activateOrDeactivate(id, active));
+            @RequestParam boolean activate) {
+        return ResponseEntity.ok(photoService.activateOrDeactivate(id, activate));
     }
 
     @DeleteMapping("/{id}")
@@ -53,4 +54,11 @@ public class PhotoController {
         photoService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/byAlbumIds")
+    public ResponseEntity<Void> deleteByAlbumIds(@RequestParam List<Long> albumIds) {
+        photoService.deleteByAlbumIds(albumIds);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -86,10 +86,10 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public AccountDTO activateOrDeactivate(Long accountId, boolean active) {
+    public AccountDTO activateOrDeactivate(Long accountId, boolean activate) {
         return accountRepository.findById(accountId)
                 .map(existing -> {
-                    existing.setActiveAccount(active);
+                    existing.setActiveAccount(activate);
                     return modelMapper.map(accountRepository.save(existing), AccountDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
@@ -104,4 +104,15 @@ public class AccountServiceImpl implements AccountService {
             throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
         }
     }
+
+    @Override
+    @Transactional
+    public void deleteByUserId(Long userId) {
+        if (accountRepository.existsByUserId(userId)) {
+            accountRepository.deleteByUserId(userId);
+        } else {
+            throw new ApplicationException("Account not found for user " + userId, HttpStatus.NOT_FOUND);
+        }
+    }
+
 }

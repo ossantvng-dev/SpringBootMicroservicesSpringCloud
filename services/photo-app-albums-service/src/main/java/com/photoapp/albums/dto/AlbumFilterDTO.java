@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AlbumFilterDTO {
-    private Long accountId;
+    private String accountIds;
     private String title;
     private String description;
     private Boolean activeAlbum;

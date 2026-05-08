@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
@@ -80,10 +81,10 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Override
     @Transactional
-    public PhotoDTO activateOrDeactivate(Long id, boolean active) {
+    public PhotoDTO activateOrDeactivate(Long id, boolean activate) {
         return photoRepository.findById(id)
                 .map(existing -> {
-                    existing.setActivePhoto(active);
+                    existing.setActivePhoto(activate);
                     Photo updated = photoRepository.save(existing);
                     return modelMapper.map(updated, PhotoDTO.class);
                 })
@@ -99,4 +100,10 @@ public class PhotoServiceImpl implements PhotoService {
             throw new ApplicationException("Photo not found", HttpStatus.NOT_FOUND);
         }
     }
+
+    @Override
+    public void deleteByAlbumIds(List<Long> albumIds) {
+        photoRepository.deleteByAlbumIdIn(albumIds);
+    }
+
 }

@@ -22,7 +22,7 @@ public interface UserService {
 
     Page<UserDTO> findAll(Map<String, String> filters);
 
-    UserDTO activateOrDeactivate(Long id, boolean active);
+    UserDTO activateOrDeactivate(Long id, boolean activate);
 
     UserDTO assignOrRemoveRole(Long userId, UpdateUserRolesInputDTO updateUserRolesInputDTO);
 

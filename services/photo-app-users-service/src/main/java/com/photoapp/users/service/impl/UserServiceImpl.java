@@ -2,8 +2,11 @@ package com.photoapp.users.service.impl;
 
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
+import com.photoapp.commons.dto.album.AlbumDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.commons.feign.AccountFeignClient;
+import com.photoapp.commons.feign.AlbumFeignClient;
+import com.photoapp.commons.feign.PhotoFeignClient;
 import com.photoapp.users.dto.*;
 import com.photoapp.users.entity.Role;
 import com.photoapp.users.entity.RoleAction;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +43,8 @@ public class UserServiceImpl implements UserService {
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final AccountFeignClient accountFeignClient;
+    private final AlbumFeignClient albumFeignClient;
+    private final PhotoFeignClient photoFeignClient;
 
     @Override
     public UserDTO register(CreateUserInputDTO createUserInputDTO) {
@@ -125,9 +131,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDTO activateOrDeactivate(Long id, boolean active) {
+    public UserDTO activateOrDeactivate(Long id, boolean activate) {
         return userRepository.findById(id).map(existingUser -> {
-            existingUser.setActiveUser(active);
+            existingUser.setActiveUser(activate);
             return modelMapper.map(userRepository.save(existingUser), UserDTO.class);
         }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
@@ -155,7 +161,35 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteById(Long id) {
         if (userRepository.existsById(id)) {
+
+            List<Long> accountIds = accountFeignClient
+                    .findAll(Map.of("userId", String.valueOf(id)))
+                    .map(AccountDTO::getId)
+                    .toList();
+
+
+            String accountIdsFilterParam = accountIds.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", "));
+
+            if (!accountIds.isEmpty()) {
+
+                List<Long> albumIds = albumFeignClient
+                        .findAll(Map.of("accountIds", accountIdsFilterParam))
+                        .map(AlbumDTO::getId)
+                        .toList();
+
+                if (!albumIds.isEmpty()) {
+                    photoFeignClient.deleteByAlbumId(albumIds);
+                }
+
+                albumFeignClient.deleteByAccountIds(accountIds);
+
+                accountFeignClient.deleteByUserId(id);
+
+            }
             userRepository.deleteById(id);
+
         } else {
             throw new ApplicationException("User not found", HttpStatus.NOT_FOUND);
         }

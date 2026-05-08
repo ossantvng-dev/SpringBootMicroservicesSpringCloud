@@ -19,9 +19,11 @@ public interface AccountService {
 
     Page<AccountDTO> findAll(Map<String, String> filters);
 
-    AccountDTO activateOrDeactivate(Long accountId, boolean active);
+    AccountDTO activateOrDeactivate(Long accountId, boolean activate);
 
     void deleteById(Long accountId);
+
+    void deleteByUserId(Long userId);
 
 }
 

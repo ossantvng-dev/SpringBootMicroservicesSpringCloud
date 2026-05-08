@@ -10,9 +10,7 @@ import java.util.List;
 @Repository
 public interface AlbumRepository extends JpaRepository<Album, Long>, JpaSpecificationExecutor<Album> {
 
-    List<Album> findByAccountId(Long accountId);
-
-    List<Album> findByAccountIdAndActiveAlbumTrue(Long accountId);
+    void deleteByAccountIdIn(List<Long> accountIds);
 
     long countByAccountIdAndActiveAlbumTrue(Long accountId);
 
