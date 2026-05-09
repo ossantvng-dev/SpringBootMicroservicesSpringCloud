@@ -17,6 +17,7 @@ public class AlbumDTO {
     private String title;
     private String description;
     private Boolean activeAlbum;
+    private Long version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

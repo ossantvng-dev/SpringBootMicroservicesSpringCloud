@@ -1,5 +1,6 @@
 package com.photoapp.accounts.entity;
 
+import com.photoapp.commons.dto.account.AccountType;
 import com.photoapp.commons.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,7 +20,7 @@ public class Account extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     @Column(name = "account_type", nullable = false)
-    private com.photoapp.commons.dto.account.AccountType accountType = com.photoapp.commons.dto.account.AccountType.BASIC;
+    private AccountType accountType = AccountType.BASIC;
 
     @Builder.Default
     @Column(name = "active_account", nullable = false)

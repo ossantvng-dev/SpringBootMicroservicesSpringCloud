@@ -17,6 +17,7 @@ public class AccountDTO {
     private String accountName;
     private AccountType accountType;
     private Boolean activeAccount;
+    private Long version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

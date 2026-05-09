@@ -9,6 +9,7 @@ import com.photoapp.commons.dto.account.AccountType;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.commons.feign.AlbumFeignClient;
+import com.photoapp.commons.feign.UserFeignClient;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -30,13 +31,18 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final ModelMapper modelMapper;
     private final AlbumFeignClient albumFeignClient;
+    private final UserFeignClient userFeignClient;
 
     @Override
     @Transactional
     public AccountDTO createAccount(CreateAccountInputDTO input) {
-        CreateAccountInputDTO normalized = normalizeInputDTO(input);
-        Account account = modelMapper.map(normalized, Account.class);
-        return modelMapper.map(accountRepository.save(account), AccountDTO.class);
+        if (userFeignClient.isActive(input.getUserId())) {
+            CreateAccountInputDTO normalized = normalizeInputDTO(input);
+            Account account = modelMapper.map(normalized, Account.class);
+            return modelMapper.map(accountRepository.saveAndFlush(account), AccountDTO.class);
+        } else {
+            throw new ApplicationException("User is not active", HttpStatus.FORBIDDEN);
+        }
     }
 
     @Override
@@ -45,15 +51,19 @@ public class AccountServiceImpl implements AccountService {
         String normalizedName = accountName != null ? accountName.trim() : null;
         return accountRepository.findById(accountId)
                 .map(existingAccount -> {
-                    if (normalizedName == null || normalizedName.isBlank()) {
-                        throw new ApplicationException("Account name cannot be blank", HttpStatus.BAD_REQUEST);
+                    if (existingAccount.getActiveAccount()) {
+                        if (normalizedName == null || normalizedName.isBlank()) {
+                            throw new ApplicationException("Account name cannot be blank", HttpStatus.BAD_REQUEST);
+                        }
+                        if (existingAccount.getAccountName().equalsIgnoreCase(normalizedName)) {
+                            throw new ApplicationException("No changes detected", HttpStatus.BAD_REQUEST);
+                        }
+                        existingAccount.setAccountName(normalizedName);
+                        Account updated = accountRepository.saveAndFlush(existingAccount);
+                        return modelMapper.map(updated, AccountDTO.class);
+                    } else {
+                        throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
                     }
-                    if (existingAccount.getAccountName().equalsIgnoreCase(normalizedName)) {
-                        throw new ApplicationException("No changes detected", HttpStatus.BAD_REQUEST);
-                    }
-                    existingAccount.setAccountName(normalizedName);
-                    Account updated = accountRepository.save(existingAccount);
-                    return modelMapper.map(updated, AccountDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -63,8 +73,12 @@ public class AccountServiceImpl implements AccountService {
     public AccountDTO changeAccountType(Long accountId, AccountType accountType) {
         return accountRepository.findById(accountId)
                 .map(account -> {
-                    account.setAccountType(accountType);
-                    return modelMapper.map(accountRepository.save(account), AccountDTO.class);
+                    if (account.getActiveAccount()) {
+                        account.setAccountType(accountType);
+                        return modelMapper.map(accountRepository.saveAndFlush(account), AccountDTO.class);
+                    } else {
+                        throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
+                    }
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -92,7 +106,7 @@ public class AccountServiceImpl implements AccountService {
         return accountRepository.findById(accountId)
                 .map(existing -> {
                     existing.setActiveAccount(activate);
-                    return modelMapper.map(accountRepository.save(existing), AccountDTO.class);
+                    return modelMapper.map(accountRepository.saveAndFlush(existing), AccountDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }

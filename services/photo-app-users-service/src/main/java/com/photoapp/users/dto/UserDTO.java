@@ -1,6 +1,5 @@
 package com.photoapp.users.dto;
 
-import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.users.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +21,7 @@ public class UserDTO {
     private String email;
     private Boolean activeUser;
     private Set<Role> roles;
+    private Long version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private AccountDTO accountDTO;
 }

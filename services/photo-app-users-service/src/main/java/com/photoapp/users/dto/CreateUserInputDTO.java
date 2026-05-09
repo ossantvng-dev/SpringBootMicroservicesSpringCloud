@@ -1,10 +1,8 @@
 package com.photoapp.users.dto;
 
-import com.photoapp.commons.dto.account.AccountType;
 import com.photoapp.users.entity.RoleName;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,9 +38,6 @@ public class CreateUserInputDTO {
     private String password;
 
     private Set<RoleName> roles;
-
-    @NotNull(message = "Account type is required")
-    private AccountType accountType;
 
 }
 

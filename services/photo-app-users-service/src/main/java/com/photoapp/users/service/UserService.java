@@ -26,6 +26,8 @@ public interface UserService {
 
     UserDTO assignOrRemoveRole(Long userId, UpdateUserRolesInputDTO updateUserRolesInputDTO);
 
+    boolean existsById(Long id);
+
     void deleteById(Long id);
 
 }

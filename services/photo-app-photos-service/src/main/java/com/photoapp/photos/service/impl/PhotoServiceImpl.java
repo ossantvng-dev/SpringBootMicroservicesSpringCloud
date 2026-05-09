@@ -44,7 +44,7 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         Photo photo = modelMapper.map(normalizedInput, Photo.class);
-        return modelMapper.map(photoRepository.save(photo), PhotoDTO.class);
+        return modelMapper.map(photoRepository.saveAndFlush(photo), PhotoDTO.class);
     }
 
     @Override
@@ -68,13 +68,16 @@ public class PhotoServiceImpl implements PhotoService {
     @Transactional
     public PhotoDTO update(Long id, UpdatePhotoInputDTO input) {
         UpdatePhotoInputDTO normalizedInput = normalizeInputDTO(input);
-
         return photoRepository.findById(id)
                 .map(existing -> {
-                    existing.setFileName(normalizedInput.getFileName());
-                    existing.setFileUrl(normalizedInput.getFileUrl());
-                    Photo updated = photoRepository.save(existing);
-                    return modelMapper.map(updated, PhotoDTO.class);
+                    if (existing.isActivePhoto()) {
+                        existing.setFileName(normalizedInput.getFileName());
+                        existing.setFileUrl(normalizedInput.getFileUrl());
+                        Photo updated = photoRepository.saveAndFlush(existing);
+                        return modelMapper.map(updated, PhotoDTO.class);
+                    } else {
+                        throw new ApplicationException("Photo is not active", HttpStatus.FORBIDDEN);
+                    }
                 })
                 .orElseThrow(() -> new ApplicationException("Photo not found", HttpStatus.NOT_FOUND));
     }
@@ -85,7 +88,7 @@ public class PhotoServiceImpl implements PhotoService {
         return photoRepository.findById(id)
                 .map(existing -> {
                     existing.setActivePhoto(activate);
-                    Photo updated = photoRepository.save(existing);
+                    Photo updated = photoRepository.saveAndFlush(existing);
                     return modelMapper.map(updated, PhotoDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Photo not found", HttpStatus.NOT_FOUND));

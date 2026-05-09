@@ -61,7 +61,7 @@ public class AlbumServiceImpl implements AlbumService {
         album.setAccountId(account.getId());
         album.setActiveAlbum(true);
 
-        Album savedAlbum = albumRepository.save(album);
+        Album savedAlbum = albumRepository.saveAndFlush(album);
 
         return modelMapper.map(savedAlbum, AlbumDTO.class);
     }
@@ -87,13 +87,16 @@ public class AlbumServiceImpl implements AlbumService {
     @Transactional
     public AlbumDTO update(Long id, UpdateAlbumInputDTO input) {
         UpdateAlbumInputDTO normalizedInput = normalizeInputDTO(input);
-
         return albumRepository.findById(id)
                 .map(existing -> {
-                    existing.setTitle(normalizedInput.getTitle());
-                    existing.setDescription(normalizedInput.getDescription());
-                    Album updated = albumRepository.save(existing);
-                    return modelMapper.map(updated, AlbumDTO.class);
+                    if (existing.getActiveAlbum()) {
+                        existing.setTitle(normalizedInput.getTitle());
+                        existing.setDescription(normalizedInput.getDescription());
+                        Album updated = albumRepository.saveAndFlush(existing);
+                        return modelMapper.map(updated, AlbumDTO.class);
+                    } else {
+                        throw new ApplicationException("Album is not active", HttpStatus.FORBIDDEN);
+                    }
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
     }
@@ -104,7 +107,7 @@ public class AlbumServiceImpl implements AlbumService {
         return albumRepository.findById(id)
                 .map(existing -> {
                     existing.setActiveAlbum(activate);
-                    Album updated = albumRepository.save(existing);
+                    Album updated = albumRepository.saveAndFlush(existing);
                     return modelMapper.map(updated, AlbumDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));

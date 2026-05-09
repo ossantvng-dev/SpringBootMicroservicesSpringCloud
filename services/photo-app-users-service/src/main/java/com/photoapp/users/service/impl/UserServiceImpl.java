@@ -1,7 +1,6 @@
 package com.photoapp.users.service.impl;
 
 import com.photoapp.commons.dto.account.AccountDTO;
-import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.commons.feign.AccountFeignClient;
@@ -21,7 +20,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -47,10 +45,10 @@ public class UserServiceImpl implements UserService {
     private final PhotoFeignClient photoFeignClient;
 
     @Override
+    @Transactional
     public UserDTO register(CreateUserInputDTO createUserInputDTO) {
         CreateUserInputDTO inputDTO = normalizeInputDTO(createUserInputDTO);
-        if (userRepository.existsByEmailAndUsername(inputDTO.getEmail(),
-                inputDTO.getUsername())) {
+        if (userRepository.existsByEmailAndUsername(inputDTO.getEmail(), inputDTO.getUsername())) {
             throw new ApplicationException("User already registered", HttpStatus.BAD_REQUEST);
         } else {
             Role defaultRole = roleRepository.findByName(RoleName.ROLE_USER)
@@ -63,27 +61,9 @@ public class UserServiceImpl implements UserService {
             User newUser = modelMapper.map(inputDTO, User.class);
             newUser.setRoles(roles);
             newUser.setPasswordHash(passwordEncoder.encode(inputDTO.getPassword()));
-
-            User savedUser = saveUser(newUser);
-
-            CreateAccountInputDTO accountInput = CreateAccountInputDTO.builder()
-                    .userId(savedUser.getId())
-                    .accountName("Default Account")
-                    .accountType(inputDTO.getAccountType())
-                    .build();
-
-            AccountDTO accountDTO = accountFeignClient.createAccount(accountInput);
-
-            UserDTO userDTO = modelMapper.map(savedUser, UserDTO.class);
-            userDTO.setAccountDTO(accountDTO);
-
-            return userDTO;
+            User savedUser = userRepository.save(newUser);
+            return modelMapper.map(savedUser, UserDTO.class);
         }
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private User saveUser(User newUser) {
-        return userRepository.save(newUser);
     }
 
     @Override
@@ -91,7 +71,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO update(Long id, UpdateUserInputDTO updateUserInputDTO) {
         return userRepository.findById(id)
                 .map(existingUser -> modelMapper.map(
-                        userRepository.save(validateAndSetUser(existingUser, updateUserInputDTO)),
+                        userRepository.saveAndFlush(validateAndSetUser(existingUser, updateUserInputDTO)),
                         UserDTO.class))
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
@@ -134,7 +114,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO activateOrDeactivate(Long id, boolean activate) {
         return userRepository.findById(id).map(existingUser -> {
             existingUser.setActiveUser(activate);
-            return modelMapper.map(userRepository.save(existingUser), UserDTO.class);
+            return modelMapper.map(userRepository.saveAndFlush(existingUser), UserDTO.class);
         }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 
@@ -143,6 +123,9 @@ public class UserServiceImpl implements UserService {
     public UserDTO assignOrRemoveRole(Long id, UpdateUserRolesInputDTO updateUserRolesInputDTO) {
         return userRepository.findById(id)
                 .map(existingUser -> {
+                    if (!existingUser.getActiveUser()) {
+                        throw new ApplicationException("User must be active", HttpStatus.FORBIDDEN);
+                    }
                     Set<Role> roles = mapRoleNamesToRoles(updateUserRolesInputDTO.getRoles());
                     if (updateUserRolesInputDTO.getAction() == RoleAction.ASSIGN) {
                         existingUser.getRoles().addAll(roles);
@@ -152,10 +135,13 @@ public class UserServiceImpl implements UserService {
                             throw new ApplicationException("User must have at least one role", HttpStatus.BAD_REQUEST);
                         }
                     }
-                    return modelMapper.map(userRepository.save(existingUser), UserDTO.class);
+                    return modelMapper.map(userRepository.saveAndFlush(existingUser), UserDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
+
+    @Override
+    public boolean existsById(Long id) { return userRepository.existsById(id); }
 
     @Override
     @Transactional

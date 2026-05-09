@@ -46,6 +46,11 @@ public class UserController {
         return new ResponseEntity<>(userService.findByUsername(username), HttpStatus.OK);
     }
 
+    @GetMapping("/{id}/active")
+    public ResponseEntity<?> isActive(@PathVariable("id") Long id) {
+        return new ResponseEntity<>(userService.existsById(id), HttpStatus.OK);
+    }
+
     @GetMapping
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(userService.findAll(filters), HttpStatus.OK);
