@@ -24,5 +24,7 @@ public interface AlbumService {
 
     void deleteByAccountIds(List<Long> accountIds);
 
+    long countByAccountId(Long accountId);
+
 }
 

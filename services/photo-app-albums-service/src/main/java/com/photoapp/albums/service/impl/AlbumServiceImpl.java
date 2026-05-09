@@ -11,6 +11,7 @@ import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.commons.feign.AccountFeignClient;
+import com.photoapp.commons.feign.PhotoFeignClient;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +34,7 @@ public class AlbumServiceImpl implements AlbumService {
 
     private final AlbumRepository albumRepository;
     private final AccountFeignClient accountFeignClient;
+    private final PhotoFeignClient photoFeignClient;
     private final AlbumLimitsProperties albumLimitsProperties;
     private final ModelMapper modelMapper;
 
@@ -58,7 +61,9 @@ public class AlbumServiceImpl implements AlbumService {
         album.setAccountId(account.getId());
         album.setActiveAlbum(true);
 
-        return modelMapper.map(albumRepository.save(album), AlbumDTO.class);
+        Album savedAlbum = albumRepository.save(album);
+
+        return modelMapper.map(savedAlbum, AlbumDTO.class);
     }
 
     @Override
@@ -106,9 +111,18 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public long countByAccountId(Long accountId) {
+        return albumRepository.countByAccountId(accountId);
+    }
+
+    @Override
     @Transactional
     public void deleteById(Long id) {
         if (albumRepository.existsById(id)) {
+            if (photoFeignClient.countByAlbumIds(Collections.singletonList(id)) > 0) {
+                throw new ApplicationException("Cannot delete album with existing photos", HttpStatus.CONFLICT);
+            }
             albumRepository.deleteById(id);
         } else {
             throw new ApplicationException("Album not found", HttpStatus.NOT_FOUND);
@@ -116,7 +130,15 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
+    @Transactional
     public void deleteByAccountIds(List<Long> accountIds) {
+        List<Long> albumIds = albumRepository.findIdsByAccountIdIn(accountIds);
+        if (albumIds == null || albumIds.isEmpty()) {
+            throw new ApplicationException("Albums not found for accountIds " + accountIds, HttpStatus.NOT_FOUND);
+        }
+        if (photoFeignClient.countByAlbumIds(albumIds) > 0) {
+            throw new ApplicationException("Cannot delete albums with existing photos", HttpStatus.CONFLICT);
+        }
         albumRepository.deleteByAccountIdIn(accountIds);
     }
 

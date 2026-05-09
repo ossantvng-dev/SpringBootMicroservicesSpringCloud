@@ -102,8 +102,15 @@ public class PhotoServiceImpl implements PhotoService {
     }
 
     @Override
+    @Transactional
     public void deleteByAlbumIds(List<Long> albumIds) {
         photoRepository.deleteByAlbumIdIn(albumIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countByAlbumIdIn(List<Long> albumIds) {
+        return photoRepository.countByAlbumIdIn(albumIds);
     }
 
 }

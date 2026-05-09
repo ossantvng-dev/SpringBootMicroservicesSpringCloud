@@ -12,4 +12,6 @@ public interface PhotoRepository extends JpaRepository<Photo, Long>, JpaSpecific
 
     void deleteByAlbumIdIn(List<Long> albumIds);
 
+    long countByAlbumIdIn(List<Long> albumIds);
+
 }

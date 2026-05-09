@@ -25,7 +25,7 @@ public class AlbumController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Long id) {
+    public ResponseEntity<?> findById(@PathVariable("id") Long id) {
         return new ResponseEntity<>(albumService.findById(id), HttpStatus.OK);
     }
 
@@ -34,24 +34,31 @@ public class AlbumController {
         return new ResponseEntity<>(albumService.findAll(filters), HttpStatus.OK);
     }
 
+    @GetMapping("/countByAccountId")
+    public ResponseEntity<?> countByAccountId(@RequestParam("accountId") Long accountId) {
+        return new ResponseEntity<>(albumService.countByAccountId(accountId), HttpStatus.OK);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdateAlbumInputDTO input) {
+    public ResponseEntity<?> update(@PathVariable("id") Long id, @Valid @RequestBody UpdateAlbumInputDTO input) {
         return new ResponseEntity<>(albumService.update(id, input), HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
+    public ResponseEntity<?> activateOrDeactivate(
+            @PathVariable("id") Long id,
+            @RequestParam("activate") boolean activate) {
         return new ResponseEntity<>(albumService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable("id") Long id) {
         albumService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/byAccountIds")
-    public ResponseEntity<Void> deleteByAccountIds(@RequestParam List<Long> accountIds) {
+    public ResponseEntity<Void> deleteByAccountIds(@RequestParam("accountIds") List<Long> accountIds) {
         albumService.deleteByAccountIds(accountIds);
         return ResponseEntity.noContent().build();
     }

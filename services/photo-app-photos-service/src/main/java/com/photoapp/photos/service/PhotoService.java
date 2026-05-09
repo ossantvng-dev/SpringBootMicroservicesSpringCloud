@@ -24,5 +24,7 @@ public interface PhotoService {
 
     void deleteByAlbumIds(List<Long> albumIds);
 
+    long countByAlbumIdIn(List<Long> albumIds);
+
 }
 

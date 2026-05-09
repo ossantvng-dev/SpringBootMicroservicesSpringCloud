@@ -7,6 +7,7 @@ import com.photoapp.photos.service.PhotoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -59,6 +60,11 @@ public class PhotoController {
     public ResponseEntity<Void> deleteByAlbumIds(@RequestParam List<Long> albumIds) {
         photoService.deleteByAlbumIds(albumIds);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/countByAlbumIds")
+    public ResponseEntity<?> countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds) {
+        return new ResponseEntity<>(photoService.countByAlbumIdIn(albumIds), HttpStatus.OK);
     }
 
 }

@@ -26,4 +26,7 @@ public interface PhotoFeignClient {
     @DeleteMapping("/photos/byAlbumIds")
     void deleteByAlbumId(@RequestParam("albumIds") List<Long> albumIds);
 
+    @GetMapping("/photos/countByAlbumIds")
+    long countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds);
+
 }

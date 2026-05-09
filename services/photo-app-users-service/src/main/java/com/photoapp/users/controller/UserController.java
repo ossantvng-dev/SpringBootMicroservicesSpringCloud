@@ -25,22 +25,24 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdateUserInputDTO inputDTO) {
+    public ResponseEntity<?> update(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateUserInputDTO inputDTO) {
         return new ResponseEntity<>(userService.update(id, inputDTO), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Long id) {
+    public ResponseEntity<?> findById(@PathVariable("id") Long id) {
         return new ResponseEntity<>(userService.findById(id), HttpStatus.OK);
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<?> findByEmail(@PathVariable String email) {
+    public ResponseEntity<?> findByEmail(@PathVariable("email") String email) {
         return new ResponseEntity<>(userService.findByEmail(email), HttpStatus.OK);
     }
 
     @GetMapping("/username/{username}")
-    public ResponseEntity<?> findByUsername(@PathVariable String username) {
+    public ResponseEntity<?> findByUsername(@PathVariable("username") String username) {
         return new ResponseEntity<>(userService.findByUsername(username), HttpStatus.OK);
     }
 
@@ -50,19 +52,23 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
+    public ResponseEntity<?> activateOrDeactivate(
+            @PathVariable("id") Long id,
+            @RequestParam("activate") boolean activate) {
         return new ResponseEntity<>(userService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/roles")
     public ResponseEntity<?> assignOrRemoveRole(
-            @PathVariable Long id, @RequestBody @Valid UpdateUserRolesInputDTO inputDTO) {
+            @PathVariable("id") Long id,
+            @RequestBody @Valid UpdateUserRolesInputDTO inputDTO) {
         return new ResponseEntity<>(userService.assignOrRemoveRole(id, inputDTO), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteById(@PathVariable Long id) {
+    public ResponseEntity<?> deleteById(@PathVariable("id") Long id) {
         userService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
 }

@@ -8,6 +8,7 @@ import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.account.AccountType;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.commons.feign.AlbumFeignClient;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final ModelMapper modelMapper;
+    private final AlbumFeignClient albumFeignClient;
 
     @Override
     @Transactional
@@ -99,6 +101,9 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public void deleteById(Long accountId) {
         if (accountRepository.existsById(accountId)) {
+            if (albumFeignClient.countByAccountId(accountId) > 0) {
+                throw new ApplicationException("Cannot delete account with existing albums", HttpStatus.CONFLICT);
+            }
             accountRepository.deleteById(accountId);
         } else {
             throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
