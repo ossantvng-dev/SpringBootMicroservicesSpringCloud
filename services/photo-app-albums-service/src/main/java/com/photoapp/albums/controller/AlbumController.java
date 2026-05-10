@@ -6,6 +6,7 @@ import com.photoapp.albums.service.AlbumService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,32 +20,44 @@ public class AlbumController {
 
     private final AlbumService albumService;
 
-    @PostMapping
+    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<?> create(@Valid @RequestBody CreateAlbumInputDTO input) {
         return new ResponseEntity<>(albumService.create(input), HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(
+            value = "/{id}",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> findById(@PathVariable("id") Long id) {
         return new ResponseEntity<>(albumService.findById(id), HttpStatus.OK);
     }
 
-    @GetMapping
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(albumService.findAll(filters), HttpStatus.OK);
     }
 
-    @GetMapping("/countByAccountId")
+    @GetMapping(
+            value = "/countByAccountId",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> countByAccountId(@RequestParam("accountId") Long accountId) {
         return new ResponseEntity<>(albumService.countByAccountId(accountId), HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(
+            value = "/{id}",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> update(@PathVariable("id") Long id, @Valid @RequestBody UpdateAlbumInputDTO input) {
         return new ResponseEntity<>(albumService.update(id, input), HttpStatus.OK);
     }
 
-    @PatchMapping("/{id}/activate")
+    @PatchMapping(
+            value = "/{id}/activate",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> activateOrDeactivate(
             @PathVariable("id") Long id,
             @RequestParam("activate") boolean activate) {
