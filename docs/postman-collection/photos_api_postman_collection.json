@@ -25,14 +25,13 @@
               "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\",\n  \"password\": \"StrongPass123\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users",
+              "raw": "http://localhost:8080/users",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users"
               ]
             }
@@ -54,14 +53,13 @@
               "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria Updated\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101",
+              "raw": "http://localhost:8080/users/101",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101"
               ]
@@ -75,14 +73,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101",
+              "raw": "http://localhost:8080/users/101",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101"
               ]
@@ -96,14 +93,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/email/ossant@example.com",
+              "raw": "http://localhost:8080/users/email/ossant@example.com",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "email",
                 "ossant@example.com"
@@ -118,14 +114,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/username/ossant",
+              "raw": "http://localhost:8080/users/username/ossant",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "username",
                 "ossant"
@@ -140,14 +135,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users?email=ossant@example.com",
+              "raw": "http://localhost:8080/users",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users"
               ],
               "query": [
@@ -168,7 +162,8 @@
                 },
                 {
                   "key": "email",
-                  "value": "ossant@example.com"
+                  "value": "ossant@example.com",
+                  "disabled": true
                 },
                 {
                   "key": "active",
@@ -226,14 +221,13 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101/activate?activate=false",
+              "raw": "http://localhost:8080/users/101/activate?activate=false",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101",
                 "activate"
@@ -263,14 +257,13 @@
               "raw": "{\n  \"action\": \"ASSIGN\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"]\n}\n"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101/roles",
+              "raw": "http://localhost:8080/users/101/roles",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101",
                 "roles"
@@ -294,14 +287,13 @@
               "raw": "{\n  \"action\": \"REMOVE\",\n  \"roles\": [\"ROLE_USER\"]\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101/roles",
+              "raw": "http://localhost:8080/users/101/roles",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101",
                 "roles"
@@ -316,14 +308,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101",
+              "raw": "http://localhost:8080/users/101",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101"
               ]
@@ -340,14 +331,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-users-service/users/101/active",
+              "raw": "http://localhost:8080/users/101/active",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-users-service",
                 "users",
                 "101",
                 "active"
@@ -376,14 +366,13 @@
               "raw": "{\n  \"accountName\": \"Oscar Account\",\n  \"accountType\": \"PREMIUM\",\n  \"userId\": 101\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts",
+              "raw": "http://localhost:8080/accounts",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts"
               ]
             }
@@ -405,14 +394,13 @@
               "raw": ""
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts/101/name?accountName=Oscar Updated Account Name",
+              "raw": "http://localhost:8080/accounts/101/name?accountName=Oscar Updated Account Name",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts",
                 "101",
                 "name"
@@ -420,8 +408,7 @@
               "query": [
                 {
                   "key": "accountName",
-                  "value": "Oscar Updated Account Name",
-                  "type": "text"
+                  "value": "Oscar Updated Account Name"
                 }
               ]
             }
@@ -443,14 +430,13 @@
               "raw": ""
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts/101/type?accountType=BASIC",
+              "raw": "http://localhost:8080/accounts/101/type?accountType=BASIC",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts",
                 "101",
                 "type"
@@ -458,8 +444,7 @@
               "query": [
                 {
                   "key": "accountType",
-                  "value": "BASIC",
-                  "type": "text"
+                  "value": "BASIC"
                 }
               ]
             }
@@ -472,14 +457,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts/101",
+              "raw": "http://localhost:8080/accounts/101",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts",
                 "101"
               ]
@@ -493,14 +477,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts?userId=100",
+              "raw": "http://localhost:8080/accounts",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts"
               ],
               "query": [
@@ -524,7 +507,7 @@
                 {
                   "key": "userId",
                   "value": "100",
-                  "type": "text"
+                  "disabled": true
                 },
                 {
                   "key": "createdStart",
@@ -571,14 +554,13 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts/101/activate?activate=true",
+              "raw": "http://localhost:8080/accounts/101/activate?activate=true",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts",
                 "101",
                 "activate"
@@ -599,14 +581,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-accounts-service/accounts/199",
+              "raw": "http://localhost:8080/accounts/199",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-accounts-service",
                 "accounts",
                 "199"
               ]
@@ -634,14 +615,13 @@
               "raw": "{\n  \"title\": \"Vacation 2026\",\n  \"description\": \"Trip to Costa Rica\",\n  \"accountId\": 198\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums",
+              "raw": "http://localhost:8080/albums",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums"
               ]
             }
@@ -654,16 +634,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/766",
+              "raw": "http://localhost:8080/albums/711",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
-                "766"
+                "711"
               ]
             }
           },
@@ -675,14 +654,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums?accountIds=1, 2, 3",
+              "raw": "http://localhost:8080/albums?accountIds=1, 2, 3",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums"
               ],
               "query": [
@@ -763,16 +741,15 @@
               "raw": "{\n  \"title\": \"Updated Album Name\",\n  \"description\": \"Updated description\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/766",
+              "raw": "http://localhost:8080/albums/711",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
-                "766"
+                "711"
               ]
             }
           },
@@ -784,14 +761,13 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/766/activate?activate=true",
+              "raw": "http://localhost:8080/albums/766/activate?activate=true",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
                 "766",
                 "activate"
@@ -812,14 +788,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/766",
+              "raw": "http://localhost:8080/albums/766",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
                 "766"
               ]
@@ -833,14 +808,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/byAccountIds?accountIds=101,102,103",
+              "raw": "http://localhost:8080/albums/byAccountIds?accountIds=101,102,103",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
                 "byAccountIds"
               ],
@@ -863,22 +837,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-albums-service/albums/countByAccountId?accountId=1",
+              "raw": "http://localhost:8080/albums/countByAccountId?accountId=1",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-albums-service",
                 "albums",
                 "countByAccountId"
               ],
               "query": [
                 {
                   "key": "accountId",
-                  "value": "1",
-                  "type": "text"
+                  "value": "1"
                 }
               ]
             }
@@ -905,14 +877,13 @@
               "raw": "{\n  \"fileName\": \"beach.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach.png\",\n  \"albumId\": 1\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos",
+              "raw": "http://localhost:8080/photos",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos"
               ]
             }
@@ -925,14 +896,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos/1",
+              "raw": "http://localhost:8080/photos/1",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos",
                 "1"
               ]
@@ -946,14 +916,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos?fileName=photo_1_2.jpg",
+              "raw": "http://localhost:8080/photos?fileName=photo_1_2.jpg",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos"
               ],
               "query": [
@@ -964,8 +933,7 @@
                 },
                 {
                   "key": "fileName",
-                  "value": "photo_1_2.jpg",
-                  "type": "text"
+                  "value": "photo_1_2.jpg"
                 },
                 {
                   "key": "activePhoto",
@@ -1017,14 +985,13 @@
               "raw": "{\n  \"fileName\": \"beach_updated.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach_updated.png\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos/1",
+              "raw": "http://localhost:8080/photos/1",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos",
                 "1"
               ]
@@ -1038,14 +1005,13 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos/1/activate?activate=false",
+              "raw": "http://localhost:8080/photos/1/activate?activate=false",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos",
                 "1",
                 "activate"
@@ -1066,14 +1032,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos/10232",
+              "raw": "http://localhost:8080/photos/10232",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos",
                 "10232"
               ]
@@ -1087,14 +1052,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photo-app-photos-service/photos/countByAlbumIds?albumIds=1, 256",
+              "raw": "http://localhost:8080/photos/countByAlbumIds?albumIds=1, 256",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "8080",
               "path": [
-                "photo-app-photos-service",
                 "photos",
                 "countByAlbumIds"
               ],
