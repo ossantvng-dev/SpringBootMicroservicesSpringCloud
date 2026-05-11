@@ -372,3 +372,47 @@ Creamos coleccion de postman y probamos el flujo de registrar. Estamos haciendo 
 // 05-08-2026
 
 Terminamos de probar todo el users api
+
+// 05-09-2026
+
+Terminamos de probar todo el accounts, albums y photos api
+
+
+Prioridades inmediatas
+
+	Config Server
+
+		Centralizar configuración en repos Git.
+
+		Definir application-dev.properties y application-prod.properties.
+
+		Integrar Spring Cloud Bus + RabbitMQ para refresco en caliente.
+
+		Encriptar credenciales sensibles (DB, JWT secret).
+
+	Authorization Service
+
+		Nuevo micro photo-app-auth-service.
+
+		Login y emisión de JWT.
+
+		Validación de credenciales contra tabla users.
+
+		Generación de tokens con userId y roles.
+
+	Security Lib
+
+		Módulo photo-app-security.
+
+		Contendrá JwtProvider, JwtFilter, SecurityConfig, CurrentUserService.
+
+		Se integra en Gateway y servicios con @PreAuthorize.
+
+	Refactor Commons
+
+		Separar DTOs y utilidades en commons.
+
+		Crear feign-lib para interfaces Feign.
+
+		Mantener jwt-lib o integrarlo en security-lib.
+		
