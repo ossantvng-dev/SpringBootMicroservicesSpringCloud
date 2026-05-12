@@ -6,7 +6,6 @@ import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,54 +18,32 @@ public class AccountController {
 
     private final AccountService accountService;
 
-    @PostMapping(
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PostMapping
     public ResponseEntity<?> createAccount(@Valid @RequestBody CreateAccountInputDTO input) {
         return new ResponseEntity<>(accountService.createAccount(input), HttpStatus.CREATED);
     }
 
-    @PatchMapping(
-            value = "/{id}/name",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PatchMapping("/{id}/name")
     public ResponseEntity<?> changeAccountName(@PathVariable Long id, @RequestParam String accountName) {
         return new ResponseEntity<>(accountService.changeAccountName(id, accountName), HttpStatus.OK);
     }
 
-    @PatchMapping(
-            value = "/{id}/type",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PatchMapping("/{id}/type")
     public ResponseEntity<?> changeAccountType(@PathVariable Long id, @RequestParam AccountType accountType) {
         return new ResponseEntity<>(accountService.changeAccountType(id, accountType), HttpStatus.OK);
     }
 
-    @GetMapping(
-            value = "/{id}",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable Long id) {
         return new ResponseEntity<>(accountService.findById(id), HttpStatus.OK);
     }
 
-    @GetMapping(
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @GetMapping
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(accountService.findAll(filters), HttpStatus.OK);
     }
 
-    @PatchMapping(
-            value = "/{id}/activate",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PatchMapping("/{id}/activate")
     public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
         return new ResponseEntity<>(accountService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }

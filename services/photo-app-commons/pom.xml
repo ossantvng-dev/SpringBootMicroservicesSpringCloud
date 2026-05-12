@@ -66,12 +66,12 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
             <version>${spring.boot.version}</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>${jackson.dataformat.xml.version}</version>
             <scope>compile</scope>
-        </dependency>
+        </dependency>-->
 
         <!-- Tests -->
         <dependency>

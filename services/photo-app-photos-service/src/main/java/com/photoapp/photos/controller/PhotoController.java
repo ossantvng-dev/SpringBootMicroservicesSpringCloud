@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,56 +21,34 @@ public class PhotoController {
 
     private final PhotoService photoService;
 
-    @PostMapping(
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PostMapping
     public ResponseEntity<PhotoDTO> create(@Valid @RequestBody CreatePhotoInputDTO input) {
         return ResponseEntity.ok(photoService.create(input));
     }
 
-    @GetMapping(
-            value = "/{id}",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @GetMapping("/{id}")
     public ResponseEntity<PhotoDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(photoService.findById(id));
     }
 
-    @GetMapping(
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @GetMapping
     public ResponseEntity<Page<PhotoDTO>> findAll(@RequestParam Map<String, String> filters) {
         return ResponseEntity.ok(photoService.findAll(filters));
     }
 
-    @GetMapping(
-            value = "/countByAlbumIds",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @GetMapping("/countByAlbumIds")
     public ResponseEntity<?> countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds) {
         return new ResponseEntity<>(photoService.countByAlbumIdIn(albumIds), HttpStatus.OK);
     }
 
-    @PutMapping(
-            value = "/{id}",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PutMapping("/{id}")
     public ResponseEntity<PhotoDTO> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdatePhotoInputDTO input) {
         return ResponseEntity.ok(photoService.update(id, input));
     }
 
-    @PatchMapping(
-            value = "/{id}/activate",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @PatchMapping("/{id}/activate")
     public ResponseEntity<PhotoDTO> activateOrDeactivate(
             @PathVariable Long id,
             @RequestParam boolean activate) {
