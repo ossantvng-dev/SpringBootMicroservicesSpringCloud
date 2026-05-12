@@ -3,7 +3,7 @@ package com.photoapp.photos.service.impl;
 import com.photoapp.commons.dto.album.AlbumDTO;
 import com.photoapp.commons.dto.photo.PhotoDTO;
 import com.photoapp.commons.exception.ApplicationException;
-import com.photoapp.commons.feign.AlbumFeignClient;
+import com.photoapp.feign.AlbumFeignClient;
 import com.photoapp.photos.dto.CreatePhotoInputDTO;
 import com.photoapp.photos.dto.PhotoFilterDTO;
 import com.photoapp.photos.dto.UpdatePhotoInputDTO;

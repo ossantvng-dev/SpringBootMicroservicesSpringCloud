@@ -377,42 +377,141 @@ Terminamos de probar todo el users api
 
 Terminamos de probar todo el accounts, albums y photos api
 
+// 05-12-2026
 
-Prioridades inmediatas
+Configuration server up and running. Remote repo and native configs working fine.
 
-	Config Server
+spring-cloud-starter-bus-amqp listo
 
-		Centralizar configuración en repos Git.
 
-		Definir application-dev.properties y application-prod.properties.
+Analisis cambio de estructura del proyecto:
 
-		Integrar Spring Cloud Bus + RabbitMQ para refresco en caliente.
+ossan@ossant-pc MINGW64 ~/git/SpringBootMicroservicesSpringCloud (main)
+$ tree -L 2
+.
+|-- README.md
+|-- docs
+|   |-- Microservices.pdf
+|   |-- first-model.txt
+|   |-- micros-api-gateway.png
+|   |-- notes.txt
+|   |-- postman-collection
+|   |-- rabbitmq.txt
+|   |-- security.txt
+|   |-- spring cloud bus
+|   |-- spring-cloud-api-gateway.png
+|   `-- users.txt
+`-- services
+    |-- photo-app-accounts-service
+    |-- photo-app-albums-service
+    |-- photo-app-api-gateway
+    |-- photo-app-commons
+    |-- photo-app-configuration-server
+    |-- photo-app-discovery-service
+    |-- photo-app-jwt-lib
+    |-- photo-app-photos-service
+    `-- photo-app-users-service
 
-		Encriptar credenciales sensibles (DB, JWT secret).
 
-	Authorization Service
+-------------------------------------------------------------
 
-		Nuevo micro photo-app-auth-service.
+ossan@ossant-pc MINGW64 ~/git/kanan-backup/kanan-system-api (main)
+$ tree -L 2
+.
+|-- README.md
+|-- api-parent
+|   |-- admin-service
+|   |-- common-library
+|   |-- core-service
+|   |-- message-gateway-service
+|   |-- mvnw
+|   |-- mvnw.cmd
+|   `-- pom.xml
+|-- database
+|   |-- docs
+|   |-- mvnw
+|   |-- mvnw.cmd
+|   |-- pom.xml
+|   `-- src
+|-- deploy
+|   |-- default.conf
+|   |-- deploycore.sh
+|   |-- deploymessagegateway.sh
+|   |-- deployui.sh
+|   |-- generate-ssl-certificates.sh
+|   |-- installdocker.sh
+|   |-- installnginx.sh
+|   |-- liquibase_update.sh
+|   `-- ssh_tunnel.sh
+|-- docker-compose.yml
+|-- docs
+|   `-- infraestructure.md
+|-- pom.xml
+`-- tools
 
-		Login y emisión de JWT.
 
-		Validación de credenciales contra tabla users.
 
-		Generación de tokens con userId y roles.
+Plan actualizado – Mayo 2026
 
-	Security Lib
+1. Base actual
+   - Microservicios funcionando: Users (8081), Accounts (8082), Albums (8083), Photos (8084), API Gateway (8080).
+   - Config Server + Bus + RabbitMQ listo.
+   - Eureka Discovery activo.
+   - Postman collection probada end-to-end.
 
-		Módulo photo-app-security.
+2. Inmediato
+   - Refactorizar commons:
+     • Separar DTOs y utilidades en commons.
+     • Extraer interfaces Feign a feign-lib.
+   - Definir Security Lib:
+     • Crear photo-app-security con JwtProvider, JwtFilter, SecurityConfig, CurrentUserService.
+     • Integrar en Gateway y servicios con @PreAuthorize.
+   - Levantar Authorization Service:
+     • Nuevo micro photo-app-auth-service.
+     • Login y emisión de JWT validando contra tabla users.
+     • Tokens con userId y roles.
 
-		Contendrá JwtProvider, JwtFilter, SecurityConfig, CurrentUserService.
+3. Refactorizar estructura del proyecto
+   - Crear api-parent con Maven BOM para controlar versiones (Spring Boot, Spring Cloud, Feign, Security).
+   - Reorganizar en multi-module:
+     • api-parent/
+       - accounts-service
+       - albums-service
+       - api-gateway
+       - auth-service
+       - commons-library
+       - feign-lib
+       - photos-service
+       - users-service
+       - security-lib
+     • infra/
+       - config-server
+       - discovery-service
+     • database/
+       - scripts, migraciones (Flyway/Liquibase)
+     • deploy/
+       - docker-compose.yml
+       - scripts (nginx, ssl, etc.)
+     • docs/
+       - arquitectura, postman, notas
 
-		Se integra en Gateway y servicios con @PreAuthorize.
+4. Resilience4J
+   - Configurar circuit breakers y retries en Feign Clients.
+   - Definir fallback claro:
+     • Registrar usuario → crear cuenta.
+     • Si falla, reintentar o fallback (usuario creado sin cuenta, mensaje en cola).
+   - Fail fast en operaciones críticas.
 
-	Refactor Commons
+5. Observabilidad
+   - Actuator en todos los servicios.
+   - Micrometer + Zipkin para métricas y tracing distribuido.
+   - Centralizar logs en ELK Stack.
 
-		Separar DTOs y utilidades en commons.
-
-		Crear feign-lib para interfaces Feign.
-
-		Mantener jwt-lib o integrarlo en security-lib.
-		
+6. Docker + AWS + CI/CD
+   - Dockerizar todos los servicios.
+   - Definir docker-compose para entorno local.
+   - Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
+   - Configurar múltiples instancias de cada servicio → Gateway balancea automáticamente.
+   - CI/CD con GitHub Actions / GitLab CI / Jenkins:
+     • Build + test automático.
+     • Deploy a AWS con pipelines.

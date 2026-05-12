@@ -110,3 +110,73 @@ public class CustomUserPrincipal implements UserDetails {
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return true; }
 }
+
+
+
+🔑 Esquema actual con JWT
+Authorization Service
+
+Microservicio que recibe credenciales (/login).
+
+Emite un JWT con userId y roles (admin, user).
+
+Tokens firmados con clave privada/secret.
+
+Gateway + JwtFilter
+
+Intercepta cada request.
+
+Valida el token y extrae claims.
+
+Rechaza accesos no autorizados antes de llegar a los micros.
+
+Microservicios + @PreAuthorize
+
+Validan roles y ownership.
+
+Ejemplo: @PreAuthorize("hasRole('ADMIN') or #id == principal.userId").
+
+Así un user solo accede a sus propios datos, mientras que admin accede a todo.
+
+🔑 Evolución hacia OAuth2 + PKCE
+OAuth2 Authorization Code Flow
+
+El frontend (Angular/React) redirige al Authorization Service.
+
+El usuario se autentica.
+
+Se devuelve un authorization code.
+
+El frontend intercambia el code por un JWT usando PKCE (Proof Key for Code Exchange).
+
+Esto protege contra ataques de interceptación de tokens en aplicaciones SPA.
+
+Ventajas:
+
+Estándar ampliamente usado.
+
+Compatible con librerías de frontend.
+
+Permite integrar proveedores externos (Google, Microsoft) si lo deseas en el futuro.
+
+🔒 Seguridad adicional (Spring Security Config)
+Clickjacking → X-Frame-Options: DENY en headers.
+
+Session Fixation → sessionManagement().sessionFixation().migrateSession() en config.
+
+XSS → Content-Security-Policy headers + sanitización en frontend.
+
+CSRF → habilitar CSRF tokens si usas formularios; en APIs REST con JWT normalmente se desactiva, pero puedes reforzar con SameSite=strict cookies si usas refresh tokens.
+
+📍 Estrategia clara
+Consolidar tu jwt-lib dentro de photo-app-security.
+
+Definir Authorization Service como microservicio central.
+
+Gateway valida JWT en cada request.
+
+Micros aplican reglas de negocio con roles y ownership.
+
+Evolucionar a OAuth2 + PKCE si tu API será consumida por SPA (Angular/React).
+
+Configurar headers y políticas de seguridad para proteger contra ataques comunes.

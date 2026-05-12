@@ -60,18 +60,6 @@
             <artifactId>modelmapper</artifactId>
             <version>3.2.4</version>
         </dependency>
-        <!-- OpenFeign -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-            <version>${spring.boot.version}</version>
-        </dependency>
-        <!--<dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.dataformat.xml.version}</version>
-            <scope>compile</scope>
-        </dependency>-->
 
         <!-- Tests -->
         <dependency>
