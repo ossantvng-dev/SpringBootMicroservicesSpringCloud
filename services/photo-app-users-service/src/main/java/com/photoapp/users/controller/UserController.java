@@ -20,13 +20,17 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @PostMapping(
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> register(@Valid @RequestBody CreateUserInputDTO inputDTO) {
         return new ResponseEntity<>(userService.register(inputDTO), HttpStatus.CREATED);
     }
 
     @PutMapping(
             value = "/{id}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> update(
@@ -37,6 +41,7 @@ public class UserController {
 
     @GetMapping(
             value = "/{id}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> findById(@PathVariable("id") Long id) {
@@ -45,6 +50,7 @@ public class UserController {
 
     @GetMapping(
             value = "/email/{email}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> findByEmail(@PathVariable("email") String email) {
@@ -53,6 +59,7 @@ public class UserController {
 
     @GetMapping(
             value = "/username/{username}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> findByUsername(@PathVariable("username") String username) {
@@ -61,19 +68,24 @@ public class UserController {
 
     @GetMapping(
             value = "/{id}/active",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> isActive(@PathVariable("id") Long id) {
         return new ResponseEntity<>(userService.existsById(id), HttpStatus.OK);
     }
 
-    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
         return new ResponseEntity<>(userService.findAll(filters), HttpStatus.OK);
     }
 
     @PatchMapping(
             value = "/{id}/activate",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> activateOrDeactivate(
@@ -84,6 +96,7 @@ public class UserController {
 
     @PatchMapping(
             value = "/{id}/roles",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> assignOrRemoveRole(

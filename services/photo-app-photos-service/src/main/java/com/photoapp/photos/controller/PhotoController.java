@@ -22,26 +22,34 @@ public class PhotoController {
 
     private final PhotoService photoService;
 
-    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @PostMapping(
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<PhotoDTO> create(@Valid @RequestBody CreatePhotoInputDTO input) {
         return ResponseEntity.ok(photoService.create(input));
     }
 
     @GetMapping(
             value = "/{id}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<PhotoDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(photoService.findById(id));
     }
 
-    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
     public ResponseEntity<Page<PhotoDTO>> findAll(@RequestParam Map<String, String> filters) {
         return ResponseEntity.ok(photoService.findAll(filters));
     }
 
     @GetMapping(
             value = "/countByAlbumIds",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<?> countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds) {
@@ -50,6 +58,7 @@ public class PhotoController {
 
     @PutMapping(
             value = "/{id}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<PhotoDTO> update(
@@ -60,6 +69,7 @@ public class PhotoController {
 
     @PatchMapping(
             value = "/{id}/activate",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
     public ResponseEntity<PhotoDTO> activateOrDeactivate(
@@ -68,10 +78,7 @@ public class PhotoController {
         return ResponseEntity.ok(photoService.activateOrDeactivate(id, activate));
     }
 
-    @DeleteMapping(
-            value = "/{id}",
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
-    )
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         photoService.deleteById(id);
         return ResponseEntity.noContent().build();
