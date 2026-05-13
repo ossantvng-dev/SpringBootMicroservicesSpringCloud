@@ -1,13 +1,13 @@
 package com.photoapp.accounts.service.impl;
 
 import com.photoapp.accounts.dto.AccountFilterDTO;
-import com.photoapp.accounts.entity.Account;
 import com.photoapp.accounts.repository.AccountRepository;
 import com.photoapp.accounts.service.AccountService;
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.account.AccountType;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.entity.Account;
 import com.photoapp.feign.AlbumFeignClient;
 import com.photoapp.feign.UserFeignClient;
 import lombok.RequiredArgsConstructor;

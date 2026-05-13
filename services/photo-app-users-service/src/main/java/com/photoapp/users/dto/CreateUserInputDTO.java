@@ -1,6 +1,6 @@
 package com.photoapp.users.dto;
 
-import com.photoapp.users.entity.RoleName;
+import com.photoapp.commons.dto.role.RoleName;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

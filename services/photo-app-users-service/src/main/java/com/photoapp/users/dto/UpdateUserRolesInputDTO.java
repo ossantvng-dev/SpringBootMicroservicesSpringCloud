@@ -1,7 +1,7 @@
 package com.photoapp.users.dto;
 
-import com.photoapp.users.entity.RoleAction;
-import com.photoapp.users.entity.RoleName;
+import com.photoapp.commons.dto.role.RoleAction;
+import com.photoapp.commons.dto.role.RoleName;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

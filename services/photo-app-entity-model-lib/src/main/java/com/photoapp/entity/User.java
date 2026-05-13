@@ -1,6 +1,5 @@
-package com.photoapp.users.entity;
+package com.photoapp.entity;
 
-import com.photoapp.commons.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

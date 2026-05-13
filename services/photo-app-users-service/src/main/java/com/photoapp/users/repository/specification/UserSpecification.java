@@ -1,8 +1,8 @@
 package com.photoapp.users.repository.specification;
 
+import com.photoapp.entity.User;
+import com.photoapp.entity.User_;
 import com.photoapp.users.dto.UserFilterDTO;
-import com.photoapp.users.entity.User;
-import com.photoapp.users.entity.User_;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

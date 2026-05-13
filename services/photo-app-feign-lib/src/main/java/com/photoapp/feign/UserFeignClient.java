@@ -1,5 +1,6 @@
 package com.photoapp.feign;
 
+import com.photoapp.entity.User;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,5 +10,8 @@ public interface UserFeignClient {
 
     @GetMapping("/users/{id}/active")
     boolean isActive(@PathVariable("id") Long id);
+
+    @GetMapping("/users/username/{username}")
+    User findByUsernameAndActiveUser(@PathVariable("username") String username);
 
 }

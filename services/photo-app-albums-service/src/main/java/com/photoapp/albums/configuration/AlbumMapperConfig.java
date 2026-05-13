@@ -1,7 +1,7 @@
 package com.photoapp.albums.configuration;
 
 import com.photoapp.albums.dto.CreateAlbumInputDTO;
-import com.photoapp.albums.entity.Album;
+import com.photoapp.entity.Album;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

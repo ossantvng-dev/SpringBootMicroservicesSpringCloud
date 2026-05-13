@@ -1,8 +1,8 @@
 package com.photoapp.accounts.repository.specification;
 
 import com.photoapp.accounts.dto.AccountFilterDTO;
-import com.photoapp.accounts.entity.Account;
-import com.photoapp.accounts.entity.Account_;
+import com.photoapp.entity.Account;
+import com.photoapp.entity.Account_;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

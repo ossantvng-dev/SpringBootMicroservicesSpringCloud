@@ -1,4 +1,4 @@
-package com.photoapp.commons.entity;
+package com.photoapp.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -41,6 +41,11 @@ public class JwtClaimsParser {
         return claims.getSubject();
     }
 
+    public String getJwtUsername(String jwt) {
+        Claims claims = parseClaims(jwt);
+        return claims.get("username", String.class);
+    }
+
     private Claims parseClaims(String jwt) {
         JwtParser jwtParser = Jwts.parser()
                 .verifyWith(secretKey)

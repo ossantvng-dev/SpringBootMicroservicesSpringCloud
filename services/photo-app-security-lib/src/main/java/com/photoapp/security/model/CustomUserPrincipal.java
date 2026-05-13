@@ -10,12 +10,16 @@ public class CustomUserPrincipal implements UserDetails {
 
     private final String userId;
     private final String username;
+    private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserPrincipal(String userId, String username,
+    public CustomUserPrincipal(String userId,
+                               String username,
+                               String password,
                                Collection<? extends GrantedAuthority> authorities) {
         this.userId = userId;
         this.username = username;
+        this.password = password;
         this.authorities = authorities;
     }
 
@@ -30,8 +34,9 @@ public class CustomUserPrincipal implements UserDetails {
     }
 
     @Override
+    @NonNull
     public String getPassword() {
-        return null;
+        return password;
     }
 
     @Override

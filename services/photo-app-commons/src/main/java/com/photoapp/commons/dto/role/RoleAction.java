@@ -1,4 +1,4 @@
-package com.photoapp.users.entity;
+package com.photoapp.commons.dto.role;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

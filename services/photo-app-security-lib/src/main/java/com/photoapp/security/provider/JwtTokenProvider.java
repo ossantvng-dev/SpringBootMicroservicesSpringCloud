@@ -22,12 +22,13 @@ public class JwtTokenProvider {
         this.validityInMillis = validityInMillis;
     }
 
-    public String generateToken(String subject, List<String> scopes) {
+    public String generateToken(String userId, String username, List<String> scopes) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityInMillis);
 
         return Jwts.builder()
-                .subject(subject)
+                .subject(userId)
+                .claim("username", username)
                 .claim("scope", scopes)
                 .issuedAt(now)
                 .expiration(expiry)

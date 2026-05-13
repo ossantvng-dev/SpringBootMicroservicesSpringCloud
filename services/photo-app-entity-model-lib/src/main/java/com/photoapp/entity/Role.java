@@ -1,8 +1,9 @@
-package com.photoapp.users.entity;
+package com.photoapp.entity;
 
-import com.photoapp.commons.entity.BaseEntity;
+import com.photoapp.commons.dto.role.RoleName;
 import jakarta.persistence.*;
 import lombok.*;
+
 
 @Entity
 @Table(name = "roles")

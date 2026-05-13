@@ -42,8 +42,8 @@ public class UserController {
     }
 
     @GetMapping("/username/{username}")
-    public ResponseEntity<?> findByUsername(@PathVariable("username") String username) {
-        return new ResponseEntity<>(userService.findByUsername(username), HttpStatus.OK);
+    public ResponseEntity<?> findByUsernameAndActiveUser(@PathVariable("username") String username) {
+        return new ResponseEntity<>(userService.findByUsernameAndActiveUser(username, true), HttpStatus.OK);
     }
 
     @GetMapping("/{id}/active")

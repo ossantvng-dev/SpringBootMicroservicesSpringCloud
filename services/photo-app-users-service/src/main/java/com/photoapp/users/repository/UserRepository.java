@@ -1,6 +1,6 @@
 package com.photoapp.users.repository;
 
-import com.photoapp.users.entity.User;
+import com.photoapp.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -12,7 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByUsername(String username);
+    Optional<User> findByUsernameAndActiveUser(String username, boolean activeUser);
 
     boolean existsByEmail(String email);
 

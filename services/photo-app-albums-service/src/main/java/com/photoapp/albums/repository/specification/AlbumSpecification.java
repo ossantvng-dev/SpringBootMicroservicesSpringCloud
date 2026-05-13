@@ -1,8 +1,8 @@
 package com.photoapp.albums.repository.specification;
 
 import com.photoapp.albums.dto.AlbumFilterDTO;
-import com.photoapp.albums.entity.Album;
-import com.photoapp.albums.entity.Album_;
+import com.photoapp.entity.Album;
+import com.photoapp.entity.Album_;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

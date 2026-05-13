@@ -1,6 +1,6 @@
 package com.photoapp.albums.repository;
 
-import com.photoapp.albums.entity.Album;
+import com.photoapp.entity.Album;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;

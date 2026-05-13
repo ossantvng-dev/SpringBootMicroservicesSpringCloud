@@ -1,7 +1,7 @@
 package com.photoapp.users.repository;
 
-import com.photoapp.users.entity.Role;
-import com.photoapp.users.entity.RoleName;
+import com.photoapp.commons.dto.role.RoleName;
+import com.photoapp.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

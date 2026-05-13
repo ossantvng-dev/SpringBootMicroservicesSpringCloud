@@ -1,6 +1,6 @@
 package com.photoapp.accounts.repository;
 
-import com.photoapp.accounts.entity.Account;
+import com.photoapp.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;

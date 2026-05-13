@@ -2,15 +2,19 @@ package com.photoapp.users.service.impl;
 
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
+import com.photoapp.commons.dto.role.RoleAction;
+import com.photoapp.commons.dto.role.RoleName;
+import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.entity.Role;
+import com.photoapp.entity.User;
 import com.photoapp.feign.AccountFeignClient;
 import com.photoapp.feign.AlbumFeignClient;
 import com.photoapp.feign.PhotoFeignClient;
-import com.photoapp.users.dto.*;
-import com.photoapp.users.entity.Role;
-import com.photoapp.users.entity.RoleAction;
-import com.photoapp.users.entity.RoleName;
-import com.photoapp.users.entity.User;
+import com.photoapp.users.dto.CreateUserInputDTO;
+import com.photoapp.users.dto.UpdateUserInputDTO;
+import com.photoapp.users.dto.UpdateUserRolesInputDTO;
+import com.photoapp.users.dto.UserFilterDTO;
 import com.photoapp.users.repository.RoleRepository;
 import com.photoapp.users.repository.UserRepository;
 import com.photoapp.users.service.UserService;
@@ -72,7 +76,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .map(existingUser -> modelMapper.map(
                         userRepository.saveAndFlush(validateAndSetUser(existingUser, updateUserInputDTO)),
-                        UserDTO.class))
+                        com.photoapp.commons.dto.user.UserDTO.class))
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 
@@ -94,11 +98,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDTO findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .map(existingUser -> modelMapper.map(existingUser, UserDTO.class))
-                .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+    public User findByUsernameAndActiveUser(String username, boolean activeUser) {
+        return userRepository.findByUsernameAndActiveUser(username, activeUser)
+                .orElseThrow(() -> new ApplicationException("User not found or inactive", HttpStatus.NOT_FOUND));
     }
+
 
     @Override
     @Transactional(readOnly = true)

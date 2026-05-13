@@ -34,10 +34,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 Collection<? extends GrantedAuthority> authorities =
                         jwtClaimsParser.getUserAuthorities(token);
 
-                String subject = jwtClaimsParser.getJwtSubject(token);
+                String userId = jwtClaimsParser.getJwtSubject(token);
+                String username = jwtClaimsParser.getJwtUsername(token);
 
                 CustomUserPrincipal principal =
-                        new CustomUserPrincipal(subject, subject, authorities);
+                        new CustomUserPrincipal(userId, username,null, authorities);
 
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                         new UsernamePasswordAuthenticationToken(principal, null, authorities);

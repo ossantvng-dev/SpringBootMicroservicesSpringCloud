@@ -1,7 +1,7 @@
 package com.photoapp.photos.configuration;
 
+import com.photoapp.entity.Photo;
 import com.photoapp.photos.dto.CreatePhotoInputDTO;
-import com.photoapp.photos.entity.Photo;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,7 +1,6 @@
-package com.photoapp.accounts.entity;
+package com.photoapp.entity;
 
 import com.photoapp.commons.dto.account.AccountType;
-import com.photoapp.commons.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
