@@ -11,7 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.photoapp.feign")
 @EntityScan(basePackages = "com.photoapp.entity")
-@ComponentScan(basePackages = {"com.photoapp.auth", "com.photoapp.commons"})
+@ComponentScan(basePackages = {"com.photoapp.auth", "com.photoapp.commons", "com.photoapp.security"})
 public class PhotoAppAuthorizationServiceApplication {
 
 	static void main(String[] args) {

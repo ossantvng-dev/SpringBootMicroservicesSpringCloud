@@ -32,8 +32,10 @@ public class JwtClaimsParser {
         Collection<String> scopes = claims.get("scope", List.class);
 
         return scopes.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
+
     }
 
     public String getJwtSubject(String jwt) {
