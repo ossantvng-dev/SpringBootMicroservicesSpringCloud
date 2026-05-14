@@ -44,7 +44,6 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-
         <!-- Cloud discovery -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
