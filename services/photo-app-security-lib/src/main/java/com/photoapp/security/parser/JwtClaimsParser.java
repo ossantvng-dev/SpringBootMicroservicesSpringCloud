@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,7 +53,17 @@ public class JwtClaimsParser {
         JwtParser jwtParser = Jwts.parser()
                 .verifyWith(secretKey)
                 .build();
+
         Jwt<?, ?> parsedJwt = jwtParser.parse(jwt.replace("Bearer ", ""));
-        return (Claims) parsedJwt.getPayload();
+        Claims claims = (Claims) parsedJwt.getPayload();
+
+        // Validate token expiration
+        Date expiration = claims.getExpiration();
+        if (expiration != null && expiration.before(new Date())) {
+            throw new io.jsonwebtoken.ExpiredJwtException(null, claims, "Token expired");
+        }
+
+        return claims;
     }
+
 }

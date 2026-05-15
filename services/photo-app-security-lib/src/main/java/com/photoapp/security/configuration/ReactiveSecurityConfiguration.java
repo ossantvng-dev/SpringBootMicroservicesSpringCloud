@@ -29,8 +29,10 @@ public class ReactiveSecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         // Public Endpoints
-                        .pathMatchers("/auth/**").permitAll()
+                        .pathMatchers("/users/*").permitAll()   // abre /users/{id}
+                        .pathMatchers("/users/username/**").permitAll()
                         .pathMatchers("/users").permitAll()
+                        .pathMatchers("/auth/**").permitAll()
 
                         // ROLE Protection
                         .pathMatchers("/users/**").hasAnyRole("USER", "ADMIN")

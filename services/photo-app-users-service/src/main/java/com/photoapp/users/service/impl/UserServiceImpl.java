@@ -11,6 +11,7 @@ import com.photoapp.entity.User;
 import com.photoapp.feign.AccountFeignClient;
 import com.photoapp.feign.AlbumFeignClient;
 import com.photoapp.feign.PhotoFeignClient;
+import com.photoapp.security.service.CurrentUserService;
 import com.photoapp.users.dto.CreateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserRolesInputDTO;
@@ -47,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final AccountFeignClient accountFeignClient;
     private final AlbumFeignClient albumFeignClient;
     private final PhotoFeignClient photoFeignClient;
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional
@@ -73,11 +75,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDTO update(Long id, UpdateUserInputDTO updateUserInputDTO) {
-        return userRepository.findById(id)
-                .map(existingUser -> modelMapper.map(
-                        userRepository.saveAndFlush(validateAndSetUser(existingUser, updateUserInputDTO)),
-                        com.photoapp.commons.dto.user.UserDTO.class))
-                .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+        String currentUserId = currentUserService.getCurrentUserId();
+        boolean isAdmin = currentUserService.isAdmin();
+        return userRepository.findById(id).map(existingUser -> {
+            if (isAdmin && !String.valueOf(existingUser.getId()).equals(currentUserId)) {
+                throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
+            }
+            return modelMapper.map(userRepository.saveAndFlush(
+                    validateAndSetUser(existingUser, updateUserInputDTO)), UserDTO.class);
+        }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 
     @Override

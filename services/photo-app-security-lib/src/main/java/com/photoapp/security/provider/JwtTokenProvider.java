@@ -24,6 +24,8 @@ public class JwtTokenProvider {
         this.validityInMillis = validityInMillis;
     }
 
+    public long getValidityInMillis() { return validityInMillis; }
+
     public String generateToken(String userId, String username, List<String> scopes) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityInMillis);

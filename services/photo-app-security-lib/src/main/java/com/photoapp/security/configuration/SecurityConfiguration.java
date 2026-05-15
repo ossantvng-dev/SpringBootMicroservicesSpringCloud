@@ -35,8 +35,9 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // Public Endpoints
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users").permitAll() // registro de usuario
+                        .requestMatchers("/users/*").permitAll()
                         .requestMatchers("/users/username/**").permitAll()
+                        .requestMatchers("/users").permitAll() // registro de usuario
 
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")

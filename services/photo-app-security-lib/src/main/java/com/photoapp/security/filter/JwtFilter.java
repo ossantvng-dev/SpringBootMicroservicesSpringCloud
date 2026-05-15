@@ -38,14 +38,17 @@ public class JwtFilter extends OncePerRequestFilter {
                 String username = jwtClaimsParser.getJwtUsername(token);
 
                 CustomUserPrincipal principal =
-                        new CustomUserPrincipal(userId, username,null, authorities);
+                        new CustomUserPrincipal(userId, username, null, authorities);
 
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(usernamePasswordAuthenticationToken);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+                return;
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
             }

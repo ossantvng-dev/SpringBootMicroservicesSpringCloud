@@ -553,6 +553,8 @@ Plan actualizado – 13 Mayo 2026
 - Agregar anotaciones @PreAuthorize → condicionar accesos más finos por rol o usuario.
 - Configurar service accounts → llamadas internas seguras entre microservicios.
 - Definir rutas en Gateway → enrutar /auth/** y /users/** vía Eureka.
+- Revisar /encryp /decrypt y /actuator/busrefresh security config. En general revisar la configuridad de seguridad para actuator (ROLE_ADMIN seria lo ideal)
+- Exceptions on feign
 
 3. Refactorización de estructura
 - api‑parent con BOM ya en marcha, controlando versiones de Spring Boot, Spring Cloud, Feign y Security.
