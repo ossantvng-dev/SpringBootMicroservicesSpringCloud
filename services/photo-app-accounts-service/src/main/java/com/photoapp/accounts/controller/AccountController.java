@@ -26,7 +26,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{id}/name")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> changeAccountName(@PathVariable Long id, @RequestParam String accountName) {
         return new ResponseEntity<>(accountService.changeAccountName(id, accountName), HttpStatus.OK);
     }
@@ -38,7 +38,7 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findById(@PathVariable Long id) {
         return new ResponseEntity<>(accountService.findById(id), HttpStatus.OK);
     }
@@ -50,13 +50,13 @@ public class AccountController {
     }
 
     @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
         return new ResponseEntity<>(accountService.activateOrDeactivate(id, activate), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> deleteAccountById(@PathVariable Long id) {
         accountService.deleteById(id);
         return ResponseEntity.noContent().build();

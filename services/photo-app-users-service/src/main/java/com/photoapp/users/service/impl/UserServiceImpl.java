@@ -75,15 +75,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDTO update(Long id, UpdateUserInputDTO updateUserInputDTO) {
-        String currentUserId = currentUserService.getCurrentUserId();
-        boolean isAdmin = currentUserService.isAdmin();
-        return userRepository.findById(id).map(existingUser -> {
-            if (!isAdmin && !String.valueOf(existingUser.getId()).equals(currentUserId)) {
-                throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
-            }
-            return modelMapper.map(userRepository.saveAndFlush(
-                    validateAndSetUser(existingUser, updateUserInputDTO)), UserDTO.class);
-        }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+        if (currentUserService.canAccessResource(String.valueOf(id))) {
+            return userRepository.findById(id).map(existingUser -> {
+                User validatedUser = validateAndSetUser(existingUser, updateUserInputDTO);
+                User savedUser = userRepository.saveAndFlush(validatedUser);
+                return modelMapper.map(savedUser, UserDTO.class);
+            }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
+        } else {
+            throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
+        }
     }
 
     @Override

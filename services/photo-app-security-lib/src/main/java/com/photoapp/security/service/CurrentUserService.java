@@ -46,4 +46,11 @@ public class CurrentUserService {
                 .anyMatch(a -> Objects.equals(a.getAuthority(), "ROLE_USER"));
     }
 
+    public boolean canAccessResource(String resourceOwnerId) {
+        String currentUserId = getCurrentUserId();
+        boolean isAdmin = isAdmin();
+        return !isAdmin && !Objects.equals(resourceOwnerId, currentUserId);
+    }
+
+
 }

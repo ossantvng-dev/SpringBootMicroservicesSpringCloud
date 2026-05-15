@@ -39,7 +39,7 @@ public class AlbumController {
     }
 
     @GetMapping("/countByAccountId")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> countByAccountId(@RequestParam("accountId") Long accountId) {
         return new ResponseEntity<>(albumService.countByAccountId(accountId), HttpStatus.OK);
     }

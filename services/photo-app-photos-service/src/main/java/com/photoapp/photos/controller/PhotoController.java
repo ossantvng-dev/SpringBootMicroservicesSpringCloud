@@ -41,7 +41,7 @@ public class PhotoController {
     }
 
     @GetMapping("/countByAlbumIds")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds) {
         return new ResponseEntity<>(photoService.countByAlbumIdIn(albumIds), HttpStatus.OK);
     }

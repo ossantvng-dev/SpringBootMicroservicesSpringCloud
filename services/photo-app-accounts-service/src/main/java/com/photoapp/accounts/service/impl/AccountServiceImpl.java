@@ -10,6 +10,7 @@ import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.Account;
 import com.photoapp.feign.client.AlbumFeignClient;
 import com.photoapp.feign.client.UserFeignClient;
+import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ public class AccountServiceImpl implements AccountService {
     private final ModelMapper modelMapper;
     private final AlbumFeignClient albumFeignClient;
     private final UserFeignClient userFeignClient;
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional
@@ -51,18 +53,22 @@ public class AccountServiceImpl implements AccountService {
         String normalizedName = accountName != null ? accountName.trim() : null;
         return accountRepository.findById(accountId)
                 .map(existingAccount -> {
-                    if (existingAccount.getActiveAccount()) {
-                        if (normalizedName == null || normalizedName.isBlank()) {
-                            throw new ApplicationException("Account name cannot be blank", HttpStatus.BAD_REQUEST);
+                    if (currentUserService.canAccessResource(String.valueOf(existingAccount.getUserId()))) {
+                        if (existingAccount.getActiveAccount()) {
+                            if (normalizedName == null || normalizedName.isBlank()) {
+                                throw new ApplicationException("Account name cannot be blank", HttpStatus.BAD_REQUEST);
+                            }
+                            if (existingAccount.getAccountName().equalsIgnoreCase(normalizedName)) {
+                                throw new ApplicationException("No changes detected", HttpStatus.BAD_REQUEST);
+                            }
+                            existingAccount.setAccountName(normalizedName);
+                            Account updated = accountRepository.saveAndFlush(existingAccount);
+                            return modelMapper.map(updated, AccountDTO.class);
+                        } else {
+                            throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
                         }
-                        if (existingAccount.getAccountName().equalsIgnoreCase(normalizedName)) {
-                            throw new ApplicationException("No changes detected", HttpStatus.BAD_REQUEST);
-                        }
-                        existingAccount.setAccountName(normalizedName);
-                        Account updated = accountRepository.saveAndFlush(existingAccount);
-                        return modelMapper.map(updated, AccountDTO.class);
                     } else {
-                        throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
+                        throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
                     }
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
@@ -87,17 +93,33 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(readOnly = true)
     public AccountDTO findById(Long accountId) {
         return accountRepository.findById(accountId)
-                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .map(existingAccount -> {
+                    if (currentUserService.canAccessResource(String.valueOf(existingAccount.getUserId()))) {
+                        return modelMapper.map(existingAccount, AccountDTO.class);
+                    } else {
+                        throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
+                    }
+                })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AccountDTO> findAll(Map<String, String> filters) {
-        return accountRepository.findAll(
-                fromFilter(mapToFilter(filters, AccountFilterDTO.class)),
-                mapToPageable(filters)
-        ).map(account -> modelMapper.map(account, AccountDTO.class));
+        AccountFilterDTO accountFilterDTO = mapToFilter(filters, AccountFilterDTO.class);
+        String currentUserId = currentUserService.getCurrentUserId();
+        boolean isAdmin = currentUserService.isAdmin();
+        if (!isAdmin) {
+            if (accountFilterDTO.getUserId() != null) {
+                if (!accountFilterDTO.getUserId().equals(Long.valueOf(currentUserId))) {
+                    throw new ApplicationException("You can only list your own accounts", HttpStatus.FORBIDDEN);
+                }
+            } else {
+                accountFilterDTO.setUserId(Long.valueOf(currentUserId));
+            }
+        }
+        return accountRepository.findAll(fromFilter(accountFilterDTO), mapToPageable(filters))
+                .map(account -> modelMapper.map(account, AccountDTO.class));
     }
 
     @Override
@@ -105,8 +127,13 @@ public class AccountServiceImpl implements AccountService {
     public AccountDTO activateOrDeactivate(Long accountId, boolean activate) {
         return accountRepository.findById(accountId)
                 .map(existing -> {
-                    existing.setActiveAccount(activate);
-                    return modelMapper.map(accountRepository.saveAndFlush(existing), AccountDTO.class);
+                    if (currentUserService.canAccessResource(String.valueOf(existing.getUserId()))) {
+                        existing.setActiveAccount(activate);
+                        return modelMapper.map(accountRepository.saveAndFlush(existing), AccountDTO.class);
+                    } else {
+                        throw new ApplicationException("You can only activate/deactivate your own accounts",
+                                HttpStatus.FORBIDDEN);
+                    }
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -114,14 +141,19 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public void deleteById(Long accountId) {
-        if (accountRepository.existsById(accountId)) {
-            if (albumFeignClient.countByAccountId(accountId) > 0) {
-                throw new ApplicationException("Cannot delete account with existing albums", HttpStatus.CONFLICT);
-            }
-            accountRepository.deleteById(accountId);
-        } else {
-            throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
-        }
+        accountRepository.findById(accountId)
+                .ifPresentOrElse(existingAccount -> {
+                    if (currentUserService.canAccessResource(String.valueOf(existingAccount.getUserId()))) {
+                        if (albumFeignClient.countByAccountId(accountId) > 0) {
+                            throw new ApplicationException("Cannot delete account with existing albums", HttpStatus.CONFLICT);
+                        }
+                        accountRepository.delete(existingAccount);
+                    } else {
+                        throw new ApplicationException("You can only delete your own account", HttpStatus.FORBIDDEN);
+                    }
+                }, () -> {
+                    throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
+                });
     }
 
     @Override
