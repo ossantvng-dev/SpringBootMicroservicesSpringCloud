@@ -1,7 +1,7 @@
 package com.photoapp.auth.service;
 
 import com.photoapp.entity.User;
-import com.photoapp.feign.UserFeignClient;
+import com.photoapp.feign.client.UserFeignClient;
 import com.photoapp.security.model.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;

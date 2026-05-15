@@ -6,7 +6,7 @@ import com.photoapp.auth.dto.RefreshTokenRequestDTO;
 import com.photoapp.auth.service.TokenHandlerService;
 import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
-import com.photoapp.feign.UserFeignClient;
+import com.photoapp.feign.client.UserFeignClient;
 import com.photoapp.security.provider.JwtTokenProvider;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;

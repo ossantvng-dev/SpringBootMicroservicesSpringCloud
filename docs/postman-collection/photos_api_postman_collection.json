@@ -8,11 +8,132 @@
   },
   "item": [
     {
+      "name": "Authorization Service",
+      "item": [
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let jsonData = pm.response.json();\r",
+                  "pm.environment.set(\"accessToken\", jsonData.accessToken);\r",
+                  "pm.environment.set(\"refreshToken\", jsonData.refreshToken);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"generic\",\r\n    \"codeVerifier\": \"YAL9KbrRgGYyV12_YxRVnV8z54xhM2o8XpbMB1a01Ro\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "refresh token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "revoke token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "revoke"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Users Service",
       "item": [
         {
           "name": "Register User",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -25,12 +146,10 @@
               "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\",\n  \"password\": \"StrongPass123\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/users",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users"
               ]
@@ -41,6 +160,16 @@
         {
           "name": "Update User",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -53,12 +182,10 @@
               "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria Updated\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/users/101",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101"
@@ -73,12 +200,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users/101",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101"
@@ -90,15 +215,23 @@
         {
           "name": "Get User By Email",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users/email/ossant@example.com",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/email/ossant@example.com",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "email",
@@ -114,12 +247,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users/username/ossant",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/username/ossant",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "username",
@@ -130,17 +261,54 @@
           "response": []
         },
         {
-          "name": "List Users With Filters",
+          "name": "Is Active",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101/active",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
+              "path": [
+                "users",
+                "101",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Users With Filters",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?activeUser=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
               "path": [
                 "users"
               ],
@@ -166,9 +334,8 @@
                   "disabled": true
                 },
                 {
-                  "key": "active",
-                  "value": "true",
-                  "disabled": true
+                  "key": "activeUser",
+                  "value": "true"
                 },
                 {
                   "key": "createdStart",
@@ -218,15 +385,23 @@
         {
           "name": "Activate or Deactivate User",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users/101/activate?activate=false",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101/activate?activate=false",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101",
@@ -245,6 +420,16 @@
         {
           "name": "Assign Roles",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -257,12 +442,10 @@
               "raw": "{\n  \"action\": \"ASSIGN\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"]\n}\n"
             },
             "url": {
-              "raw": "http://localhost:8080/users/101/roles",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101/roles",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101",
@@ -275,6 +458,16 @@
         {
           "name": "Remove Roles",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -287,12 +480,10 @@
               "raw": "{\n  \"action\": \"REMOVE\",\n  \"roles\": [\"ROLE_USER\"]\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/users/101/roles",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101/roles",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101",
@@ -308,39 +499,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/users/101",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/users/101",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "users",
                 "101"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Is Active",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/users/101/active",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "users",
-                "101",
-                "active"
               ]
             }
           },
@@ -1080,6 +1245,63 @@
         {
           "name": "dev",
           "item": [
+            {
+              "name": "actuator",
+              "item": [
+                {
+                  "name": "busrefresh",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "http://localhost:8888/actuator/busrefresh",
+                      "protocol": "http",
+                      "host": [
+                        "localhost"
+                      ],
+                      "port": "8888",
+                      "path": [
+                        "actuator",
+                        "busrefresh"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "busenv",
+                  "request": {
+                    "auth": {
+                      "type": "noauth"
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"name\": \"logging.level.org.hibernate.SQL\",\r\n  \"value\": \"TRACE\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "http://localhost:8888/actuator/busenv",
+                      "protocol": "http",
+                      "host": [
+                        "localhost"
+                      ],
+                      "port": "8888",
+                      "path": [
+                        "actuator",
+                        "busenv"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
             {
               "name": "photo-app-discovery-service-dev",
               "request": {

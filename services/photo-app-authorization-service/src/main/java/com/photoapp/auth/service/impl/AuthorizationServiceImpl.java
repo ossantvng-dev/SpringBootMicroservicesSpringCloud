@@ -6,7 +6,7 @@ import com.photoapp.auth.service.AuthorizationService;
 import com.photoapp.auth.service.TokenHandlerService;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.User;
-import com.photoapp.feign.UserFeignClient;
+import com.photoapp.feign.client.UserFeignClient;
 import com.photoapp.security.provider.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,18 +1,18 @@
-package com.photoapp.feign;
+package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.account.AccountDTO;
-import com.photoapp.commons.dto.account.CreateAccountInputDTO;
+import com.photoapp.feign.configuration.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@FeignClient(name = "photo-app-accounts-service")
+@FeignClient(
+        name = "photo-app-accounts-service",
+        configuration = FeignConfiguration.class
+)
 public interface AccountFeignClient {
-
-    @PostMapping("/accounts")
-    AccountDTO createAccount(@RequestBody CreateAccountInputDTO input);
 
     @GetMapping("/accounts/{id}")
     AccountDTO findById(@PathVariable("id") Long id);

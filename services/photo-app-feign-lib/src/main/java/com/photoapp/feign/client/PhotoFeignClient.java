@@ -1,6 +1,7 @@
-package com.photoapp.feign;
+package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.photo.PhotoDTO;
+import com.photoapp.feign.configuration.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +9,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "photo-app-photos-service")
+@FeignClient(
+        name = "photo-app-photos-service",
+        configuration = FeignConfiguration.class
+)
 public interface PhotoFeignClient {
 
     @GetMapping("/photos/{id}")
@@ -24,7 +28,7 @@ public interface PhotoFeignClient {
     void deleteById(@PathVariable("id") Long id);
 
     @DeleteMapping("/photos/byAlbumIds")
-    void deleteByAlbumId(@RequestParam("albumIds") List<Long> albumIds);
+    void deleteByAlbumIds(@RequestParam("albumIds") List<Long> albumIds);
 
     @GetMapping("/photos/countByAlbumIds")
     long countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds);

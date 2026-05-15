@@ -8,9 +8,9 @@ import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.Role;
 import com.photoapp.entity.User;
-import com.photoapp.feign.AccountFeignClient;
-import com.photoapp.feign.AlbumFeignClient;
-import com.photoapp.feign.PhotoFeignClient;
+import com.photoapp.feign.client.AccountFeignClient;
+import com.photoapp.feign.client.AlbumFeignClient;
+import com.photoapp.feign.client.PhotoFeignClient;
 import com.photoapp.security.service.CurrentUserService;
 import com.photoapp.users.dto.CreateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
@@ -175,7 +175,7 @@ public class UserServiceImpl implements UserService {
                         .toList();
 
                 if (!albumIds.isEmpty()) {
-                    photoFeignClient.deleteByAlbumId(albumIds);
+                    photoFeignClient.deleteByAlbumIds(albumIds);
                 }
 
                 albumFeignClient.deleteByAccountIds(accountIds);

@@ -4,7 +4,7 @@ import com.photoapp.commons.dto.album.AlbumDTO;
 import com.photoapp.commons.dto.photo.PhotoDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.Photo;
-import com.photoapp.feign.AlbumFeignClient;
+import com.photoapp.feign.client.AlbumFeignClient;
 import com.photoapp.photos.dto.CreatePhotoInputDTO;
 import com.photoapp.photos.dto.PhotoFilterDTO;
 import com.photoapp.photos.dto.UpdatePhotoInputDTO;
@@ -112,8 +112,6 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Override
     @Transactional(readOnly = true)
-    public long countByAlbumIdIn(List<Long> albumIds) {
-        return photoRepository.countByAlbumIdIn(albumIds);
-    }
+    public long countByAlbumIdIn(List<Long> albumIds) { return photoRepository.countByAlbumIdIn(albumIds); }
 
 }
