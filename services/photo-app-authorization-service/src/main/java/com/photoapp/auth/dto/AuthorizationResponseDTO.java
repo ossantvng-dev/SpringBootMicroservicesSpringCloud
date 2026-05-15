@@ -16,6 +16,7 @@ public class AuthorizationResponseDTO {
     // Value in seconds
     private long expiresIn;
 
+    // Value in seconds
     private long refreshTokenExpiresIn;
 
 }

@@ -2,6 +2,7 @@ package com.photoapp.security.configuration;
 
 import com.photoapp.security.filter.JwtFilter;
 import com.photoapp.security.parser.JwtClaimsParser;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,16 +38,19 @@ public class SecurityConfiguration {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/*").permitAll()
                         .requestMatchers("/users/username/**").permitAll()
-                        .requestMatchers("/users").permitAll() // registro de usuario
-
+                        .requestMatchers("/users").permitAll() // user registry
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/albums/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/photos/**").hasAnyRole("USER","ADMIN")
-
                         // Everything else requires authentication
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((_, response, _) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                        )
                 )
                 .addFilterBefore(new JwtFilter(jwtClaimsParser), UsernamePasswordAuthenticationFilter.class);
 

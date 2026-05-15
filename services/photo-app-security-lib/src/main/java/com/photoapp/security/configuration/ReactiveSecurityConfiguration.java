@@ -5,6 +5,7 @@ import com.photoapp.security.parser.JwtClaimsParser;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -29,18 +30,23 @@ public class ReactiveSecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         // Public Endpoints
-                        .pathMatchers("/users/*").permitAll()   // abre /users/{id}
+                        .pathMatchers("/users/*").permitAll()   // exposes /users/{id}
                         .pathMatchers("/users/username/**").permitAll()
                         .pathMatchers("/users").permitAll()
                         .pathMatchers("/auth/**").permitAll()
-
                         // ROLE Protection
                         .pathMatchers("/users/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/accounts/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/albums/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/photos/**").hasAnyRole("USER", "ADMIN")
-
+                        // Everything else requires authentication
                         .anyExchange().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((exchange, _) -> {
+                            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                            return exchange.getResponse().setComplete();
+                        })
                 )
                 // Reactive JWT Filter registry
                 .addFilterAt(new ReactiveJwtFilter(jwtClaimsParser), SecurityWebFiltersOrder.AUTHENTICATION)
