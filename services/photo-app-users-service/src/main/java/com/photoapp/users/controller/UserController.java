@@ -34,6 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findById(@PathVariable("id") Long id) {
         return new ResponseEntity<>(userService.findById(id), HttpStatus.OK);
     }
@@ -45,6 +46,7 @@ public class UserController {
     }
 
     @GetMapping("/username/{username}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findByUsernameAndActiveUser(@PathVariable("username") String username) {
         return new ResponseEntity<>(userService.findByUsernameAndActiveUser(username, true), HttpStatus.OK);
     }

@@ -48,9 +48,12 @@ public class CurrentUserService {
 
     public boolean canAccessResource(String resourceOwnerId) {
         String currentUserId = getCurrentUserId();
-        boolean isAdmin = isAdmin();
-        return !isAdmin && !Objects.equals(resourceOwnerId, currentUserId);
+        if (isAdmin()) {
+            return true;
+        }
+        return Objects.equals(resourceOwnerId, currentUserId);
     }
+
 
 
 }

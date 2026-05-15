@@ -5,6 +5,7 @@ import com.photoapp.security.parser.JwtClaimsParser;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -30,10 +31,10 @@ public class ReactiveSecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         // Public Endpoints
-                        .pathMatchers("/users/*").permitAll()   // exposes /users/{id}
-                        .pathMatchers("/users/username/**").permitAll()
-                        .pathMatchers("/users").permitAll()
+                        //.pathMatchers("/users/*").permitAll()   // exposes /users/{id}
+                        //.pathMatchers("/users/username/**").permitAll()
                         .pathMatchers("/auth/**").permitAll()
+                        .pathMatchers(HttpMethod.POST,"/users").permitAll()
                         // ROLE Protection
                         .pathMatchers("/users/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/accounts/**").hasAnyRole("USER", "ADMIN")

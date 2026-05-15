@@ -90,7 +90,13 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
         return userRepository.findById(id)
-                .map(existingUser -> modelMapper.map(existingUser, UserDTO.class))
+                .map(existingUser -> {
+                    if (currentUserService.canAccessResource(String.valueOf(id))) {
+                        return modelMapper.map(existingUser, UserDTO.class);
+                    } else {
+                        throw new ApplicationException("You can only view your own user data", HttpStatus.FORBIDDEN);
+                    }
+                })
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 

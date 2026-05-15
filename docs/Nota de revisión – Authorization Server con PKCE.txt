@@ -1,0 +1,34 @@
+Nota de revisión – Authorization Server con PKCE
+
+Contexto actual:
+- Tenemos dos enfoques coexistiendo:
+  1. Flujo manual:
+     • Auth Service valida credenciales vía Feign contra Users.
+     • Genera JWT con JwtProvider.
+     • Microservicios validan con JwtFilter y @PreAuthorize.
+     • Ownership con currentUserService.canAccessResource.
+     → Este es el flujo que usamos hoy en producción.
+  2. AuthorizationServerConfig:
+     • Configura un cliente OAuth2 (photoapp-client).
+     • Usa Authorization Code + PKCE (ClientAuthenticationMethod.NONE).
+     • Define scopes y redirect URI.
+     • Expone endpoints estándar (/oauth2/authorize, /oauth2/token).
+     → Está listo, pero aún no lo hemos conectado al flujo real.
+
+Situación:
+- El flujo manual funciona, pero es más artesanal.
+- AuthorizationServerConfig con PKCE es el camino formal y estándar en apps serias.
+- Hoy no estamos consumiendo los endpoints del Authorization Server, por eso parece que “no sirve”.
+- En realidad, lo que tenemos es un doble stack: manual (activo) y estándar (preparado).
+
+Próximos pasos recomendados:
+1. Integrar Gateway y frontend para usar /oauth2/authorize y /oauth2/token.
+2. Ajustar login para que el token venga del Authorization Server, no del endpoint manual.
+3. Mantener JwtProvider/JwtFilter para validación en microservicios, pero con tokens emitidos por el Authorization Server.
+4. Probar flujo completo PKCE con Postman: challenge, verifier, redirect, token.
+5. Documentar transición: manual → estándar.
+
+Conclusión:
+- Lo que hicimos no fue en vano: tenemos PKCE configurado y listo.
+- El flujo manual nos permitió avanzar rápido y probar seguridad.
+- El camino correcto para una app formal es usar AuthorizationServerConfig con PKCE.

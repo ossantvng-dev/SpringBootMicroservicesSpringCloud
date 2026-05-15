@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,9 +37,9 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // Public Endpoints
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/*").permitAll()
-                        .requestMatchers("/users/username/**").permitAll()
-                        .requestMatchers("/users").permitAll() // user registry
+                        //.requestMatchers("/users/*").permitAll()
+                        //.requestMatchers("/users/username/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users").permitAll() // user registry
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")
