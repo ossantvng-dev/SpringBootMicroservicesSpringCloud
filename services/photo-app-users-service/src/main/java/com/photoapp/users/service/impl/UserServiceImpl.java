@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
         String currentUserId = currentUserService.getCurrentUserId();
         boolean isAdmin = currentUserService.isAdmin();
         return userRepository.findById(id).map(existingUser -> {
-            if (isAdmin && !String.valueOf(existingUser.getId()).equals(currentUserId)) {
+            if (!isAdmin && !String.valueOf(existingUser.getId()).equals(currentUserId)) {
                 throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
             }
             return modelMapper.map(userRepository.saveAndFlush(
@@ -108,7 +108,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByUsernameAndActiveUser(username, activeUser)
                 .orElseThrow(() -> new ApplicationException("User not found or inactive", HttpStatus.NOT_FOUND));
     }
-
 
     @Override
     @Transactional(readOnly = true)
