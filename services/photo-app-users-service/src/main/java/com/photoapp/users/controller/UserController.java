@@ -46,7 +46,6 @@ public class UserController {
     }
 
     @GetMapping("/username/{username}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findByUsernameAndActiveUser(@PathVariable("username") String username) {
         return new ResponseEntity<>(userService.findByUsernameAndActiveUser(username, true), HttpStatus.OK);
     }

@@ -32,8 +32,8 @@ public class ReactiveSecurityConfiguration {
                 .authorizeExchange(exchanges -> exchanges
                         // Public Endpoints
                         //.pathMatchers("/users/*").permitAll()   // exposes /users/{id}
-                        //.pathMatchers("/users/username/**").permitAll()
                         .pathMatchers("/auth/**").permitAll()
+                        .pathMatchers("/users/username/**").permitAll()
                         .pathMatchers(HttpMethod.POST,"/users").permitAll()
                         // ROLE Protection
                         .pathMatchers("/users/**").hasAnyRole("USER", "ADMIN")
@@ -46,6 +46,10 @@ public class ReactiveSecurityConfiguration {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((exchange, _) -> {
                             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                            return exchange.getResponse().setComplete();
+                        })
+                        .accessDeniedHandler((exchange, _) -> {
+                            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                             return exchange.getResponse().setComplete();
                         })
                 )

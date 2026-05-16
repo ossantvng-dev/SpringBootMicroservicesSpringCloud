@@ -97,7 +97,7 @@ public class AccountServiceImpl implements AccountService {
                     if (currentUserService.canAccessResource(String.valueOf(existingAccount.getUserId()))) {
                         return modelMapper.map(existingAccount, AccountDTO.class);
                     } else {
-                        throw new ApplicationException("You can only update your own user data", HttpStatus.FORBIDDEN);
+                        throw new ApplicationException("You can only query your own user data", HttpStatus.FORBIDDEN);
                     }
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));

@@ -38,7 +38,7 @@ public class SecurityConfiguration {
                         // Public Endpoints
                         .requestMatchers("/auth/**").permitAll()
                         //.requestMatchers("/users/*").permitAll()
-                        //.requestMatchers("/users/username/**").permitAll()
+                        .requestMatchers("/users/username/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").permitAll() // user registry
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
@@ -51,6 +51,9 @@ public class SecurityConfiguration {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((_, response, _) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                        )
+                        .accessDeniedHandler((_, response, _) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")
                         )
                 )
                 .addFilterBefore(new JwtFilter(jwtClaimsParser), UsernamePasswordAuthenticationFilter.class);
