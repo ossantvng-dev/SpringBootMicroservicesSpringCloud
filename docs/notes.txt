@@ -592,53 +592,60 @@ Plan actualizado – 15 Mayo 2026
 
 1. Base actual
 - Microservicios funcionando:
-  • Users (8081), Accounts (8082), Albums (8083), Photos (8084), API Gateway (8080).
-- Config Server + Bus + RabbitMQ listos.
-- Eureka Discovery activo.
+  • photo-app-users-service (8081)
+  • photo-app-accounts-service (8082)
+  • photo-app-albums-service (8083)
+  • photo-app-photos-service (8084)
+  • photo-app-api-gateway (8080)
+  • photo-app-authorization-service (8085)
+- Infraestructura:
+  • photo-app-configuration-server (8888)
+  • photo-app-discovery-service (8761)
+  • RabbitMQ + Spring Cloud Bus listos
+  • Eureka Discovery activo
+- Librerías compartidas:
+  • photo-app-commons
+  • photo-app-feign-lib
+  • photo-app-entity-model-lib
+  • photo-app-security-lib
 - Postman collection probada end‑to‑end.
 - Authorization Service completo: login, validación de credenciales vía Feign, emisión de JWT.
 - Security Lib robusto: JwtProvider, JwtFilter, SecurityConfiguration, JwtClaimsParser, PasswordEncoder.
-- Entity Model Lib consolidado para entidades compartidas.
-- Commons y Feign refactorizados: DTOs y utilidades en commons, interfaces en feign‑lib.
 - Roles alineados (ROLE_USER, ROLE_ADMIN) y parser ajustado.
-- Flujo de login probado: genera token válido y roles reconocidos por Spring Security.
-- Ownership y estado activo validados en todos los servicios (Accounts, Albums, Photos):
-  • currentUserService.canAccessResource siempre en positivo.
-  • Validación de cuenta activa en cada operación.
-  • Validación de álbum/foto activa en update y activate/deactivate.
-  • findAll ajustado: Admin libre, User obligado a pasar accountIds o albumId.
-
-2. Próximos pasos inmediatos
-- Validar expiración de tokens → probar que un JWT vencido devuelve 401.
-- Revisar exhaustivamente anotaciones @PreAuthorize → condicionar accesos más finos por rol y ownership.
-- Configurar service accounts → llamadas internas seguras entre microservicios.
-- Definir rutas en Gateway → enrutar /auth/**, /users/**, /accounts/**, /albums/**, /photos/** vía Eureka.
-- Revisar seguridad de /encrypt, /decrypt y /actuator/busrefresh → restringir a ROLE_ADMIN.
+- Flujo de login probado: token válido y roles reconocidos por Spring Security.
+- Ownership y estado activo validados en todos los servicios (Accounts, Albums, Photos).
+- findAll ajustado: Admin libre, User obligado a pasar accountIds o albumId.
+- Validación de expiración de tokens → JWT vencido devuelve 401.
+- Revisión exhaustiva de anotaciones @PreAuthorize → accesos más finos por rol y ownership.
+- Configuración de service accounts → llamadas internas seguras entre microservicios.
+- Definición de rutas en Gateway → enrutar /auth/**, /users/**, /accounts/**, /albums/**, /photos/** vía Eureka.
+- Seguridad reforzada: /encrypt, /decrypt y /actuator/busrefresh restringidos a ROLE_ADMIN (servlet y reactivo).
 - Manejo de excepciones en Feign → fallback + mensajes claros.
 
-3. Refactorización de estructura
-- api‑parent con BOM ya en marcha, controlando versiones de Spring Boot, Spring Cloud, Feign y Security.
-- Multi‑module organizado:
-  • api-parent/ → accounts, albums, gateway, auth, commons, feign, photos, users, security.
-  • infra/ → config‑server, discovery‑service.
-  • database/ → scripts, migraciones (Flyway/Liquibase).
-  • deploy/ → docker‑compose.yml, scripts (nginx, ssl, etc.).
-  • docs/ → arquitectura, postman, notas.
+2. Próximos pasos inmediatos
+- Refactorización de estructura:
+  • api‑parent con BOM controlando versiones de Spring Boot, Spring Cloud, Feign y Security.
+  • Multi‑module organizado:
+    - api-parent/ → accounts, albums, gateway, auth, commons, feign, photos, users, security.
+    - infra/ → config‑server, discovery‑service.
+    - database/ → scripts, migraciones (Flyway/Liquibase).
+    - deploy/ → docker‑compose.yml, scripts (nginx, ssl, etc.).
+    - docs/ → arquitectura, postman, notas.
 
-4. Resiliencia
+3. Resiliencia
 - Resilience4J → circuit breakers y retries en Feign Clients.
 - Fallbacks claros:
   • Registrar usuario → crear cuenta.
   • Si falla, reintentar o fallback (usuario creado sin cuenta, mensaje en cola).
 - Fail fast en operaciones críticas.
 
-5. Observabilidad
+4. Observabilidad
 - Actuator en todos los servicios.
 - Micrometer + Zipkin para métricas y tracing distribuido.
 - Centralización de logs en ELK Stack.
 - Alertas básicas para expiración de tokens y fallos de Feign.
 
-6. Docker + AWS + CI/CD
+5. Docker + AWS + CI/CD
 - Dockerizar servicios.
 - Definir docker‑compose para entorno local.
 - Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
