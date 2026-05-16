@@ -197,6 +197,16 @@
         {
           "name": "Get User By ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -244,6 +254,16 @@
         {
           "name": "Get User By Username",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -496,6 +516,16 @@
         {
           "name": "Delete User",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -519,6 +549,16 @@
         {
           "name": "Create Account",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -547,6 +587,16 @@
         {
           "name": "Change Account Name",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -559,7 +609,7 @@
               "raw": ""
             },
             "url": {
-              "raw": "http://localhost:8080/accounts/101/name?accountName=Oscar Updated Account Name",
+              "raw": "http://localhost:8080/accounts/200/name?accountName=Oscar Updated Account Name",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -567,7 +617,7 @@
               "port": "8080",
               "path": [
                 "accounts",
-                "101",
+                "200",
                 "name"
               ],
               "query": [
@@ -583,6 +633,16 @@
         {
           "name": "Change Account Type",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -595,7 +655,7 @@
               "raw": ""
             },
             "url": {
-              "raw": "http://localhost:8080/accounts/101/type?accountType=BASIC",
+              "raw": "http://localhost:8080/accounts/200/type?accountType=BASIC",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -603,7 +663,7 @@
               "port": "8080",
               "path": [
                 "accounts",
-                "101",
+                "200",
                 "type"
               ],
               "query": [
@@ -619,10 +679,20 @@
         {
           "name": "Get Account By ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/accounts/101",
+              "raw": "http://localhost:8080/accounts/200",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -630,7 +700,7 @@
               "port": "8080",
               "path": [
                 "accounts",
-                "101"
+                "200"
               ]
             }
           },
@@ -639,6 +709,16 @@
         {
           "name": "List Accounts With Filters",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -671,7 +751,7 @@
                 },
                 {
                   "key": "userId",
-                  "value": "100",
+                  "value": "101",
                   "disabled": true
                 },
                 {
@@ -716,6 +796,16 @@
         {
           "name": "Activate or Deactivate Account",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [],
             "url": {
@@ -743,6 +833,16 @@
         {
           "name": "Delete Account",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -768,6 +868,16 @@
         {
           "name": "Create Album",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -777,7 +887,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Vacation 2026\",\n  \"description\": \"Trip to Costa Rica\",\n  \"accountId\": 198\n}"
+              "raw": "{\n  \"title\": \"Vacation 2026\",\n  \"description\": \"Trip to Costa Rica\",\n  \"accountId\": 200\n}"
             },
             "url": {
               "raw": "http://localhost:8080/albums",
@@ -796,10 +906,20 @@
         {
           "name": "Get Album By ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/albums/711",
+              "raw": "http://localhost:8080/albums/766",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -807,7 +927,7 @@
               "port": "8080",
               "path": [
                 "albums",
-                "711"
+                "766"
               ]
             }
           },
@@ -816,6 +936,16 @@
         {
           "name": "List Albums With Filters",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -894,6 +1024,16 @@
         {
           "name": "Update Album",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -906,7 +1046,7 @@
               "raw": "{\n  \"title\": \"Updated Album Name\",\n  \"description\": \"Updated description\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/albums/711",
+              "raw": "http://localhost:8080/albums/766",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -914,7 +1054,7 @@
               "port": "8080",
               "path": [
                 "albums",
-                "711"
+                "766"
               ]
             }
           },
@@ -923,6 +1063,16 @@
         {
           "name": "Activate or Deactivate Album",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [],
             "url": {
@@ -950,6 +1100,16 @@
         {
           "name": "Delete Album",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -970,6 +1130,16 @@
         {
           "name": "Delete Albums By AccountIds",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -997,12 +1167,19 @@
           "name": "Count Albums By AccountId",
           "request": {
             "auth": {
-              "type": "noauth"
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/albums/countByAccountId?accountId=1",
+              "raw": "http://localhost:8080/albums/countByAccountId?accountId=200",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -1015,7 +1192,7 @@
               "query": [
                 {
                   "key": "accountId",
-                  "value": "1"
+                  "value": "200"
                 }
               ]
             }
@@ -1030,6 +1207,16 @@
         {
           "name": "Create Photo",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -1039,7 +1226,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fileName\": \"beach.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach.png\",\n  \"albumId\": 1\n}"
+              "raw": "{\n  \"fileName\": \"beach.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach.png\",\n  \"albumId\": 766\n}"
             },
             "url": {
               "raw": "http://localhost:8080/photos",
@@ -1058,10 +1245,20 @@
         {
           "name": "Get Photo By ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photos/1",
+              "raw": "http://localhost:8080/photos/10231",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -1069,7 +1266,7 @@
               "port": "8080",
               "path": [
                 "photos",
-                "1"
+                "10231"
               ]
             }
           },
@@ -1078,10 +1275,20 @@
         {
           "name": "List Photos With Filters",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photos?fileName=photo_1_2.jpg",
+              "raw": "http://localhost:8080/photos?albumId=766",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -1093,12 +1300,12 @@
               "query": [
                 {
                   "key": "albumId",
-                  "value": "1",
-                  "disabled": true
+                  "value": "766"
                 },
                 {
                   "key": "fileName",
-                  "value": "photo_1_2.jpg"
+                  "value": "photo_1_2.jpg",
+                  "disabled": true
                 },
                 {
                   "key": "activePhoto",
@@ -1138,6 +1345,16 @@
         {
           "name": "Update Photo",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -1150,7 +1367,7 @@
               "raw": "{\n  \"fileName\": \"beach_updated.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach_updated.png\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/photos/1",
+              "raw": "http://localhost:8080/photos/10231",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -1158,7 +1375,7 @@
               "port": "8080",
               "path": [
                 "photos",
-                "1"
+                "10231"
               ]
             }
           },
@@ -1167,10 +1384,20 @@
         {
           "name": "Activate or Deactivate Photo",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/photos/1/activate?activate=false",
+              "raw": "http://localhost:8080/photos/10231/activate?activate=true",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -1178,13 +1405,13 @@
               "port": "8080",
               "path": [
                 "photos",
-                "1",
+                "10231",
                 "activate"
               ],
               "query": [
                 {
                   "key": "activate",
-                  "value": "false"
+                  "value": "true"
                 }
               ]
             }
@@ -1194,6 +1421,16 @@
         {
           "name": "Delete Photo",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -1214,6 +1451,16 @@
         {
           "name": "Count By Album Ids",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
