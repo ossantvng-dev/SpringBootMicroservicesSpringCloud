@@ -31,7 +31,6 @@ public class ReactiveSecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         // Public Endpoints
-                        //.pathMatchers("/users/*").permitAll()   // exposes /users/{id}
                         .pathMatchers("/auth/**").permitAll()
                         .pathMatchers("/users/username/**").permitAll()
                         .pathMatchers(HttpMethod.POST,"/users").permitAll()
@@ -40,6 +39,9 @@ public class ReactiveSecurityConfiguration {
                         .pathMatchers("/accounts/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/albums/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/photos/**").hasAnyRole("USER", "ADMIN")
+                        .pathMatchers("/encrypt/**").hasRole("ADMIN")
+                        .pathMatchers("/decrypt/**").hasRole("ADMIN")
+                        .pathMatchers("/actuator/busrefresh").hasRole("ADMIN")
                         // Everything else requires authentication
                         .anyExchange().authenticated()
                 )

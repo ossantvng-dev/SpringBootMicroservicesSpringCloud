@@ -37,7 +37,6 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // Public Endpoints
                         .requestMatchers("/auth/**").permitAll()
-                        //.requestMatchers("/users/*").permitAll()
                         .requestMatchers("/users/username/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").permitAll() // user registry
                         // Protected Endpoints by Role
@@ -45,6 +44,9 @@ public class SecurityConfiguration {
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/albums/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/photos/**").hasAnyRole("USER","ADMIN")
+                        .requestMatchers("/encrypt/**").hasRole("ADMIN")
+                        .requestMatchers("/decrypt/**").hasRole("ADMIN")
+                        .requestMatchers("/actuator/busrefresh").hasRole("ADMIN")
                         // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
