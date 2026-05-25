@@ -1,0 +1,99 @@
+keytool -genkeypair ^
+ -alias mykey ^
+ -keyalg RSA ^
+ -keysize 2048 ^
+ -storetype JKS ^
+ -keystore keystore.jks ^
+ -validity 3650
+
+
+keytool -genkeypair -alias mykey -keyalg RSA -keysize 2048 -storetype JKS -keystore keystore.jks -validity 3650
+
+
+Enter the distinguished name. Provide a single dot (.) to leave a sub-component empty or press ENTER to use the default value in braces.
+What is your first and last name?
+  [Unknown]:  Oscar Santamaria
+What is the name of your organizational unit?
+  [Unknown]:  ossantvng
+What is the name of your organization?
+  [Unknown]:  ossantvng
+What is the name of your City or Locality?
+  [Unknown]:  San Jose
+What is the name of your State or Province?
+  [Unknown]:  San Jose
+What is the two-letter country code for this unit?
+  [Unknown]:  CR
+Is CN=Oscar Santamaria, OU=ossantvng, O=ossantvng, L=San Jose, ST=San Jose, C=CR correct?
+  [no]:  yes
+
+
+Sobre la advertencia de migrar a PKCS12:
+
+	El formato JKS funciona bien y Spring Cloud Config lo soporta sin problema.
+	La advertencia es porque JKS es propietario de Oracle, mientras que PKCS12 es estándar y más portable.
+	No es obligatorio migrar, pero sí recomendable a futuro (especialmente si vas a desplegar en AWS/EKS o usar integraciones externas).
+	Si quieres migrar ahora mismo, el comando es sencillo y no rompe nada:
+
+		keytool -importkeystore -srckeystore keystore.jks -destkeystore keystore.p12 -deststoretype pkcs12
+
+
+Despues cambia el valor de las propiedades:
+
+	encrypt.keyStore.location=classpath:/keystore.jks
+	encrypt.keyStore.password=changeit
+	encrypt.keyStore.alias=mykey
+
+Por:
+
+	encrypt.keyStore.location=classpath:/keystore.p12
+	encrypt.keyStore.password=changeit
+	encrypt.keyStore.alias=mykey
+
+Desde postman (Revisar spring security ya que usualmente solo ADMIN debe tener acceso)
+	
+	curl --location 'http://localhost:8888/encrypt' \
+		--header 'Content-Type: text/plain' \
+		--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsInNjb3BlIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzc5NjgyMTUyLCJleHAiOjE3Nzk3Njg1NTJ9.5xyYpnbn4_MIBAqVKT-Y7UZa8071yqoPHiChhFSWgbM' \
+		--data 'pruebaPassword123'
+
+	curl --location 'http://localhost:8888/decrypt' \
+		--header 'Content-Type: text/plain' \
+		--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsInNjb3BlIjpbIlJPTEVfQURNSU4iXSwiaWF0IjoxNzc5NjgyMTUyLCJleHAiOjE3Nzk3Njg1NTJ9.5xyYpnbn4_MIBAqVKT-Y7UZa8071yqoPHiChhFSWgbM' \
+		--data 'AQAiFuo5sE4Zp77y3nnzFWXc0JWf5cLjIDswOLUQCNbz8TiNIKEtIQcWxu4HWPKvc+o+uXbb3CuwYtp9fqtExbUnw03xfsJXPmwPcdWyI54bzGqCrQtmJCCxdzFuQqjVpJSeeoUvn466HoPVkP4KMadtYByAKR9ELYQUHGInYY3/uOQFG3Um6nCyoPmMQUeQKw6vsYrk10nuoM+hMpxEkOfETxBnK9RZlvd2FQbtdygYPgsyT0x6GPeEePYYCUR7rFOr2+Tyn+bhu/qh/K3ZWgqSlTtRZdLVcCVtyrm6PBdJHUNhUqYtK6tgMVL0DEnIRxz1EV8j6c6yFr4Mwqu7b6BXqIW/dT588LHLRfijOF+CkMzrR29AAsf55od86iOqgQClROHj1zjn2UQvG3Yb0KtF'
+
+
+Ejemplo de uso en .properties
+
+	spring.datasource.url=jdbc:mysql://localhost:3306/photoapp
+	spring.datasource.username=photoappuser
+	spring.datasource.password={cipher}AQAiFuo5sE4Zp77y3nnzFWXc0JWf5cLjIDswOLUQCNbz8TiNIKEtIQcWxu4HWPKvc+o+uXbb3CuwYtp9fqtExbUnw03xfsJXPmwPcdWyI54bzGqCrQtmJCCxdzFuQqjVpJSeeoUvn466HoPVkP4KMadtYByAKR9ELYQUHGInYY3/uOQFG3Um6nCyoPmMQUeQKw6vsYrk10nuoM+hMpxEkOfETxBnK9RZlvd2FQbtdygYPgsyT0x6GPeEePYYCUR7rFOr2+Tyn+bhu/qh/K3ZWgqSlTtRZdLVcCVtyrm6PBdJHUNhUqYtK6tgMVL0DEnIRxz1EV8j6c6yFr4Mwqu7b6BXqIW/dT588LHLRfijOF+CkMzrR29AAsf55od86iOqgQClROHj1zjn2UQvG3Yb0KtF
+
+
+
+Proceso Simetrico:
+
+	En lugar de generar un par de claves pública/privada (RSA), se crea una sola clave secreta que sirve tanto para cifrar como para descifrar.
+
+	Comando de ejemplo:
+
+		keytool -genseckey -alias mysecret -keyalg AES -keysize 128 -storetype JCEKS -keystore keystore-symmetric.jceks
+
+ 
+	Detalles:
+
+		-genseckey → genera clave secreta (simétrica).
+
+		-keyalg AES → algoritmo de cifrado simétrico.
+
+		-storetype JCEKS → recomendado para claves secretas (JKS no soporta bien claves simétricas).
+
+		-keysize 128 → tamaño de la clave AES (puede ser 128, 192 o 256 según soporte).
+
+		Alias: mysecret.
+
+Configuración en application.properties:
+
+	encrypt.keyStore.location=classpath:/keystore-symmetric.jceks
+	encrypt.keyStore.password=changeit
+	encrypt.keyStore.alias=mysecret
+

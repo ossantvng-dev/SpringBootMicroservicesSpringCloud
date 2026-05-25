@@ -653,3 +653,16 @@ Plan actualizado – 15 Mayo 2026
 - CI/CD con GitHub Actions / GitLab CI / Jenkins:
   • Build + test automático.
   • Deploy a AWS con pipelines.
+
+
+Udemy course pending lessons
+	
+	Lesson 24 Spring Cloud Config Encryption and Decryption
+	Lesson 27 Fault Tolerance with Resilience4J - Circuit Breaker
+	Lesson 28 Fault Tolerance with Resilience4J - Retry
+	Lesson 29 Distributed Tracing with Micrometer and Zipkin
+	Lesson 30 Aggregating Log Files with ELK Stack - Centralized logging
+	Lesson 31 Secure Eureka Dashboard
+	Lesson 32 Running Microservices in Docker Containers on AWS EC2
+	Lesson 33 Multiple Environments DEV, PROD
+	Lesson 38 Eureka Server cluster - highly available and fault tolerant service discovery
