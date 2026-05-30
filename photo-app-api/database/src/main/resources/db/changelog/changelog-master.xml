@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <include file="db/changelog/users/users_202605301400.xml"/>
+    <include file="db/changelog/accounts/accounts_202605301420.xml"/>
+    <include file="db/changelog/roles/roles_202605301430.xml"/>
+    <include file="db/changelog/users-roles/user_roles_202605301440.xml"/>
+    <include file="db/changelog/albums/albums_202605301450.xml"/>
+    <include file="db/changelog/photos/photos_202605301500.xml"/>
+
+    <!-- Seed data -->
+    <include file="db/changelog/roles/roles_202605301510.xml"/>
+    <include file="db/changelog/users/users_202605301520.xml"/>
+    <include file="db/changelog/accounts/accounts_202605301530.xml"/>
+    <include file="db/changelog/users-roles/user_roles_202605301540.xml"/>
+    <include file="db/changelog/albums/albums_202605301550.xml"/>
+    <include file="db/changelog/photos/photos_202605301600.xml"/>
+
+</databaseChangeLog>
