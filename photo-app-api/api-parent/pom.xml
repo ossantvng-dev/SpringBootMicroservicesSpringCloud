@@ -1,26 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" 
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<!-- =================================================================== -->
+	<!-- Parent Spring Boot -->
+	<!-- =================================================================== -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.6</version>
+		<relativePath/>
+	</parent>
 	<groupId>com.ossantvng.photoapp</groupId>
 	<artifactId>api-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>api-parent</name>
-	<description>API Parent</description>
 	<packaging>pom</packaging>
-	
+	<name>api-parent</name>
+	<description>API Parent for Photo App ecosystem</description>
+	<!-- =================================================================== -->
+	<!-- Properties -->
+	<!-- =================================================================== -->
+	<properties>
+		<java.version>25</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>${java.version}</maven.compiler.release>
+		<spring-cloud.version>2025.1.1</spring-cloud.version>
+		<hibernate.version>7.2.7.Final</hibernate.version>
+		<lombok.version>1.18.44</lombok.version>
+		<modelmapper.version>3.2.4</modelmapper.version>
+	</properties>
+	<!-- =================================================================== -->
+	<!-- Modules -->
+	<!-- =================================================================== -->
 	<modules>
-		<module>commons-lib</module>
-		<module>security-lib</module>
-		<module>entity-model-lib</module>
-		<module>feign-lib</module>
-		<module>users-service</module>
-		<module>accounts-service</module>
-		<module>photos-service</module>
-		<module>albums-service</module>
-		<module>api-gateway</module>
-		<module>config-server</module>
-		<module>discovery-service</module>
-	</modules>
+		<!-- Libraries -->
+		<module>libraries/photo-app-commons</module>
+		<module>libraries/photo-app-entity-model-lib</module>
+		<module>libraries/photo-app-feign-lib</module>
+		<module>libraries/photo-app-security-lib</module>
 
+		<!-- Services -->
+		<module>services/photo-app-authorization-service</module>
+		<module>services/photo-app-users-service</module>
+		<module>services/photo-app-accounts-service</module>
+		<module>services/photo-app-albums-service</module>
+		<module>services/photo-app-photos-service</module>
+
+		<!-- Infrastructure -->
+		<module>infrastructure/photo-app-api-gateway</module>
+		<module>infrastructure/photo-app-configuration-server</module>
+		<module>infrastructure/photo-app-discovery-service</module>
+	</modules>
+	<!-- =================================================================== -->
+	<!-- Dependency Management -->
+	<!-- =================================================================== -->
+	<dependencyManagement>
+		<dependencies>
+			<!-- Spring Cloud BOM -->
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<!-- Shared Versions -->
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>${lombok.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-processor</artifactId>
+				<version>${hibernate.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.modelmapper</groupId>
+				<artifactId>modelmapper</artifactId>
+				<version>${modelmapper.version}</version>
+			</dependency>
+			<!-- Internal Libraries -->
+			<dependency>
+				<groupId>com.photoapp.commons</groupId>
+				<artifactId>photo-app-commons</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>com.photoapp.domain</groupId>
+				<artifactId>photo-app-entity-model-lib</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>com.photoapp.feign</groupId>
+				<artifactId>photo-app-feign-lib</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>com.photoapp.security</groupId>
+				<artifactId>photo-app-security-lib</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<!-- =================================================================== -->
+	<!-- Build -->
+	<!-- =================================================================== -->
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.14.1</version>
+					<configuration>
+						<release>${java.version}</release>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
+							</path>
+							<path>
+								<groupId>org.hibernate.orm</groupId>
+								<artifactId>hibernate-processor</artifactId>
+								<version>${hibernate.version}</version>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 </project>

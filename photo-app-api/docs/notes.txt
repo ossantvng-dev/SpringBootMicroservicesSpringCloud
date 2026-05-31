@@ -257,7 +257,7 @@ Accounts Service (photo-app-accounts-service)
 
 	CRUD de cuentas (crear, listar, activar/desactivar, cambiar tipo).
 
-	Ya no maneja roles: solo atributos propios de la cuenta (accountName, accountType, activeAccount).
+	Ya no maneja roles: solo atributos propios de la cuenta (accountName, accountTypeDTO, activeAccount).
 
 Albums Service (photo-app-albums-service)
 
