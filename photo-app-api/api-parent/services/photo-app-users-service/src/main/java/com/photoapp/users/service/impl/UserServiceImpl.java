@@ -7,6 +7,7 @@ import com.photoapp.commons.dto.role.RoleNameDTO;
 import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.Role;
+import com.photoapp.entity.RoleName;
 import com.photoapp.entity.User;
 import com.photoapp.feign.client.AccountFeignClient;
 import com.photoapp.feign.client.AlbumFeignClient;
@@ -57,7 +58,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmailAndUsername(inputDTO.getEmail(), inputDTO.getUsername())) {
             throw new ApplicationException("User already registered", HttpStatus.BAD_REQUEST);
         } else {
-            Role defaultRole = roleRepository.findByName(RoleNameDTO.ROLE_USER)
+            Role defaultRole = roleRepository.findByName(RoleName.ROLE_USER)
                     .orElseThrow(() -> new ApplicationException("Default role not found", HttpStatus.NOT_FOUND));
 
             Set<Role> roles = (createUserInputDTO.getRoles() != null && !createUserInputDTO.getRoles().isEmpty())
@@ -233,11 +234,10 @@ public class UserServiceImpl implements UserService {
 
     private Set<Role> mapRoleNamesToRoles(Set<RoleNameDTO> roleNames) {
         return roleNames.stream()
-                .map(roleName -> roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new ApplicationException("Role not found: " + roleName.name(),
+                .map(roleNameDTO -> roleRepository.findByName(RoleName.valueOf(roleNameDTO.name()))
+                        .orElseThrow(() -> new ApplicationException("Role not found: " + roleNameDTO.name(),
                                 HttpStatus.NOT_FOUND)))
                 .collect(Collectors.toSet());
     }
-
 
 }
