@@ -452,80 +452,117 @@ $ tree -L 2
 
 ----------------------------------------------------------------------------------------------------
 
-Plan actualizado – 15 Mayo 2026
+Plan actualizado – 31 Mayo 2026
 
 1. Base actual
-- Microservicios funcionando:
+
+- Microservicios funcionando y registrados en Eureka:
   • photo-app-users-service (8081)
   • photo-app-accounts-service (8082)
   • photo-app-albums-service (8083)
   • photo-app-photos-service (8084)
   • photo-app-api-gateway (8080)
   • photo-app-authorization-service (8085)
-- Infraestructura:
+
+- Infraestructura activa:
   • photo-app-configuration-server (8888)
   • photo-app-discovery-service (8761)
   • RabbitMQ + Spring Cloud Bus listos
   • Eureka Discovery activo
+
 - Librerías compartidas:
   • photo-app-commons
   • photo-app-feign-lib
   • photo-app-entity-model-lib
   • photo-app-security-lib
-- Postman collection probada end‑to‑end.
-- Authorization Service completo: login, validación de credenciales vía Feign, emisión de JWT.
-- Security Lib robusto: JwtProvider, JwtFilter, SecurityConfiguration, JwtClaimsParser, PasswordEncoder.
-- Roles alineados (ROLE_USER, ROLE_ADMIN) y parser ajustado.
-- Flujo de login probado: token válido y roles reconocidos por Spring Security.
-- Ownership y estado activo validados en todos los servicios (Accounts, Albums, Photos).
-- findAll ajustado: Admin libre, User obligado a pasar accountIds o albumId.
-- Validación de expiración de tokens → JWT vencido devuelve 401.
-- Revisión exhaustiva de anotaciones @PreAuthorize → accesos más finos por rol y ownership.
-- Configuración de service accounts → llamadas internas seguras entre microservicios.
-- Definición de rutas en Gateway → enrutar /auth/**, /users/**, /accounts/**, /albums/**, /photos/** vía Eureka.
-- Seguridad reforzada: /encrypt, /decrypt y /actuator/busrefresh restringidos a ROLE_ADMIN (servlet y reactivo).
-- Manejo de excepciones en Feign → fallback + mensajes claros.
 
-2. Próximos pasos inmediatos
-- Refactorización de estructura:
-  • api‑parent con BOM controlando versiones de Spring Boot, Spring Cloud, Feign y Security.
-  • Multi‑module organizado:
-    - api-parent/ → accounts, albums, gateway, auth, commons, feign, photos, users, security.
-    - infra/ → config‑server, discovery‑service.
-    - database/ → scripts, migraciones (Flyway/Liquibase).
-    - deploy/ → docker‑compose.yml, scripts (nginx, ssl, etc.).
-    - docs/ → arquitectura, postman, notas.
+- Validaciones completadas:
+  • Postman collection probada end‑to‑end
+  • Authorization Service completo: login, validación vía Feign, emisión de JWT
+  • Security Lib robusto: JwtProvider, JwtFilter, SecurityConfiguration, JwtClaimsParser, PasswordEncoder
+  • Roles alineados (ROLE_USER, ROLE_ADMIN) y parser ajustado
+  • Flujo de login probado: token válido y roles reconocidos por Spring Security
+  • Ownership y estado activo validados en Accounts, Albums, Photos
+  • findAll ajustado: Admin libre, User con restricciones (accountIds/albumId)
+  • Validación de expiración de tokens → JWT vencido devuelve 401
+  • Revisión exhaustiva de anotaciones @PreAuthorize → accesos finos por rol y ownership
+  • Configuración de service accounts → llamadas internas seguras
+  • Rutas en Gateway definidas (/auth/**, /users/**, /accounts/**, /albums/**, /photos/** vía Eureka)
+  • Seguridad reforzada: /encrypt, /decrypt y /actuator/busrefresh restringidos a ROLE_ADMIN
+  • Manejo de excepciones en Feign → fallback + mensajes claros
 
-3. Resiliencia
-- Resilience4J → circuit breakers y retries en Feign Clients.
-- Fallbacks claros:
-  • Registrar usuario → crear cuenta.
-  • Si falla, reintentar o fallback (usuario creado sin cuenta, mensaje en cola).
-- Fail fast en operaciones críticas.
+2. Refactorización de estructura
+- api‑parent con BOM centralizado (Spring Boot, Spring Cloud, Feign, Security)
+- Multi‑module organizado:
+  • libraries/ → photo-app-commons, photo-app-feign-lib, photo-app-entity-model-lib, photo-app-security-lib
+  • services/ → photo-app-users-service, photo-app-accounts-service, photo-app-photos-service, photo-app-albums-service, photo-app-authorization-service
+  • infrastructure/ → photo-app-api-gateway, photo-app-configuration-server, photo-app-discovery-service
+  • database/ → scripts, migraciones (Flyway/Liquibase)
+  • deploy/ → docker-compose.yml, scripts (nginx, ssl, etc.)
+  • docs/ → arquitectura, postman, notas
 
-4. Observabilidad
-- Actuator en todos los servicios.
-- Micrometer + Zipkin para métricas y tracing distribuido.
-- Centralización de logs en ELK Stack.
-- Alertas básicas para expiración de tokens y fallos de Feign.
+- Estructura final validada:
+ossan@ossant-pc MINGW64 ~/git/SpringBootMicroservicesSpringCloud/photo-app-api (main)
+$ tree -L 3
+.
+|-- api-parent
+|   |-- infrastructure
+|   |   |-- photo-app-api-gateway
+|   |   |-- photo-app-configuration-server
+|   |   `-- photo-app-discovery-service
+|   |-- libraries
+|   |   |-- photo-app-commons
+|   |   |-- photo-app-entity-model-lib
+|   |   |-- photo-app-feign-lib
+|   |   `-- photo-app-security-lib
+|   |-- pom.xml
+|   `-- services
+|       |-- photo-app-accounts-service
+|       |-- photo-app-albums-service
+|       |-- photo-app-authorization-service
+|       |-- photo-app-photos-service
+|       `-- photo-app-users-service
+|-- database
+|   |-- docs
+|   |   |-- create_db_and_user.sql
+|   |   `-- drop_tables.sql
+|   |-- pom.xml
+|   `-- src
+|       `-- main
+|-- deploy
+|-- docs
+|-- pom.xml
+`-- tools
 
-5. Docker + AWS + CI/CD
-- Dockerizar servicios.
-- Definir docker‑compose para entorno local.
-- Preparar despliegue en AWS (ECS/EKS o EC2 + ALB).
-- Configurar múltiples instancias de cada servicio → Gateway balancea automáticamente.
+3. Resiliencia (en curso)
+- Implementar Resilience4J: circuit breakers y retries en Feign Clients
+- Diseñar fallbacks claros:
+  • Registrar usuario → crear cuenta automáticamente
+  • Si falla, reintentar o fallback (usuario creado sin cuenta, mensaje en cola)
+- Estrategia fail fast en operaciones críticas
+
+4. Observabilidad (pendiente)
+- Actuator en todos los servicios
+- Micrometer + Zipkin para métricas y tracing distribuido
+- Centralización de logs en ELK Stack
+- Alertas básicas para expiración de tokens y fallos de Feign
+
+5. Docker + AWS + CI/CD (pendiente)
+- Dockerizar servicios
+- Definir docker-compose para entorno local
+- Preparar despliegue en AWS (ECS/EKS o EC2 + ALB)
+- Configurar múltiples instancias de cada servicio → Gateway balancea automáticamente
 - CI/CD con GitHub Actions / GitLab CI / Jenkins:
-  • Build + test automático.
-  • Deploy a AWS con pipelines.
+  • Build + test automático
+  • Deploy a AWS con pipelines
 
+Udemy course pendientes
 
-Udemy course pending lessons
-	
-	Lesson 27 Fault Tolerance with Resilience4J - Circuit Breaker
-	Lesson 28 Fault Tolerance with Resilience4J - Retry
-	Lesson 29 Distributed Tracing with Micrometer and Zipkin
-	Lesson 30 Aggregating Log Files with ELK Stack - Centralized logging
-	Lesson 31 Secure Eureka Dashboard
-	Lesson 32 Running Microservices in Docker Containers on AWS EC2
-	Lesson 33 Multiple Environments DEV, PROD
-	Lesson 38 Eureka Server cluster - highly available and fault tolerant service discovery
+- Lesson 27: Fault Tolerance with Resilience4J – Circuit Breaker
+- Lesson 28: Fault Tolerance with Resilience4J – Retry
+- Lesson 29: Distributed Tracing with Micrometer and Zipkin
+- Lesson 30: Aggregating Log Files with ELK Stack – Centralized logging
+- Lesson 31: Secure Eureka Dashboard
+- Lesson 32: Running Microservices in Docker Containers on AWS EC2
+- Lesson 33: Multiple Environments DEV, PROD
+- Lesson 38: Eureka Server cluster – highly available and fault tolerant service discovery
