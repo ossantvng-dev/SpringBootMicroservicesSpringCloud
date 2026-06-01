@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableJpaAuditing
 @EnableFeignClients(basePackages = "com.photoapp.feign")
 @EntityScan(basePackages = "com.photoapp.entity")
-@ComponentScan(basePackages = {"com.photoapp.users", "com.photoapp.commons", "com.photoapp.security"})
+@ComponentScan(basePackages = {"com.photoapp.users", "com.photoapp.commons", "com.photoapp.security", "com.photoapp.feign"})
 public class PhotoAppUsersServiceApplication {
 
 	static void main(String[] args) {

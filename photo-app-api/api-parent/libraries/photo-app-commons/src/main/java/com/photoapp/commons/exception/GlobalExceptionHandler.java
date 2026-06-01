@@ -26,6 +26,16 @@ public class GlobalExceptionHandler {
                 applicationException.getHttpStatus());
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<?> serviceUnavailableExceptionHandler(
+            ServiceUnavailableException serviceUnavailableException, HttpServletRequest httpServletRequest) {
+        return new ResponseEntity<>(
+                apiErrorBuilder(serviceUnavailableException.getMessage(), HttpStatus.SERVICE_UNAVAILABLE,
+                        httpServletRequest.getRequestURI()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+
     /* Thrown when validating @RequestBody with @Valid */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> validationExceptionHandler(

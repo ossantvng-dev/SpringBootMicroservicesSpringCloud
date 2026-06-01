@@ -2,6 +2,7 @@ package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.feign.configuration.FeignConfiguration;
+import com.photoapp.feign.fallback.AccountFeignFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +11,8 @@ import java.util.Map;
 
 @FeignClient(
         name = "photo-app-accounts-service",
-        configuration = FeignConfiguration.class
+        configuration = FeignConfiguration.class,
+        fallback = AccountFeignFallback.class
 )
 public interface AccountFeignClient {
 

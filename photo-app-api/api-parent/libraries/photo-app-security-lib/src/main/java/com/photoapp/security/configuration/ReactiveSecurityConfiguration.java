@@ -34,6 +34,7 @@ public class ReactiveSecurityConfiguration {
                         .pathMatchers("/auth/**").permitAll()
                         .pathMatchers("/users/username/**").permitAll()
                         .pathMatchers(HttpMethod.POST,"/users").permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         // ROLE Protection
                         .pathMatchers("/users/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/accounts/**").hasAnyRole("USER", "ADMIN")

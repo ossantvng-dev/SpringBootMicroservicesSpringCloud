@@ -39,6 +39,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/username/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").permitAll() // user registry
+                        .requestMatchers("/actuator/**").permitAll()
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")

@@ -1,0 +1,37 @@
+Resilience4J
+
+	Resilience4J is a lightweight fault-tolerance library designed for Java applications. 
+	It helps implement resilience patterns commonly used in microservices to improve stability and reliability.
+
+Circuit Breaker
+
+	Prevents repeated calls to a failing service. 
+	When failures exceed a threshold, the circuit opens and blocks further requests for a configured time. 
+	This avoids cascading failures and gives the system time to recover.
+
+Rate Limiter
+	
+	Controls the number of requests allowed within a specific time window. 
+	It protects services from excessive traffic and ensures fair usage of resources or compliance with API limits.
+
+Retry
+
+	Automatically retries failed operations based on a defined policy. 
+	This can include number of attempts, wait duration, and backoff strategy. 
+	It is useful for handling temporary or intermittent failures.
+
+Bulkhead
+
+	Isolates different parts of a system so that failure in one component does not impact others. 
+	It limits concurrent calls using either thread pools or semaphores, preventing resource exhaustion.
+
+TimeLimiter
+
+	Applies a timeout to asynchronous operations. 
+	If execution exceeds the configured time limit, the operation is cancelled or marked as failed. 
+	This prevents hanging processes and improves responsiveness.
+
+Cache
+	
+	Stores the result of method calls to avoid repeating expensive operations. 
+	If the same request occurs again, the cached result is returned instead of executing the method again.
