@@ -13,4 +13,7 @@ public class ApplicationException extends RuntimeException {
         this.httpStatus = httpStatus;
     }
 
+    @Override
+    public String toString() { return getClass().getSimpleName() + ": " + getMessage(); }
+
 }

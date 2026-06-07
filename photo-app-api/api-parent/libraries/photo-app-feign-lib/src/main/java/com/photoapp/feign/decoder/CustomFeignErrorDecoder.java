@@ -6,7 +6,14 @@ import feign.codec.ErrorDecoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-/* Your decoders in the feign-lib handle the HTTP response when the remote service responds. */
+/*
+    Your decoders in the feign-lib handle the HTTP response when the remote service responds.
+
+    404 -> Not Found
+    403 -> Forbidden
+    401 -> Unauthorized
+    503 -> Service Unavailable
+*/
 @Component
 public class CustomFeignErrorDecoder implements ErrorDecoder {
 

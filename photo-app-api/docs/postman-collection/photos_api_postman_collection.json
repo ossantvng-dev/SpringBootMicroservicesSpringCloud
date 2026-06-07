@@ -1,1838 +1,2338 @@
 {
-  "info": {
-    "_postman_id": "f00f846e-1695-4da5-bdd0-8a1e800a624f",
-    "name": "Photos API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "53115833",
-    "_collection_link": "https://go.postman.co/collection/53115833-f00f846e-1695-4da5-bdd0-8a1e800a624f?source=collection_link"
-  },
-  "item": [
-    {
-      "name": "Authorization Service",
-      "item": [
-        {
-          "name": "login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "let jsonData = pm.response.json();\r",
-                  "pm.environment.set(\"accessToken\", jsonData.accessToken);\r",
-                  "pm.environment.set(\"refreshToken\", jsonData.refreshToken);\r",
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"generic\",\r\n    \"codeVerifier\": \"YAL9KbrRgGYyV12_YxRVnV8z54xhM2o8XpbMB1a01Ro\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "refresh token",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/refresh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "refresh"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "revoke token",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/revoke",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "revoke"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
+    "info": {
+        "_postman_id": "f00f846e-1695-4da5-bdd0-8a1e800a624f",
+        "name": "Photos API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "53115833",
+        "_collection_link": "https://go.postman.co/collection/53115833-f00f846e-1695-4da5-bdd0-8a1e800a624f?source=collection_link"
     },
-    {
-      "name": "Users Service",
-      "item": [
-        {
-          "name": "Register User",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\",\n  \"password\": \"StrongPass123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update User",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria Updated\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/101",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User By ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/101",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User By Email",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/email/ossant@example.com",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "email",
-                "ossant@example.com"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User By Username",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/username/ossant",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "username",
-                "ossant"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Is Active",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/101/active",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101",
-                "active"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Users With Filters",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users?activeUser=true",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ],
-              "query": [
-                {
-                  "key": "firstName",
-                  "value": "Oscar",
-                  "disabled": true
-                },
-                {
-                  "key": "lastName",
-                  "value": "Santamaria",
-                  "disabled": true
-                },
-                {
-                  "key": "username",
-                  "value": "ossant",
-                  "disabled": true
-                },
-                {
-                  "key": "email",
-                  "value": "ossant@example.com",
-                  "disabled": true
-                },
-                {
-                  "key": "activeUser",
-                  "value": "true"
-                },
-                {
-                  "key": "createdStart",
-                  "value": "2026-05-08T00:00:00",
-                  "disabled": true
-                },
-                {
-                  "key": "createdEnd",
-                  "value": "2026-05-08T23:59:59",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedStart",
-                  "value": "2026-05-08T09:00:00",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedEnd",
-                  "value": "2026-05-08T18:00:00",
-                  "disabled": true
-                },
-                {
-                  "key": "page",
-                  "value": "0",
-                  "disabled": true
-                },
-                {
-                  "key": "size",
-                  "value": "10",
-                  "disabled": true
-                },
-                {
-                  "key": "sortBy",
-                  "value": "id",
-                  "disabled": true
-                },
-                {
-                  "key": "direction",
-                  "value": "desc",
-                  "disabled": true
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Activate or Deactivate User",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/101/activate?activate=false",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101",
-                "activate"
-              ],
-              "query": [
-                {
-                  "key": "activate",
-                  "value": "false"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Assign Roles",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"ASSIGN\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"]\n}\n"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/101/roles",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101",
-                "roles"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Remove Roles",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"REMOVE\",\n  \"roles\": [\"ROLE_USER\"]\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/101/roles",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101",
-                "roles"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete User",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/101",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "101"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Accounts Service",
-      "item": [
-        {
-          "name": "Create Account",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountName\": \"Oscar Account\",\n  \"accountType\": \"PREMIUM\",\n  \"userId\": 101\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/accounts",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Change Account Name",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "url": {
-              "raw": "http://localhost:8080/accounts/200/name?accountName=Oscar Updated Account Name",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts",
-                "200",
-                "name"
-              ],
-              "query": [
-                {
-                  "key": "accountName",
-                  "value": "Oscar Updated Account Name"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Change Account Type",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "url": {
-              "raw": "http://localhost:8080/accounts/200/type?accountType=BASIC",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts",
-                "200",
-                "type"
-              ],
-              "query": [
-                {
-                  "key": "accountType",
-                  "value": "BASIC"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Account By ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/accounts/200",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts",
-                "200"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Accounts With Filters",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/accounts",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts"
-              ],
-              "query": [
-                {
-                  "key": "activeAccount",
-                  "value": "true",
-                  "disabled": true
-                },
-                {
-                  "key": "accountName",
-                  "value": "user99_account1",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "accountType",
-                  "value": "PREMIUM",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "userId",
-                  "value": "101",
-                  "disabled": true
-                },
-                {
-                  "key": "createdStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "createdEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "page",
-                  "value": "0",
-                  "disabled": true
-                },
-                {
-                  "key": "size",
-                  "value": "10",
-                  "disabled": true
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Activate or Deactivate Account",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/accounts/101/activate?activate=true",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts",
-                "101",
-                "activate"
-              ],
-              "query": [
-                {
-                  "key": "activate",
-                  "value": "true"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Account",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/accounts/199",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "accounts",
-                "199"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Albums Service",
-      "item": [
-        {
-          "name": "Create Album",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Vacation 2026\",\n  \"description\": \"Trip to Costa Rica\",\n  \"accountId\": 200\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/albums",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Album By ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums/766",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "766"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Albums With Filters",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums?accountIds=1, 2, 3",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums"
-              ],
-              "query": [
-                {
-                  "key": "accountIds",
-                  "value": "1, 2, 3"
-                },
-                {
-                  "key": "title",
-                  "value": "Vacation 2026",
-                  "disabled": true
-                },
-                {
-                  "key": "description",
-                  "value": "Trip to Costa Rica",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "activeAlbum",
-                  "value": "false",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "createdStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "createdEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "page",
-                  "value": "0",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "size",
-                  "value": "10",
-                  "type": "text",
-                  "disabled": true
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Album",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Album Name\",\n  \"description\": \"Updated description\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/albums/766",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "766"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Activate or Deactivate Album",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums/766/activate?activate=true",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "766",
-                "activate"
-              ],
-              "query": [
-                {
-                  "key": "activate",
-                  "value": "true"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Album",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums/766",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "766"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Albums By AccountIds",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums/byAccountIds?accountIds=101,102,103",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "byAccountIds"
-              ],
-              "query": [
-                {
-                  "key": "accountIds",
-                  "value": "101,102,103"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Count Albums By AccountId",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/albums/countByAccountId?accountId=200",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "albums",
-                "countByAccountId"
-              ],
-              "query": [
-                {
-                  "key": "accountId",
-                  "value": "200"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Photos Service",
-      "item": [
-        {
-          "name": "Create Photo",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fileName\": \"beach.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach.png\",\n  \"albumId\": 766\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/photos",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Photo By ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/photos/10231",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos",
-                "10231"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Photos With Filters",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/photos?albumId=766",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos"
-              ],
-              "query": [
-                {
-                  "key": "albumId",
-                  "value": "766"
-                },
-                {
-                  "key": "fileName",
-                  "value": "photo_1_2.jpg",
-                  "disabled": true
-                },
-                {
-                  "key": "activePhoto",
-                  "value": "true",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "createdStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "createdEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedStart",
-                  "value": "2026-05-09T00:00:00",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "updatedEnd",
-                  "value": "2026-05-09T23:59:59",
-                  "type": "text",
-                  "disabled": true
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Photo",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fileName\": \"beach_updated.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach_updated.png\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/photos/10231",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos",
-                "10231"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Activate or Deactivate Photo",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/photos/10231/activate?activate=true",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos",
-                "10231",
-                "activate"
-              ],
-              "query": [
-                {
-                  "key": "activate",
-                  "value": "true"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Photo",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/photos/10232",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos",
-                "10232"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Count By Album Ids",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/photos/countByAlbumIds?albumIds=1, 256",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "photos",
-                "countByAlbumIds"
-              ],
-              "query": [
-                {
-                  "key": "albumIds",
-                  "value": "1, 256"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Configuration Server",
-      "item": [
-        {
-          "name": "dev",
-          "item": [
-            {
-              "name": "actuator",
-              "item": [
-                {
-                  "name": "busrefresh",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "url": {
-                      "raw": "http://localhost:8888/actuator/busrefresh",
-                      "protocol": "http",
-                      "host": [
-                        "localhost"
-                      ],
-                      "port": "8888",
-                      "path": [
-                        "actuator",
-                        "busrefresh"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "busenv",
-                  "request": {
-                    "auth": {
-                      "type": "noauth"
-                    },
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\r\n  \"name\": \"logging.level.org.hibernate.SQL\",\r\n  \"value\": \"TRACE\"\r\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
+    "item": [{
+            "name": "Authorization Service",
+            "item": [{
+                    "name": "Actuator",
+                    "item": [{
+                            "name": "Get actuator endpoints",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8085/actuator",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8085",
+                                    "path": [
+                                        "actuator"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breakers",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8085/actuator/circuitbreakers",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8085",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakers"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breaker events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8085/actuator/circuitbreakerevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8085",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakerevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retries",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8085/actuator/retries",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8085",
+                                    "path": [
+                                        "actuator",
+                                        "retries"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retry events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8085/actuator/retryevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8085",
+                                    "path": [
+                                        "actuator",
+                                        "retryevents"
+                                    ]
+                                }
+                            },
+                            "response": []
                         }
-                      }
+                    ]
+                }, {
+                    "name": "login",
+                    "event": [{
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "let jsonData = pm.response.json();\r",
+                                    "pm.environment.set(\"accessToken\", jsonData.accessToken);\r",
+                                    "pm.environment.set(\"refreshToken\", jsonData.refreshToken);\r",
+                                    ""
+                                ],
+                                "type": "text/javascript",
+                                "packages": {},
+                                "requests": {}
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"generic\",\r\n    \"codeVerifier\": \"YAL9KbrRgGYyV12_YxRVnV8z54xhM2o8XpbMB1a01Ro\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
                     },
-                    "url": {
-                      "raw": "http://localhost:8888/actuator/busenv",
-                      "protocol": "http",
-                      "host": [
-                        "localhost"
-                      ],
-                      "port": "8888",
-                      "path": [
-                        "actuator",
-                        "busenv"
-                      ]
-                    }
-                  },
-                  "response": []
+                    "response": []
+                }, {
+                    "name": "refresh token",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "refresh"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "revoke token",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"refreshToken\": \"a30c2031-ea17-439a-87ad-fdbae2b60812\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/revoke",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "revoke"
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-              ]
-            },
-            {
-              "name": "photo-app-discovery-service-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-discovery-service/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-discovery-service",
-                    "dev"
-                  ]
+            ]
+        }, {
+            "name": "Users Service",
+            "item": [{
+                    "name": "Actuator",
+                    "item": [{
+                            "name": "Get actuator endpoints",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8081/actuator",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8081",
+                                    "path": [
+                                        "actuator"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breakers",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8081/actuator/circuitbreakers",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8081",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakers"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breaker events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8081/actuator/circuitbreakerevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8081",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakerevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retries",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8081/actuator/retries",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8081",
+                                    "path": [
+                                        "actuator",
+                                        "retries"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retry events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8081/actuator/retryevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8081",
+                                    "path": [
+                                        "actuator",
+                                        "retryevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }, {
+                    "name": "Register User",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\",\n  \"password\": \"StrongPass123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Update User",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"firstName\": \"Oscar\",\n  \"lastName\": \"Santamaria Updated\",\n  \"username\": \"ossant\",\n  \"email\": \"ossant@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get User By ID",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get User By Email",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/email/ossant@example.com",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "email",
+                                "ossant@example.com"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get User By Username",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/username/ossant",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "username",
+                                "ossant"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Is Active",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101/active",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101",
+                                "active"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "List Users With Filters",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users?activeUser=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users"
+                            ],
+                            "query": [{
+                                    "key": "firstName",
+                                    "value": "Oscar",
+                                    "disabled": true
+                                }, {
+                                    "key": "lastName",
+                                    "value": "Santamaria",
+                                    "disabled": true
+                                }, {
+                                    "key": "username",
+                                    "value": "ossant",
+                                    "disabled": true
+                                }, {
+                                    "key": "email",
+                                    "value": "ossant@example.com",
+                                    "disabled": true
+                                }, {
+                                    "key": "activeUser",
+                                    "value": "true"
+                                }, {
+                                    "key": "createdStart",
+                                    "value": "2026-05-08T00:00:00",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdEnd",
+                                    "value": "2026-05-08T23:59:59",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedStart",
+                                    "value": "2026-05-08T09:00:00",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedEnd",
+                                    "value": "2026-05-08T18:00:00",
+                                    "disabled": true
+                                }, {
+                                    "key": "page",
+                                    "value": "0",
+                                    "disabled": true
+                                }, {
+                                    "key": "size",
+                                    "value": "10",
+                                    "disabled": true
+                                }, {
+                                    "key": "sortBy",
+                                    "value": "id",
+                                    "disabled": true
+                                }, {
+                                    "key": "direction",
+                                    "value": "desc",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Activate or Deactivate User",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101/activate?activate=false",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101",
+                                "activate"
+                            ],
+                            "query": [{
+                                    "key": "activate",
+                                    "value": "false"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Assign Roles",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"ASSIGN\",\n  \"roles\": [\"ROLE_ADMIN\", \"ROLE_USER\"]\n}\n"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101/roles",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101",
+                                "roles"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Remove Roles",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"REMOVE\",\n  \"roles\": [\"ROLE_USER\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101/roles",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101",
+                                "roles"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete User",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/101",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "101"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete user test resilience4j",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8081/users/100",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8081",
+                            "path": [
+                                "users",
+                                "100"
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-users-service-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-users-service/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-users-service",
-                    "dev"
-                  ]
+            ]
+        }, {
+            "name": "Accounts Service",
+            "item": [{
+                    "name": "Actuator",
+                    "item": [{
+                            "name": "Get actuator endpoints",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8082/actuator",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8082",
+                                    "path": [
+                                        "actuator"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breakers",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8082/actuator/circuitbreakers",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8082",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakers"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breaker events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8082/actuator/circuitbreakerevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8082",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakerevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retries",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8082/actuator/retries",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8082",
+                                    "path": [
+                                        "actuator",
+                                        "retries"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retry events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8082/actuator/retryevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8082",
+                                    "path": [
+                                        "actuator",
+                                        "retryevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }, {
+                    "name": "Create Account",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accountName\": \"Oscar Account\",\n  \"accountType\": \"PREMIUM\",\n  \"userId\": 101\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/accounts",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Change Account Name",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/accounts/200/name?accountName=Oscar Updated Account Name",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts",
+                                "200",
+                                "name"
+                            ],
+                            "query": [{
+                                    "key": "accountName",
+                                    "value": "Oscar Updated Account Name"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Change Account Type",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/accounts/200/type?accountType=BASIC",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts",
+                                "200",
+                                "type"
+                            ],
+                            "query": [{
+                                    "key": "accountType",
+                                    "value": "BASIC"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get Account By ID",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/accounts/200",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts",
+                                "200"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "List Accounts With Filters",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/accounts",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts"
+                            ],
+                            "query": [{
+                                    "key": "activeAccount",
+                                    "value": "true",
+                                    "disabled": true
+                                }, {
+                                    "key": "accountName",
+                                    "value": "user99_account1",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "accountType",
+                                    "value": "PREMIUM",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "userId",
+                                    "value": "101",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "page",
+                                    "value": "0",
+                                    "disabled": true
+                                }, {
+                                    "key": "size",
+                                    "value": "10",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Activate or Deactivate Account",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/accounts/101/activate?activate=true",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts",
+                                "101",
+                                "activate"
+                            ],
+                            "query": [{
+                                    "key": "activate",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete Account",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/accounts/199",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "accounts",
+                                "199"
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-accounts-service-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-accounts-service/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-accounts-service",
-                    "dev"
-                  ]
+            ]
+        }, {
+            "name": "Albums Service",
+            "item": [{
+                    "name": "Actuator",
+                    "item": [{
+                            "name": "Get actuator endpoints",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8083/actuator",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8083",
+                                    "path": [
+                                        "actuator"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breakers",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8083/actuator/circuitbreakers",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8083",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakers"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breaker events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8083/actuator/circuitbreakerevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8083",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakerevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retries",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8083/actuator/retries",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8083",
+                                    "path": [
+                                        "actuator",
+                                        "retries"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retry events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8083/actuator/retryevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8083",
+                                    "path": [
+                                        "actuator",
+                                        "retryevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }, {
+                    "name": "Create Album",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Vacation 2026\",\n  \"description\": \"Trip to Costa Rica\",\n  \"accountId\": 200\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/albums",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get Album By ID",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums/766",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "766"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "List Albums With Filters",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums?accountIds=1, 2, 3",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums"
+                            ],
+                            "query": [{
+                                    "key": "accountIds",
+                                    "value": "1, 2, 3"
+                                }, {
+                                    "key": "title",
+                                    "value": "Vacation 2026",
+                                    "disabled": true
+                                }, {
+                                    "key": "description",
+                                    "value": "Trip to Costa Rica",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "activeAlbum",
+                                    "value": "false",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "page",
+                                    "value": "0",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "size",
+                                    "value": "10",
+                                    "type": "text",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Update Album",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Album Name\",\n  \"description\": \"Updated description\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/albums/766",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "766"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Activate or Deactivate Album",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums/766/activate?activate=true",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "766",
+                                "activate"
+                            ],
+                            "query": [{
+                                    "key": "activate",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete Album",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums/766",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "766"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete Albums By AccountIds",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums/byAccountIds?accountIds=101,102,103",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "byAccountIds"
+                            ],
+                            "query": [{
+                                    "key": "accountIds",
+                                    "value": "101,102,103"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Count Albums By AccountId",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/albums/countByAccountId?accountId=200",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "albums",
+                                "countByAccountId"
+                            ],
+                            "query": [{
+                                    "key": "accountId",
+                                    "value": "200"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-photos-service-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-photos-service/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-photos-service",
-                    "dev"
-                  ]
+            ]
+        }, {
+            "name": "Photos Service",
+            "item": [{
+                    "name": "Actuator",
+                    "item": [{
+                            "name": "Get actuator endpoints",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8084/actuator",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8084",
+                                    "path": [
+                                        "actuator"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breakers",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8084/actuator/circuitbreakers",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8084",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakers"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get circuit breaker events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8084/actuator/circuitbreakerevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8084",
+                                    "path": [
+                                        "actuator",
+                                        "circuitbreakerevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retries",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8084/actuator/retries",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8084",
+                                    "path": [
+                                        "actuator",
+                                        "retries"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "Get retry events",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8084/actuator/retryevents",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8084",
+                                    "path": [
+                                        "actuator",
+                                        "retryevents"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }, {
+                    "name": "Create Photo",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fileName\": \"beach.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach.png\",\n  \"albumId\": 766\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/photos",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Get Photo By ID",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/photos/10231",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos",
+                                "10231"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "List Photos With Filters",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/photos?albumId=766",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos"
+                            ],
+                            "query": [{
+                                    "key": "albumId",
+                                    "value": "766"
+                                }, {
+                                    "key": "fileName",
+                                    "value": "photo_1_2.jpg",
+                                    "disabled": true
+                                }, {
+                                    "key": "activePhoto",
+                                    "value": "true",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "createdEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedStart",
+                                    "value": "2026-05-09T00:00:00",
+                                    "type": "text",
+                                    "disabled": true
+                                }, {
+                                    "key": "updatedEnd",
+                                    "value": "2026-05-09T23:59:59",
+                                    "type": "text",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Update Photo",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fileName\": \"beach_updated.png\",\n  \"fileUrl\": \"http://cdn.example.com/beach_updated.png\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8080/photos/10231",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos",
+                                "10231"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Activate or Deactivate Photo",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/photos/10231/activate?activate=true",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos",
+                                "10231",
+                                "activate"
+                            ],
+                            "query": [{
+                                    "key": "activate",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Delete Photo",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/photos/10232",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos",
+                                "10232"
+                            ]
+                        }
+                    },
+                    "response": []
+                }, {
+                    "name": "Count By Album Ids",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [{
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8080/photos/countByAlbumIds?albumIds=1, 256",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8080",
+                            "path": [
+                                "photos",
+                                "countByAlbumIds"
+                            ],
+                            "query": [{
+                                    "key": "albumIds",
+                                    "value": "1, 256"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-albums-service-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-albums-service/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-albums-service",
-                    "dev"
-                  ]
+            ]
+        }, {
+            "name": "Configuration Server",
+            "item": [{
+                    "name": "dev",
+                    "item": [{
+                            "name": "actuator",
+                            "item": [{
+                                    "name": "busrefresh",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [],
+                                        "url": {
+                                            "raw": "http://localhost:8888/actuator/busrefresh",
+                                            "protocol": "http",
+                                            "host": [
+                                                "localhost"
+                                            ],
+                                            "port": "8888",
+                                            "path": [
+                                                "actuator",
+                                                "busrefresh"
+                                            ]
+                                        }
+                                    },
+                                    "response": []
+                                }, {
+                                    "name": "busenv",
+                                    "request": {
+                                        "auth": {
+                                            "type": "noauth"
+                                        },
+                                        "method": "POST",
+                                        "header": [],
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\r\n  \"name\": \"logging.level.org.hibernate.SQL\",\r\n  \"value\": \"TRACE\"\r\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        },
+                                        "url": {
+                                            "raw": "http://localhost:8888/actuator/busenv",
+                                            "protocol": "http",
+                                            "host": [
+                                                "localhost"
+                                            ],
+                                            "port": "8888",
+                                            "path": [
+                                                "actuator",
+                                                "busenv"
+                                            ]
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        }, {
+                            "name": "photo-app-discovery-service-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-discovery-service/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-discovery-service",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-users-service-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-users-service/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-users-service",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-accounts-service-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-accounts-service/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-accounts-service",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-photos-service-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-photos-service/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-photos-service",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-albums-service-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-albums-service/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-albums-service",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-api-gateway-dev",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-api-gateway/dev",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-api-gateway",
+                                        "dev"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "encrypt",
+                            "request": {
+                                "auth": {
+                                    "type": "bearer",
+                                    "bearer": [{
+                                            "key": "token",
+                                            "value": "{{accessToken}}",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "pruebaPassword123",
+                                    "options": {
+                                        "raw": {
+                                            "language": "text"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8888/encrypt",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "encrypt"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "decrypt",
+                            "request": {
+                                "auth": {
+                                    "type": "bearer",
+                                    "bearer": [{
+                                            "key": "token",
+                                            "value": "{{accessToken}}",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "AQAiFuo5sE4Zp77y3nnzFWXc0JWf5cLjIDswOLUQCNbz8TiNIKEtIQcWxu4HWPKvc+o+uXbb3CuwYtp9fqtExbUnw03xfsJXPmwPcdWyI54bzGqCrQtmJCCxdzFuQqjVpJSeeoUvn466HoPVkP4KMadtYByAKR9ELYQUHGInYY3/uOQFG3Um6nCyoPmMQUeQKw6vsYrk10nuoM+hMpxEkOfETxBnK9RZlvd2FQbtdygYPgsyT0x6GPeEePYYCUR7rFOr2+Tyn+bhu/qh/K3ZWgqSlTtRZdLVcCVtyrm6PBdJHUNhUqYtK6tgMVL0DEnIRxz1EV8j6c6yFr4Mwqu7b6BXqIW/dT588LHLRfijOF+CkMzrR29AAsf55od86iOqgQClROHj1zjn2UQvG3Yb0KtF",
+                                    "options": {
+                                        "raw": {
+                                            "language": "text"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8888/decrypt",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "decrypt"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }, {
+                    "name": "prod",
+                    "item": [{
+                            "name": "photo-app-discovery-service-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-discovery-service/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-discovery-service",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-users-service-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-users-service/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-users-service",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-accounts-service-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-accounts-service/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-accounts-service",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-albums-service-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-albums-service/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-albums-service",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-photos-service-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-photos-service/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-photos-service",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }, {
+                            "name": "photo-app-api-gateway-prod",
+                            "request": {
+                                "auth": {
+                                    "type": "noauth"
+                                },
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8888/photo-app-api-gateway/prod",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8888",
+                                    "path": [
+                                        "photo-app-api-gateway",
+                                        "prod"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
                 }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-api-gateway-dev",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-api-gateway/dev",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-api-gateway",
-                    "dev"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "prod",
-          "item": [
-            {
-              "name": "photo-app-discovery-service-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-discovery-service/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-discovery-service",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-users-service-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-users-service/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-users-service",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-accounts-service-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-accounts-service/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-accounts-service",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-albums-service-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-albums-service/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-albums-service",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-photos-service-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-photos-service/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-photos-service",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "photo-app-api-gateway-prod",
-              "request": {
-                "auth": {
-                  "type": "noauth"
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:8888/photo-app-api-gateway/prod",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8888",
-                  "path": [
-                    "photo-app-api-gateway",
-                    "prod"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
