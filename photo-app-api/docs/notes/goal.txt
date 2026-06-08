@@ -1,0 +1,1 @@
+Quiero llegar a tener una plantilla de backend para monolitic apps o micros junto con su CI/CD process.

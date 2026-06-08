@@ -79,6 +79,30 @@
 				<artifactId>modelmapper</artifactId>
 				<version>${modelmapper.version}</version>
 			</dependency>
+			<!-- Micrometer Observation -->
+			<dependency>
+				<groupId>io.micrometer</groupId>
+				<artifactId>micrometer-observation</artifactId>
+				<version>1.16.5</version>
+			</dependency>
+			<!-- Micrometer Tracing Bridge Brave -->
+			<dependency>
+				<groupId>io.micrometer</groupId>
+				<artifactId>micrometer-tracing-bridge-brave</artifactId>
+				<version>1.6.5</version>
+			</dependency>
+			<!-- Zipkin Reporter Brave -->
+			<dependency>
+				<groupId>io.zipkin.reporter2</groupId>
+				<artifactId>zipkin-reporter-brave</artifactId>
+				<version>3.5.3</version>
+			</dependency>
+			<!-- Feign Micrometer -->
+			<dependency>
+				<groupId>io.github.openfeign</groupId>
+				<artifactId>feign-micrometer</artifactId>
+				<version>13.12</version>
+			</dependency>
 			<!-- Internal Libraries -->
 			<dependency>
 				<groupId>com.photoapp.commons</groupId>
