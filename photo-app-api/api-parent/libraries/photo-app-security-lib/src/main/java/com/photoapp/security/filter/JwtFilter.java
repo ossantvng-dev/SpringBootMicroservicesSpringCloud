@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collection;
 
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtClaimsParser jwtClaimsParser;
@@ -31,6 +33,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
+                log.debug("Validating JWT for request path={}", request.getRequestURI());
+
                 Collection<? extends GrantedAuthority> authorities =
                         jwtClaimsParser.getUserAuthorities(token);
 
@@ -45,14 +49,19 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
+                log.info("JWT validated successfully userId={} username={}", userId, username);
+
             } catch (io.jsonwebtoken.ExpiredJwtException e) {
                 SecurityContextHolder.clearContext();
+                log.warn("Expired JWT detected for request path={} message={}", request.getRequestURI(), e.getMessage());
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
                 return;
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
+                log.error("Invalid JWT for request path={} error={}", request.getRequestURI(), e.getMessage());
             }
         }
         filterChain.doFilter(request, response);
     }
 }
+

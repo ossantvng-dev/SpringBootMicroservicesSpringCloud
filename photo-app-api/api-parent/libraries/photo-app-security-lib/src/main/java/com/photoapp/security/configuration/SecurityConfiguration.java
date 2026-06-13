@@ -51,6 +51,13 @@ public class SecurityConfiguration {
                         // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
+                /*
+                    authenticationEntryPoint:
+                        It is executed when an unauthenticated user attempts to access a resource that requires authentication
+
+                    accessDeniedHandler:
+                        It is executed when a user is authenticated, but does not have sufficient permissions.
+                */
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((_, response, _) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")

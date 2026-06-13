@@ -4,6 +4,7 @@ import com.photoapp.commons.dto.ApiErrorDTO;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,76 +14,119 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<?> applicationExceptionHandler(
-            ApplicationException applicationException, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(
-                apiErrorBuilder(applicationException.getMessage(),
-                        applicationException.getHttpStatus(),
-                        httpServletRequest.getRequestURI()),
-                applicationException.getHttpStatus());
+            ApplicationException ex,
+            HttpServletRequest request) {
+
+        log.warn("APPLICATION_EXCEPTION path={} status={} message={}",
+                request.getRequestURI(),
+                ex.getHttpStatus(),
+                ex.getMessage());
+
+        return buildResponse(ex.getMessage(), ex.getHttpStatus(), request.getRequestURI());
     }
 
-    /* Thrown when validating @RequestBody with @Valid */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> validationExceptionHandler(
-            MethodArgumentNotValidException methodArgumentNotValidException,
-            HttpServletRequest httpServletRequest) {
-        String errors = methodArgumentNotValidException.getBindingResult().getFieldErrors().stream()
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        String errors = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .reduce((msj1, msj2) -> msj1 + "; " + msj2)
+                .reduce((a, b) -> a + "; " + b)
                 .orElse("Validation error");
-        return new ResponseEntity<>(apiErrorBuilder(errors, HttpStatus.BAD_REQUEST, httpServletRequest.getRequestURI()),
-                HttpStatus.BAD_REQUEST);
+
+        log.warn("VALIDATION_ERROR path={} errors={}",
+                request.getRequestURI(),
+                errors);
+
+        return buildResponse(errors, HttpStatus.BAD_REQUEST, request.getRequestURI());
     }
 
-    /* Thrown when validating individual params from a controller like @RequestParam or @PathVariable */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<?> constraintViolationHandler(
-            ConstraintViolationException constraintViolationException,
-            HttpServletRequest httpServletRequest) {
-        String errors = constraintViolationException.getConstraintViolations().stream()
-                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-                .reduce((msj1, msj2) -> msj1 + "; " + msj2)
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+
+        String errors = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .reduce((a, b) -> a + "; " + b)
                 .orElse("Validation error");
-        return new ResponseEntity<>(apiErrorBuilder(errors, HttpStatus.BAD_REQUEST, httpServletRequest.getRequestURI()),
-                HttpStatus.BAD_REQUEST);
+
+        log.warn("CONSTRAINT_VIOLATION path={} errors={}",
+                request.getRequestURI(),
+                errors);
+
+        return buildResponse(errors, HttpStatus.BAD_REQUEST, request.getRequestURI());
     }
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> dataAccessExceptionHandler(
-            DataAccessException dataAccessException, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(apiErrorBuilder(dataAccessException.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR,
-                httpServletRequest.getRequestURI()), HttpStatus.INTERNAL_SERVER_ERROR);
+            DataAccessException ex,
+            HttpServletRequest request) {
+
+        log.error("DATABASE_ERROR path={} message={}",
+                request.getRequestURI(),
+                ex.getMessage(),
+                ex);
+
+        return buildResponse(
+                "Database error occurred",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(OptimisticLockException.class)
     public ResponseEntity<?> optimisticLockExceptionHandler(
-            OptimisticLockException optimisticLockException,
-            HttpServletRequest httpServletRequest) {
-        String error = "Concurrent update detected. Please retry. " + optimisticLockException.getMessage();
-        return new ResponseEntity<>(apiErrorBuilder(error, HttpStatus.CONFLICT,
-                httpServletRequest.getRequestURI()), HttpStatus.CONFLICT);
+            OptimisticLockException ex,
+            HttpServletRequest request) {
+
+        log.warn("OPTIMISTIC_LOCK_CONFLICT path={} message={}",
+                request.getRequestURI(),
+                ex.getMessage());
+
+        return buildResponse(
+                "Concurrent update detected. Please retry.",
+                HttpStatus.CONFLICT,
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> genericExceptionHandler(
-            Exception exception, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(apiErrorBuilder(exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR,
-                httpServletRequest.getRequestURI()), HttpStatus.INTERNAL_SERVER_ERROR);
+            Exception ex,
+            HttpServletRequest request) {
+
+        log.error("UNHANDLED_EXCEPTION path={} message={}",
+                request.getRequestURI(),
+                ex.getMessage(),
+                ex);
+
+        return buildResponse(
+                "Unexpected error occurred",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                request.getRequestURI()
+        );
     }
 
-    private ApiErrorDTO apiErrorBuilder(String message, HttpStatus status, String path) {
-        return ApiErrorDTO.builder()
-                .httpStatus(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(path)
-                .timeStamp(LocalDateTime.now())
-                .build();
-    }
+    private ResponseEntity<ApiErrorDTO> buildResponse(
+            String message,
+            HttpStatus status,
+            String path) {
 
+        return ResponseEntity.status(status)
+                .body(ApiErrorDTO.builder()
+                        .httpStatus(status.value())
+                        .error(status.getReasonPhrase())
+                        .message(message)
+                        .path(path)
+                        .timeStamp(LocalDateTime.now())
+                        .build());
+    }
 }

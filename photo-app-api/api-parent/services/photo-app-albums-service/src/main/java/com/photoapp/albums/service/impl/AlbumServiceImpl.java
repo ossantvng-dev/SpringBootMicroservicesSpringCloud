@@ -14,6 +14,7 @@ import com.photoapp.feign.client.AccountFeignClient;
 import com.photoapp.feign.client.PhotoFeignClient;
 import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ import static com.photoapp.commons.util.FilterBuilderUtil.mapToFilter;
 import static com.photoapp.commons.util.NormalizationUtil.normalizeInputDTO;
 import static com.photoapp.commons.util.PaginationUtil.mapToPageable;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AlbumServiceImpl implements AlbumService {
@@ -44,6 +46,7 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional
     public AlbumDTO create(CreateAlbumInputDTO input) {
+        log.info("Creating album for accountId={}", input.getAccountId());
         CreateAlbumInputDTO normalizedInput = normalizeInputDTO(input);
 
         AccountDTO account = accountFeignClient.findById(normalizedInput.getAccountId());
@@ -66,15 +69,16 @@ public class AlbumServiceImpl implements AlbumService {
             album.setActiveAlbum(true);
             Album savedAlbum = albumRepository.saveAndFlush(album);
 
+            log.info("Album created successfully albumId={} accountId={}", savedAlbum.getId(), account.getId());
             return modelMapper.map(savedAlbum, AlbumDTO.class);
-        } else {
-            throw new ApplicationException("You can only create albums in your own accounts", HttpStatus.FORBIDDEN);
         }
+        throw new ApplicationException("You can only create albums in your own accounts", HttpStatus.FORBIDDEN);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AlbumDTO findById(Long id) {
+        log.debug("Finding album by id={}", id);
         return albumRepository.findById(id)
                 .map(existingAlbum -> {
                     AccountDTO accountDTO = accountFeignClient.findById(existingAlbum.getAccountId());
@@ -87,6 +91,7 @@ public class AlbumServiceImpl implements AlbumService {
                     if (!accountDTO.getActiveAccount()) {
                         throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
                     }
+                    log.info("Album retrieved successfully albumId={}", id);
                     return modelMapper.map(existingAlbum, AlbumDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
@@ -95,6 +100,7 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional(readOnly = true)
     public Page<AlbumDTO> findAll(Map<String, String> filters) {
+        log.debug("Finding all albums filters={}", filters);
         AlbumFilterDTO albumFilterDTO = mapToFilter(filters, AlbumFilterDTO.class);
         boolean isAdmin = currentUserService.isAdmin();
 
@@ -119,13 +125,16 @@ public class AlbumServiceImpl implements AlbumService {
             }
         }
 
-        return albumRepository.findAll(fromFilter(albumFilterDTO), mapToPageable(filters))
+        Page<AlbumDTO> result = albumRepository.findAll(fromFilter(albumFilterDTO), mapToPageable(filters))
                 .map(album -> modelMapper.map(album, AlbumDTO.class));
+        log.info("Albums listed successfully count={}", result.getTotalElements());
+        return result;
     }
 
     @Override
     @Transactional
     public AlbumDTO update(Long id, UpdateAlbumInputDTO input) {
+        log.info("Updating album albumId={}", id);
         UpdateAlbumInputDTO normalizedInput = normalizeInputDTO(input);
         return albumRepository.findById(id)
                 .map(existingAlbum -> {
@@ -133,20 +142,20 @@ public class AlbumServiceImpl implements AlbumService {
                     if (accountDTO == null) {
                         throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
                     }
-                    if (currentUserService.canAccessResource(String.valueOf(accountDTO.getUserId()))) {
-                        if (!accountDTO.getActiveAccount()) {
-                            throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
-                        }
-                        if (!existingAlbum.getActiveAlbum()) {
-                            throw new ApplicationException("Album is not active", HttpStatus.FORBIDDEN);
-                        }
-                        existingAlbum.setTitle(normalizedInput.getTitle());
-                        existingAlbum.setDescription(normalizedInput.getDescription());
-                        Album updated = albumRepository.saveAndFlush(existingAlbum);
-                        return modelMapper.map(updated, AlbumDTO.class);
-                    } else {
+                    if (!currentUserService.canAccessResource(String.valueOf(accountDTO.getUserId()))) {
                         throw new ApplicationException("You can only update your own albums", HttpStatus.FORBIDDEN);
                     }
+                    if (!accountDTO.getActiveAccount()) {
+                        throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
+                    }
+                    if (!existingAlbum.getActiveAlbum()) {
+                        throw new ApplicationException("Album is not active", HttpStatus.FORBIDDEN);
+                    }
+                    existingAlbum.setTitle(normalizedInput.getTitle());
+                    existingAlbum.setDescription(normalizedInput.getDescription());
+                    Album updated = albumRepository.saveAndFlush(existingAlbum);
+                    log.info("Album updated successfully albumId={}", id);
+                    return modelMapper.map(updated, AlbumDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
     }
@@ -154,6 +163,7 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional
     public AlbumDTO activateOrDeactivate(Long id, boolean activate) {
+        log.info("Updating album active state albumId={} activate={}", id, activate);
         return albumRepository.findById(id)
                 .map(existingAlbum -> {
                     AccountDTO accountDTO = accountFeignClient.findById(existingAlbum.getAccountId());
@@ -168,6 +178,7 @@ public class AlbumServiceImpl implements AlbumService {
                     }
                     existingAlbum.setActiveAlbum(activate);
                     Album updated = albumRepository.saveAndFlush(existingAlbum);
+                    log.info("Album state updated successfully albumId={} active={}", id, activate);
                     return modelMapper.map(updated, AlbumDTO.class);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
@@ -176,23 +187,26 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional(readOnly = true)
     public long countByAccountId(Long accountId) {
+        log.debug("Counting albums by accountId={}", accountId);
         AccountDTO accountDTO = accountFeignClient.findById(accountId);
         if (accountDTO == null) {
             throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
         }
-        if (currentUserService.canAccessResource(String.valueOf(accountDTO.getUserId()))) {
-            if (!accountDTO.getActiveAccount()) {
-                throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
-            }
-            return albumRepository.countByAccountId(accountId);
-        } else {
+        if (!currentUserService.canAccessResource(String.valueOf(accountDTO.getUserId()))) {
             throw new ApplicationException("You can only count albums in your own accounts", HttpStatus.FORBIDDEN);
         }
+        if (!accountDTO.getActiveAccount()) {
+            throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
+        }
+        long count = albumRepository.countByAccountId(accountId);
+        log.info("Album count retrieved accountId={} count={}", accountId, count);
+        return count;
     }
 
     @Override
     @Transactional
     public void deleteById(Long id) {
+        log.warn("Deleting album by id={}", id);
         albumRepository.findById(id)
                 .ifPresentOrElse(existingAlbum -> {
                     AccountDTO accountDTO = accountFeignClient.findById(existingAlbum.getAccountId());
@@ -209,6 +223,7 @@ public class AlbumServiceImpl implements AlbumService {
                         throw new ApplicationException("Cannot delete album with existing photos", HttpStatus.CONFLICT);
                     }
                     albumRepository.delete(existingAlbum);
+                    log.info("Album deleted successfully albumId={}", id);
                 }, () -> {
                     throw new ApplicationException("Album not found", HttpStatus.NOT_FOUND);
                 });
@@ -217,6 +232,7 @@ public class AlbumServiceImpl implements AlbumService {
     @Override
     @Transactional
     public void deleteByAccountIds(List<Long> accountIds) {
+        log.warn("Deleting albums by accountIds={}", accountIds);
         List<Long> albumIds = albumRepository.findIdsByAccountIdIn(accountIds);
         if (albumIds == null || albumIds.isEmpty()) {
             throw new ApplicationException("Albums not found for accountIds " + accountIds, HttpStatus.NOT_FOUND);
@@ -225,6 +241,7 @@ public class AlbumServiceImpl implements AlbumService {
             throw new ApplicationException("Cannot delete albums with existing photos", HttpStatus.CONFLICT);
         }
         albumRepository.deleteByAccountIdIn(accountIds);
+        log.info("Albums deleted successfully for accountIds={}", accountIds);
     }
 
 }

@@ -5,6 +5,7 @@ import com.photoapp.commons.dto.account.AccountTypeDTO;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
+@Slf4j
 public class AccountController {
 
     private final AccountService accountService;
@@ -22,42 +24,55 @@ public class AccountController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createAccount(@Valid @RequestBody CreateAccountInputDTO input) {
-        return new ResponseEntity<>(accountService.createAccount(input), HttpStatus.CREATED);
+        log.info("HTTP POST /accounts - createAccount request received");
+        var result = accountService.createAccount(input);
+        log.info("Account created successfully accountId={}", result.getId());
+        return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
     @PatchMapping("/{id}/name")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> changeAccountName(@PathVariable Long id, @RequestParam String accountName) {
-        return new ResponseEntity<>(accountService.changeAccountName(id, accountName), HttpStatus.OK);
+        log.info("HTTP PATCH /accounts/{}/name - changeAccountName request received", id);
+        var result = accountService.changeAccountName(id, accountName);
+        log.info("Account name updated accountId={}", id);
+        return ResponseEntity.ok(result);
     }
 
     @PatchMapping("/{id}/type")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> changeAccountType(@PathVariable Long id, @RequestParam AccountTypeDTO accountTypeDTO) {
-        return new ResponseEntity<>(accountService.changeAccountType(id, accountTypeDTO), HttpStatus.OK);
+        log.info("HTTP PATCH /accounts/{}/type - changeAccountType request received type={}", id, accountTypeDTO);
+        var result = accountService.changeAccountType(id, accountTypeDTO);
+        log.info("Account type updated accountId={}", id);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findById(@PathVariable Long id) {
-        return new ResponseEntity<>(accountService.findById(id), HttpStatus.OK);
+        log.debug("HTTP GET /accounts/{} - findById request received", id);
+        return ResponseEntity.ok(accountService.findById(id));
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> findAll(@RequestParam Map<String, String> filters) {
-        return new ResponseEntity<>(accountService.findAll(filters), HttpStatus.OK);
+        log.debug("HTTP GET /accounts - findAll request received filters={}", filters);
+        return ResponseEntity.ok(accountService.findAll(filters));
     }
 
     @PatchMapping("/{id}/activate")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> activateOrDeactivate(@PathVariable Long id, @RequestParam boolean activate) {
-        return new ResponseEntity<>(accountService.activateOrDeactivate(id, activate), HttpStatus.OK);
+        log.info("HTTP PATCH /accounts/{}/activate activate={}", id, activate);
+        return ResponseEntity.ok(accountService.activateOrDeactivate(id, activate));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<?> deleteAccountById(@PathVariable Long id) {
+        log.warn("HTTP DELETE /accounts/{} - deleteAccount request received", id);
         accountService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -65,8 +80,8 @@ public class AccountController {
     @DeleteMapping("/byUser/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAccountByUserId(@PathVariable Long userId) {
+        log.warn("HTTP DELETE /accounts/byUser/{} - deleteAccountByUser request received", userId);
         accountService.deleteByUserId(userId);
         return ResponseEntity.noContent().build();
     }
-
 }
