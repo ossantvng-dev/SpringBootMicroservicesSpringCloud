@@ -535,3 +535,6 @@ Plan actualizado – 7 Junio 2026
 - Lesson 32: Running Microservices in Docker Containers on AWS EC2
 - Lesson 33: Multiple Environments DEV, PROD
 - Lesson 38: Eureka Server cluster – highly available and fault tolerant service discovery
+
+
+Hikari?
