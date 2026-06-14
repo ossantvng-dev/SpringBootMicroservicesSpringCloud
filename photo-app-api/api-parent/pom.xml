@@ -28,6 +28,7 @@
 		<lombok.version>1.18.44</lombok.version>
 		<modelmapper.version>3.2.4</modelmapper.version>
 		<datasource-micrometer.version>2.2.1</datasource-micrometer.version>
+		<logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
 	</properties>
 	<!-- =================================================================== -->
 	<!-- Modules -->
@@ -87,6 +88,11 @@
 				<groupId>org.modelmapper</groupId>
 				<artifactId>modelmapper</artifactId>
 				<version>${modelmapper.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.logstash.logback</groupId>
+				<artifactId>logstash-logback-encoder</artifactId>
+				<version>${logstash-logback-encoder.version}</version>
 			</dependency>
 			<!-- Internal Libraries -->
 			<dependency>

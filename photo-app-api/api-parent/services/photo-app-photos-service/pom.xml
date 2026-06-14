@@ -98,6 +98,12 @@
             <artifactId>datasource-micrometer-spring-boot</artifactId>
         </dependency>
 
+        <!-- Logstash Logback Encoder -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
+
         <!-- Internal libs -->
         <dependency>
             <groupId>com.photoapp.domain</groupId>
