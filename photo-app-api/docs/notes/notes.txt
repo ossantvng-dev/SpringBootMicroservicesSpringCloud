@@ -452,7 +452,7 @@ $ tree -L 2
 
 ----------------------------------------------------------------------------------------------------
 
-Plan actualizado – 7 Junio 2026
+Plan y progreso actualizado – 14 Junio 2026
 
 1. Base actual
 
@@ -466,9 +466,12 @@ Plan actualizado – 7 Junio 2026
 
 - Infraestructura activa:
   • photo-app-configuration-server (8888)
-  • photo-app-discovery-service (8761)
-  • RabbitMQ + Spring Cloud Bus listos
-  • Eureka Discovery activo
+  • photo-app-discovery-service (Eureka 8761)
+  • RabbitMQ (5672) + Spring Cloud Bus listos
+  • ELK Stack:
+    – Elasticsearch (9200 → http://localhost:9200)
+    – Kibana (5601 → http://localhost:5601)
+    – Logstash (5044 → ingestión de logs)
 
 - Librerías compartidas:
   • photo-app-commons
@@ -511,14 +514,13 @@ Plan actualizado – 7 Junio 2026
 - Estrategia fail fast aplicada en operaciones críticas
 - Actuator habilitado en Authorization Service y preparado para todos los servicios
 
-4. Observabilidad (pendiente)
+4. Observabilidad (Terminado)
 
 - Actuator en todos los servicios
 - Micrometer + Zipkin para métricas y tracing distribuido
-- Centralización de logs en ELK Stack
-- Alertas básicas para expiración de tokens y fallos de Feign
+- Centralización de logs en ELK Stack (Elasticsearch + Logstash + Kibana)
 
-5. Docker + AWS + CI/CD (pendiente)
+5. Docker + AWS + CI/CD (Pendiente)
 
 - Dockerizar servicios
 - Definir docker-compose para entorno local
@@ -528,12 +530,19 @@ Plan actualizado – 7 Junio 2026
   • Build + test automático
   • Deploy a AWS con pipelines
 
+
 6. Udemy lecciones pendientes.
 
-- Lesson 31: Secure Eureka Dashboard
 - Lesson 32: Running Microservices in Docker Containers on AWS EC2
 - Lesson 33: Multiple Environments DEV, PROD
 - Lesson 38: Eureka Server cluster – highly available and fault tolerant service discovery
 
 
 Hikari?
+Donde estoy usando micrometer?
+Hacer Unit testing
+Revisar/crear alertas básicas para expiración de tokens y fallos de Feign
+OAuth2 PCKE verdadero
+Pasar a production real con todo lo que esto implique 
+Usar la version mas reciente de ELK en prod (con seguridad) 
+Usar valor encriptados para las propiedades.

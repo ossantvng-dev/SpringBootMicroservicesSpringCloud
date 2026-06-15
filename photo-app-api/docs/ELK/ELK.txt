@@ -1,0 +1,187 @@
+========================================================
+                 ELK STACK - GUÍA BASE
+========================================================
+
+========================================================
+1. ¿QUÉ ES ELK?
+========================================================
+
+ELK es un stack para observabilidad y análisis de logs:
+
+- Elasticsearch → motor de búsqueda y almacenamiento de logs
+- Logstash → procesador e ingestión de logs
+- Kibana → visualización y exploración
+
+Flujo general:
+
+Logs (apps) → Logstash → Elasticsearch → Kibana
+
+--------------------------------------------------------
+
+========================================================
+2. ELASTICSEARCH (EL CORAZÓN DEL SISTEMA)
+========================================================
+
+¿Qué es?
+- Motor de búsqueda distribuido basado en documentos JSON
+- Cada log es un documento
+- Optimizado para búsquedas rápidas y análisis
+
+Conceptos clave:
+
+- index → colección de documentos (similar a tabla)
+- document → cada log en JSON
+- field → atributo del log (service, level, message, etc.)
+- shard → partición del índice (interno)
+- traceId → correlación entre microservicios
+
+--------------------------------------------------------
+
+========================================================
+3. QUERY LANGUAGES EN ELASTICSEARCH
+========================================================
+
+3.1 Query DSL (principal)
+- JSON usado en APIs y backend
+- Más potente y flexible
+
+Ejemplo:
+
+GET photoapp-logs-*/_search
+{
+  "query": {
+    "match": {
+      "service": "photo-app-users-service"
+    }
+  }
+}
+
+--------------------------------------------------------
+
+3.2 KQL (Kibana Query Language)
+- Usado en Kibana (Discover, Dashboards)
+- Más simple y directo
+
+Ejemplo:
+
+service:"photo-app-users-service" AND level:"ERROR"
+
+--------------------------------------------------------
+
+3.3 Lucene (opcional / legacy)
+- Sintaxis más antigua
+- Aún soportada en Kibana
+
+Ejemplo:
+
+service:photo-app-users-service AND level:ERROR
+
+--------------------------------------------------------
+
+========================================================
+4. COMPONENTES DEL PIPELINE REAL
+========================================================
+
+TU ARQUITECTURA ACTUAL:
+
+Spring Boot Microservices
+   |
+   |  (logs JSON via logback-logstash-encoder)
+   v
+Log files (logs/*.log)
+   |
+   v
+Logstash
+   - input: file
+   - codec: json
+   - sin grok (no parsing necesario)
+   |
+   v
+Elasticsearch
+   - index: photoapp-logs-YYYY.MM.DD
+   |
+   v
+Kibana
+   - Discover
+   - Dashboards
+   - KQL queries
+
+--------------------------------------------------------
+
+========================================================
+5. LOGSTASH (TU CONFIG ACTUAL)
+========================================================
+
+- Lee archivos JSON directamente
+- No necesitas grok si ya envías JSON desde Spring Boot
+
+Ejemplo actual:
+
+input {
+  file {
+    path => "/mnt/services/**/logs/*.log"
+    codec => json
+    start_position => "beginning"
+    sincedb_path => "/dev/null"
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+    index => "photoapp-logs-%{+YYYY.MM.dd}"
+  }
+
+  stdout {
+    codec => rubydebug
+  }
+}
+
+--------------------------------------------------------
+
+========================================================
+6. KIBANA (INTERFAZ DE EXPLORACIÓN)
+========================================================
+
+Permite:
+
+- Buscar logs (Discover)
+- Filtrar por service, level, traceId
+- Crear dashboards
+- Usar KQL
+
+Ejemplos:
+
+Errores:
+level:"ERROR"
+
+Por servicio:
+service:"photo-app-users-service"
+
+Por traceId:
+traceId:"abc123"
+
+--------------------------------------------------------
+
+========================================================
+7. CONCEPTOS IMPORTANTES EN TU CASO
+========================================================
+
+- Logging estructurado (JSON) ya activo
+- Logback → genera logs JSON
+- Logstash → solo transporta y enruta
+- Elasticsearch → almacena y permite búsqueda
+- Kibana → visualización
+
+--------------------------------------------------------
+
+========================================================
+8. IDEAS CLAVE PARA MICROSERVICIOS
+========================================================
+
+- traceId → seguimiento de requests entre servicios
+- service → identificación del microservicio
+- level → INFO / DEBUG / ERROR
+- message → mensaje principal del log
+
+========================================================
