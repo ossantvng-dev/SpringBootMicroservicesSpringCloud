@@ -533,8 +533,6 @@ Plan y progreso actualizado – 14 Junio 2026
 
 6. Udemy lecciones pendientes.
 
-- Lesson 32: Running Microservices in Docker Containers on AWS EC2
-- Lesson 33: Multiple Environments DEV, PROD
 - Lesson 38: Eureka Server cluster – highly available and fault tolerant service discovery
 
 
@@ -543,6 +541,6 @@ Donde estoy usando micrometer?
 Hacer Unit testing
 Revisar/crear alertas básicas para expiración de tokens y fallos de Feign
 OAuth2 PCKE verdadero
-Pasar a production real con todo lo que esto implique 
+Role level security en el gateway?
 Usar la version mas reciente de ELK en prod (con seguridad) 
-Usar valor encriptados para las propiedades.
+

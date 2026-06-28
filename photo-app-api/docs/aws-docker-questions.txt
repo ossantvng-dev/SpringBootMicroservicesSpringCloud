@@ -1,0 +1,72 @@
+========================================
+Perfil de Desarrollo Local (Docker)
+========================================
+
+Tareas:
+- Dockerización de servicios
+  * Crear Dockerfiles para todos los micros (Config, Discovery, Gateway, Users, Accounts, Albums, Authorization, Photos).
+  * Validar que cada contenedor arranque correctamente.
+
+- Networking local
+  * Crear red compartida (micro-net) para que los servicios se comuniquen por nombre de contenedor.
+  * Ajustar spring.config.import y eureka.client.serviceUrl para usar nombres de contenedor en lugar de localhost.
+
+- Revisión de propiedades
+  * Revisar todas las propiedades en cada microservicio (application.properties).
+  * Revisar el Config Git repo.
+  * Identificar cuáles deben encriptarse (passwords, tokens, claves de keystore, credenciales DB).
+  * Pregunta pendiente: ¿Dónde estoy usando Micrometer?
+  * Pregunta pendiente: ¿Cómo está configurado Hikari (pool de conexiones)?
+
+- Encriptar propiedades sensibles
+  * Usar /encrypt y /decrypt del Config Server con JWT admin.
+  * Mantener variables en .env o Config Server, nunca en plano.
+
+- Logs centralizados
+  * Confirmar que todos los micros usan logback-spring.xml.
+  * Validar que un solo pipeline de Logstash recibe logs de todos los servicios.
+
+- Revisión del Bus
+  * Validar que RabbitMQ está configurado para el Bus (no en el Gateway).
+  * Probar endpoints /actuator/bus-refresh y /actuator/bus-env para confirmar propagación de cambios.
+
+- Unit Testing
+  * Revisar y crear pruebas unitarias para cada microservicio.
+  * Validar cobertura mínima en controladores, servicios y repositorios.
+
+
+========================================
+Perfil Producción (AWS)
+========================================
+
+Tareas:
+- VPC
+  * Crear VPC dedicada para todos los servicios.
+  * Configurar subnets privadas para micros y públicas solo para el Gateway.
+
+- Security Groups
+  * Definir reglas inbound/outbound por puerto y rango de IP.
+  * API Gateway recibe tráfico público, los demás solo tráfico interno.
+
+- Elastic IP
+  * Asignar Elastic IP únicamente al Gateway.
+  * Config y Discovery pueden quedar privados.
+
+- ELK stack
+  * Elasticsearch y Kibana en contenedores dentro de la misma red.
+  * Logstash único pipeline para todos los micros.
+  * Usar la versión más reciente de ELK en producción (con seguridad habilitada).
+
+- Persistencia
+  * Usar RDS MySQL en lugar de MySQL en EC2.
+  * Configurar credenciales encriptadas en Config Server.
+
+- Revisión de propiedades en producción
+  * Ajustar perfiles (prod) en cada micro.
+  * Validar que las propiedades sensibles estén encriptadas.
+  * Confirmar que las rutas de Config Server apunten al repo correcto.
+
+- Seguridad avanzada
+  * Revisar/crear alertas básicas para expiración de tokens y fallos de Feign.
+  * Implementar OAuth2 PKCE verdadero.
+  * Evaluar role-level security en el Gateway.
