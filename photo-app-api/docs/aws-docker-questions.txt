@@ -33,6 +33,10 @@ Tareas:
 - Unit Testing
   * Revisar y crear pruebas unitarias para cada microservicio.
   * Validar cobertura mínima en controladores, servicios y repositorios.
+  
+- API Gateway (spring-cloud-starter-gateway-server-webmvc or spring-cloud-starter-gateway-server-webflux)
+	Revisar si debo refactorizar.
+	Creo que tenia que haber escogido spring-cloud-starter-gateway-server-webmvc y asi no tener 2 clases de seguridad.
 
 
 ========================================
@@ -70,3 +74,5 @@ Tareas:
   * Revisar/crear alertas básicas para expiración de tokens y fallos de Feign.
   * Implementar OAuth2 PKCE verdadero.
   * Evaluar role-level security en el Gateway.
+
+- Eureka cluster

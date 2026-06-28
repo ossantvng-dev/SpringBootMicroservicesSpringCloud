@@ -51,6 +51,7 @@
 		<module>infrastructure/photo-app-api-gateway</module>
 		<module>infrastructure/photo-app-configuration-server</module>
 		<module>infrastructure/photo-app-discovery-service</module>
+		<module>infrastructure/photo-app-discovery-service-cluster</module>
 	</modules>
 	<!-- =================================================================== -->
 	<!-- Dependency Management -->
