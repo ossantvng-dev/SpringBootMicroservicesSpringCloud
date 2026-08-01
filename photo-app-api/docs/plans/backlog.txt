@@ -6,6 +6,63 @@ Append here rather than only mentioning them in a summary, so nothing is lost
 between sessions. Format: [YYYY-MM-DD | Step N] title, then detail.
 
 
+[2026-08-01 | reported] HIGH — 500 for authenticated non-admin users on protected
+endpoints                                              [UNVERIFIED - NOT REPRODUCED]
+------------------------------------------------------------------------------------
+STATUS: reported by Oscar. NOT observed, reproduced or diagnosed by any work in
+Steps 1-6, and no earlier backlog entry described it — this entry is being created
+from Oscar's report, not from a measurement. Recorded now so the eventual
+investigation starts warm.
+
+Symptom as reported: a user who authenticates successfully but lacks the required
+role gets HTTP 500 on a protected endpoint, instead of 401/403.
+
+Why it is plausible and untested: every verification run in Steps 1-6 used a
+hand-minted token carrying scope ["USER","ADMIN"], i.e. always authorised. The
+authenticated-but-insufficient-role path was therefore never exercised. Steps 1-6
+also changed all three error-handling layers below, so a regression in their
+interaction would not have been caught.
+
+FIRST REPRODUCTION STEP (do this before reading further): mint a token with scope
+["USER"] only and call an ADMIN-only route. The existing helper is
+scratchpad/MintToken.java — change the scope claim. Compare against a token with
+["USER","ADMIN"].
+
+Investigation starting points — Oscar's hunch is that the break may be in the
+INTERACTION between these layers rather than inside any one of them:
+
+  1. GlobalExceptionHandler (photo-app-commons, @RestControllerAdvice)
+     Handles ApplicationException, MethodArgumentNotValidException,
+     ConstraintViolationException, DataAccessException, OptimisticLockException
+     and a catch-all. Check whether the catch-all is swallowing a more specific
+     type that used to be handled correctly, converting it into a generic 500
+     instead of the correct 401/403. Note especially that AccessDeniedException
+     must NOT be caught by the advice — if it is, Spring Security never sees it
+     and cannot translate it to 403.
+
+  2. CustomFeignErrorDecoder (photo-app-feign-lib)
+     Maps downstream 401/403/404/503/other into ApplicationException. If a
+     non-admin request triggers an inter-service Feign call (e.g. ownership
+     validation against another service) and that call's error response is no
+     longer decoded into the right exception type, it can surface as an
+     unhandled 500 rather than the correct status. CurrentUserService
+     .canAccessResource is the ownership primitive to trace.
+
+  3. JWT error handling now that WebMVC is the only chain (Step 1 deleted the
+     reactive one). Confirm JwtFilter's handling of a VALID token with
+     INSUFFICIENT role — as distinct from expired or malformed, which are the
+     only cases verified so far — still reaches the AccessDeniedException path
+     and the accessDeniedHandler that returns 403, rather than throwing
+     something the generic catch-all turns into a 500.
+
+Cross-check while investigating: Step 1 permitted /error in SecurityConfiguration
+precisely because the servlet ERROR dispatch was masking real statuses as 401.
+That change moves what the client sees on any error dispatch, so it is worth
+confirming it did not convert a would-be 403 into a 500.
+
+Priority: HIGH per Oscar. Not scheduled into a step yet.
+
+
 [2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503
 ---------------------------------------------------------------------------------
 When no instance of a downstream service is registered, the load balancer raises
