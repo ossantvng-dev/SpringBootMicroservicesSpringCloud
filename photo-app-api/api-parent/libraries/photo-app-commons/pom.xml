@@ -31,10 +31,24 @@
     <!-- =================================================================== -->
     <dependencies>
 
-        <!-- Spring Data JPA -->
+        <!-- Persistence-adjacent types only. This library has no entities, no
+             repositories and no Hibernate usage, so it deliberately does NOT depend on
+             spring-boot-starter-data-jpa. Each artifact below backs one specific need:
+               jakarta.persistence-api  -> OptimisticLockException  (GlobalExceptionHandler)
+               spring-tx                -> DataAccessException      (GlobalExceptionHandler)
+               spring-data-commons      -> Pageable/PageRequest/Sort (pagination DTOs+util)
+             Versions come from spring-boot-starter-parent. -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-commons</artifactId>
         </dependency>
 
         <!-- Web -->
