@@ -729,23 +729,38 @@ Step 8):
       no Flyway dependency, so they are misleading no-ops.
 - [ ] Verify every service still boots natively after encryption, before dockerizing.
 
-## Step 3 — Tracing + logback parity for gateway / discovery / config-server (requirement A)
+## Step 3 — Tracing + logback parity for gateway / discovery / config-server ✅ DONE
 
-- [ ] Add `spring-boot-starter-zipkin` + `spring-boot-micrometer-tracing-brave` to
+- [x] Add `spring-boot-starter-zipkin` + `spring-boot-micrometer-tracing-brave` to
       `photo-app-api-gateway`, `photo-app-discovery-service` and
-      `photo-app-configuration-server`.
-- [ ] **Normalize** the gateway's existing raw `micrometer-observation` +
-      `zipkin-reporter-brave` declarations to that same pattern (§2 inconsistency).
-- [ ] Add `management.zipkin.tracing.endpoint` + `management.tracing.sampling.probability`
-      to the three components' properties (config repo for gateway/discovery; packaged
-      `application.properties` for the Config Server, which cannot import from itself).
-- [ ] Add a `logback-spring.xml` to each of the three, matching the five services' file.
-- [ ] Apply the log-base change to **all eight** files:
-      `<property name="LOG_BASE" value="${LOG_BASE:-api-parent/services}"/>`, so
-      `LOG_BASE=/var/log/photo-app` in compose redirects into the shared named volume while
-      native local runs keep working unchanged (decision 9, option b).
-- [ ] Verify natively: traces from all eight components appear in Zipkin, and eight JSON log
-      files are produced.
+      `photo-app-configuration-server`. All three also needed
+      `net.logstash.logback:logstash-logback-encoder`, without which the new
+      `logback-spring.xml` cannot resolve its encoder.
+- [x] **Normalized** the gateway: dropped raw `micrometer-observation`,
+      `micrometer-tracing-bridge-brave` and `zipkin-reporter-brave` in favour of the two
+      Boot starters (§2 inconsistency resolved).
+- [x] Add `management.zipkin.tracing.endpoint` + `management.tracing.sampling.probability`
+      — config repo for the discovery service (which also had **no** actuator exposure, now
+      `health,info`); packaged `application.properties` for the Config Server, which cannot
+      import from itself; the gateway already had both.
+- [x] Add a `logback-spring.xml` to each of the three, matching the five services' file.
+- [x] Log-base change applied to **all eight** files. The five services keep
+      `${LOG_BASE:-api-parent/services}`; the three infrastructure components use
+      `${LOG_BASE:-api-parent/infrastructure}` so the native layout mirrors the module tree.
+      Either way `LOG_BASE` collapses all eight onto one path in Docker.
+- [x] Verified natively against live MySQL, RabbitMQ and Zipkin — see below.
+
+**Step 3 verification (full eight-component native run):**
+
+| Check | Result |
+|---|---|
+| All 8 components started | ✅ config-server, discovery, gateway, users, accounts, albums, photos, authorization |
+| Eureka registrations | ✅ 6 — five services + gateway (the Eureka server does not self-register; the Config Server has no Eureka client at all, see `backlog.txt`) |
+| Authenticated traffic through the gateway | ✅ `/users/1`, `/albums/1`, `/photos/1`, `/accounts/1` all **200** |
+| Services reporting spans to Zipkin | ✅ **all 8**, including the three that previously emitted nothing |
+| Trace propagation | ✅ one `traceId` spanning `photo-app-api-gateway` → `photo-app-users-service` |
+| JSON log files | ✅ 8 files, each with `traceId` / `spanId` / `service` / `environment` fields |
+| `LOG_BASE` env override | ✅ restarting the gateway with `LOG_BASE=<tmp>` redirected its log to `<LOG_BASE>/photo-app-api-gateway/logs/…` — the mechanism the Step 7 named volume depends on |
 
 ## Step 4 — HikariCP sizing (§3) + actuator path fix
 

@@ -56,3 +56,32 @@ rabbitmq being service_healthy.
 Consider a dedicated health group for the readiness probe that excludes rabbit.
 Relevant to: Step 7 (compose infrastructure).
 Priority: medium — decide before writing the healthchecks.
+
+
+[2026-08-01 | Step 3] Config Server's Eureka properties are dead config
+-----------------------------------------------------------------------
+Its application.properties declares
+  eureka.client.service-url.defaultZone=${EUREKA_URL}
+  eureka.instance.prefer-ip-address=true
+but the pom has NO eureka client dependency (grep for "eureka" in it returns
+nothing), so the Config Server never registers. Confirmed during the Step 3 run:
+Eureka listed six registrations — the five business services plus the gateway —
+and no configuration server.
+This is harmless in practice because clients reach the Config Server by URL via
+spring.config.import, not through discovery. But it means EUREKA_URL is a
+required-looking env var that does nothing.
+Decide: either add spring-cloud-starter-netflix-eureka-client and register it, or
+delete both properties and drop EUREKA_URL from the Step 8 compose environment
+for this container. Do not leave it as-is.
+Priority: low, but resolve before Step 8 writes the compose env block.
+
+
+[2026-08-01 | Step 3] Redundant tracing dependency in the five business services
+--------------------------------------------------------------------------------
+Each service declares both spring-boot-micrometer-tracing-brave AND
+io.micrometer:micrometer-tracing-bridge-brave; the Boot module already brings the
+bridge. The three infrastructure components were given only the two Boot starters
+in Step 3, which is the cleaner form. Harmless, but the five services are now
+inconsistent with the three infra components.
+Fix: drop micrometer-tracing-bridge-brave from the five service poms.
+Priority: low, cosmetic.
