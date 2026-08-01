@@ -14,6 +14,11 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/*
+    Single security chain for every component in the ecosystem, gateway included.
+    The gateway runs on the servlet stack (spring-cloud-gateway-server-webmvc), so there is
+    no reactive counterpart to keep in sync.
+ */
 @Configuration
 @EnableMethodSecurity
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
@@ -40,6 +45,9 @@ public class SecurityConfiguration {
                         .requestMatchers("/users/username/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").permitAll() // user registry
                         .requestMatchers("/actuator/**").permitAll()
+                        // Servlet ERROR dispatch: without this every downstream failure
+                        // is re-authorized as /error and masked as a 401
+                        .requestMatchers("/error").permitAll()
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")

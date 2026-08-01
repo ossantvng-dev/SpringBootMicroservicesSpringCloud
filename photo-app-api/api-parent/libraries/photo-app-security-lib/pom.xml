@@ -31,6 +31,14 @@
     <!-- =================================================================== -->
     <dependencies>
 
+        <!-- Spring Boot core: @ConditionalOn* autoconfigure annotations and SLF4J.
+             Deliberately the stack-neutral starter - this library must not drag a web
+             stack into its consumers. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.security</groupId>
@@ -45,12 +53,6 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
-        </dependency>
-
-        <!-- WebFlux (required by ReactiveSecurityConfiguration) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!-- Servlet API (required by servlet security classes) -->
