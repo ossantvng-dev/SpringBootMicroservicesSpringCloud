@@ -1,0 +1,5 @@
+# IntelliJ run configurations.
+# These carry real environment values - KEYSTORE_PASSWORD,
+# CONFIG_SERVER_ADMIN_PASSWORD, GIT_TOKEN, RABBITMQ_PASSWORD - so they are local
+# developer state and must never be version-controlled.
+.run/
