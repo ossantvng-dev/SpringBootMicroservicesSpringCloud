@@ -51,6 +51,14 @@
             <artifactId>spring-data-commons</artifactId>
         </dependency>
 
+        <!-- AccessDeniedException only, so GlobalExceptionHandler can turn an
+             insufficient-role denial into 403 instead of letting the catch-all
+             report it as 500. Deliberately spring-security-core, not the starter. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+        </dependency>
+
         <!-- Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

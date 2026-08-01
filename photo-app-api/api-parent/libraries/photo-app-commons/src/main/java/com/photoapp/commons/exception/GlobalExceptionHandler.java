@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -94,6 +95,31 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 "Concurrent update detected. Please retry.",
                 HttpStatus.CONFLICT,
+                request.getRequestURI()
+        );
+    }
+
+    /*
+        Must stay above the catch-all. @PreAuthorize throws AuthorizationDeniedException,
+        a subclass of AccessDeniedException, from inside the DispatcherServlet - so it is
+        matched by @ExceptionHandler(Exception.class) long before it could propagate out
+        to Spring Security's ExceptionTranslationFilter. Without this handler every
+        insufficient-role denial is reported as a 500 instead of a 403.
+
+        WARN, not ERROR: a rejected authorization is an expected outcome, not a fault.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> accessDeniedHandler(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        log.warn("ACCESS_DENIED path={} message={}",
+                request.getRequestURI(),
+                ex.getMessage());
+
+        return buildResponse(
+                "Forbidden",
+                HttpStatus.FORBIDDEN,
                 request.getRequestURI()
         );
     }

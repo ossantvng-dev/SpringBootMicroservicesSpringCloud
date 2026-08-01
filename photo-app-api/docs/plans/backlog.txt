@@ -7,60 +7,65 @@ between sessions. Format: [YYYY-MM-DD | Step N] title, then detail.
 
 
 [2026-08-01 | reported] HIGH — 500 for authenticated non-admin users on protected
-endpoints                                              [UNVERIFIED - NOT REPRODUCED]
+endpoints                                                   [CONFIRMED AND FIXED]
 ------------------------------------------------------------------------------------
-STATUS: reported by Oscar. NOT observed, reproduced or diagnosed by any work in
-Steps 1-6, and no earlier backlog entry described it — this entry is being created
-from Oscar's report, not from a measurement. Recorded now so the eventual
-investigation starts warm.
+Reported by Oscar, reproduced, diagnosed and fixed on 2026-08-01.
 
-Symptom as reported: a user who authenticates successfully but lacks the required
-role gets HTTP 500 on a protected endpoint, instead of 401/403.
+SYMPTOM: a user who authenticated successfully but lacked the required role got
+HTTP 500 "Unexpected error occurred" on an @PreAuthorize-protected endpoint,
+instead of 403.
 
-Why it is plausible and untested: every verification run in Steps 1-6 used a
-hand-minted token carrying scope ["USER","ADMIN"], i.e. always authorised. The
-authenticated-but-insufficient-role path was therefore never exercised. Steps 1-6
-also changed all three error-handling layers below, so a regression in their
-interaction would not have been caught.
+ROOT CAUSE: @PreAuthorize denial throws
+org.springframework.security.authorization.AuthorizationDeniedException, which
+extends AccessDeniedException extends RuntimeException. It is thrown by
+AuthorizationManagerBeforeMethodInterceptor INSIDE the DispatcherServlet, so
+GlobalExceptionHandler's @ExceptionHandler(Exception.class) catch-all matched it
+first and returned 500. Because the advice handled it, the exception never
+propagated out to Spring Security's ExceptionTranslationFilter — the component
+that would route AccessDeniedException to the configured accessDeniedHandler.
+That accessDeniedHandler in SecurityConfiguration was therefore dead code for
+method-security denials; it only ever fired for filter-level
+authorizeHttpRequests denials.
 
-FIRST REPRODUCTION STEP (do this before reading further): mint a token with scope
-["USER"] only and call an ADMIN-only route. The existing helper is
-scratchpad/MintToken.java — change the scope claim. Compare against a token with
-["USER","ADMIN"].
+NOT A REGRESSION FROM STEPS 1-6. Verified: GlobalExceptionHandler is untouched by
+every commit in this session (git log 751d250..HEAD for that file is empty); the
+catch-all predates the work (commits 8a81452, e1e98eb); and @EnableMethodSecurity,
+accessDeniedHandler and all eight @PreAuthorize annotations already existed at
+751d250, the commit before Step 1. This was a pre-existing latent bug, live for as
+long as @PreAuthorize and the catch-all had coexisted. It had simply never been
+exercised, because every test token used before this point carried scope
+["USER","ADMIN"] and was therefore always authorised.
 
-Investigation starting points — Oscar's hunch is that the break may be in the
-INTERACTION between these layers rather than inside any one of them:
+RULED OUT during diagnosis:
+  - The Step 1 /error permitAll change is NOT involved. The 500 body carried the
+    ApiErrorDTO shape (httpStatus/error/message/path/timeStamp) produced by
+    GlobalExceptionHandler.buildResponse, meaning the advice returned a
+    ResponseEntity directly and no servlet ERROR dispatch occurred. An ERROR
+    dispatch would have produced Spring's default {timestamp,status,error,path}.
+  - CustomFeignErrorDecoder is NOT involved. It appeared only in the ADMIN
+    request's trace, correctly decoding a genuine downstream 503. A USER-only
+    request never reaches Feign; @PreAuthorize rejects it before the controller
+    body runs.
 
-  1. GlobalExceptionHandler (photo-app-commons, @RestControllerAdvice)
-     Handles ApplicationException, MethodArgumentNotValidException,
-     ConstraintViolationException, DataAccessException, OptimisticLockException
-     and a catch-all. Check whether the catch-all is swallowing a more specific
-     type that used to be handled correctly, converting it into a generic 500
-     instead of the correct 401/403. Note especially that AccessDeniedException
-     must NOT be caught by the advice — if it is, Spring Security never sees it
-     and cannot translate it to 403.
+FIX: added @ExceptionHandler(AccessDeniedException.class) to GlobalExceptionHandler,
+positioned ABOVE the catch-all, returning 403 with the standard ApiErrorDTO body and
+logging at WARN (an authorization denial is an expected outcome, not a fault).
+Catching AccessDeniedException also covers AuthorizationDeniedException. Required
+adding spring-security-core to photo-app-commons — deliberately the core artifact,
+not the starter, consistent with the earlier narrowing of that module.
 
-  2. CustomFeignErrorDecoder (photo-app-feign-lib)
-     Maps downstream 401/403/404/503/other into ApplicationException. If a
-     non-admin request triggers an inter-service Feign call (e.g. ownership
-     validation against another service) and that call's error response is no
-     longer decoded into the right exception type, it can surface as an
-     unhandled 500 rather than the correct status. CurrentUserService
-     .canAccessResource is the ownership primitive to trace.
+BLAST RADIUS — one fix covers everything. There is exactly ONE @RestControllerAdvice
+in the entire codebase, in photo-app-commons. All five services resolve commons
+(authorization-service transitively via photo-app-feign-lib) and all five
+component-scan com.photoapp.commons. No per-service duplication exists.
 
-  3. JWT error handling now that WebMVC is the only chain (Step 1 deleted the
-     reactive one). Confirm JwtFilter's handling of a VALID token with
-     INSUFFICIENT role — as distinct from expired or malformed, which are the
-     only cases verified so far — still reaches the AccessDeniedException path
-     and the accessDeniedHandler that returns 403, rather than throwing
-     something the generic catch-all turns into a 500.
-
-Cross-check while investigating: Step 1 permitted /error in SecurityConfiguration
-precisely because the servlet ERROR dispatch was masking real statuses as 401.
-That change moves what the client sees on any error dispatch, so it is worth
-confirming it did not convert a would-be 403 into a 500.
-
-Priority: HIGH per Oscar. Not scheduled into a step yet.
+VERIFIED after the fix, on two different services and two different endpoints:
+  accounts POST /accounts            no token 401 | USER-only 403 | USER+ADMIN 503*
+  albums   DELETE /albums/byAccountIds no token 401 | USER-only 403 | USER+ADMIN 404*
+  (* the admin results are correct pass-through: a downstream service was not
+     running, and account 999 does not exist)
+  403 body: {"httpStatus":403,"error":"Forbidden","message":"Forbidden","path":...}
+  Denials logged as ACCESS_DENIED at WARN; UNHANDLED_EXCEPTION count zero.
 
 
 [2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503
