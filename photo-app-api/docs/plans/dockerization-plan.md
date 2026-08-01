@@ -852,7 +852,64 @@ Write paths were exercised too: `POST /users` produced a bcrypt hash (60 chars, 
 persisted `account_type = PREMIUM` and round-tripped it. Both test rows were deleted after
 verification.
 
-## Step 6 — Dockerfiles (requirement / decision: temurin build, corretto runtime)
+## Step 6 — Dockerfiles ✅ DONE
+
+Delivered as **one** `photo-app-api/Dockerfile` with three stages, parameterised by build
+args, rather than eight near-identical files. Each image selects its module with
+`MODULE_PATH` / `JAR_NAME` / `SERVICE_PORT`, so the expensive reactor build is a single
+shared stage BuildKit builds once and reuses.
+
+- [x] Root `.dockerignore` — excludes `target/`, `logs/`, `.git/`, IDE files **and
+      `**/*.p12` / `**/*.jks`**. The keystore exclusion is load-bearing, not hygiene: the
+      keystore lives in `src/main/resources`, so without it Maven packages it into
+      `BOOT-INF/classes` and every image ships the private key. Confirmed by extracting a
+      locally built jar, which *does* contain `BOOT-INF/classes/keystore.p12`.
+- [x] Multi-stage: build on **eclipse-temurin 25 JDK**, runtime on **amazoncorretto:25**.
+- [x] Reactor constraint handled — the build stage builds the whole reactor
+      (`mvn -f api-parent/pom.xml install`), since the four libraries must be installed
+      before any service resolves them. A BuildKit cache mount keeps `~/.m2` between builds
+      and never becomes an image layer.
+      **Built from `api-parent/pom.xml`, not the root pom** — the root reactor includes the
+      `database` module, whose `liquibase:update` is bound to `process-resources` and would
+      try to reach MySQL during the image build.
+- [x] Spring Boot 4 layered extraction, verified against 4.0.6 rather than assumed:
+      `java -Djarmode=tools -jar app.jar extract --launcher --layers --destination extracted`
+      (`layertools` is gone; the four layers are `dependencies`, `spring-boot-loader`,
+      `snapshot-dependencies`, `application`, copied least- to most-volatile).
+      The destination must be a **subdirectory** — extracting into the working directory
+      fails with *"already exists and is not empty"* because `app.jar` sits there.
+- [x] Non-root `photoapp` user (uid 999); `-XX:MaxRAMPercentage=75` plus
+      `-XX:+ExitOnOutOfMemoryError`.
+- [x] `HEALTHCHECK` on `/actuator/health`, with `SERVICE_PORT` promoted from `ARG` to `ENV`
+      so it resolves at runtime.
+- [x] `LOG_BASE=/var/log/photo-app` baked in, directory pre-created and owned by the app
+      user, ready for the Step 7 shared volume.
+- [x] All **8 images** build: config-server, discovery, gateway, users, accounts, albums,
+      photos, authorization. `discovery-service-cluster` is not containerised (decision 6).
+- [ ] Liquibase migration container — deferred to Step 7, where it belongs with the
+      database service it depends on.
+
+### Step 6 verification
+
+| Check | Result |
+|---|---|
+| All 8 images build | ✅ |
+| Container runs | ✅ launches via `JarLauncher`, reaches Tomcat, fails only on the absent datasource/config-server — correct in isolation |
+| Runs as non-root | ✅ `uid=999(photoapp)` |
+| Log dir writable by app user | ✅ |
+| **No keystore in any image** | ✅ filesystem scan finds no `*.p12` / `*.jks`; the Config Server image contains its properties and `logback-spring.xml` only |
+| **Keystore bind mount works** | ✅ containerised Config Server with the keystore mounted **only** at `/app/BOOT-INF/classes/keystore.p12`: `/actuator/health` 200 unauthenticated, config 401 without credentials and 200 with, and a full `/encrypt` → `/decrypt` round-trip |
+| Step 4 config reaches containers | ✅ served `spring.datasource.hikari.maximum-pool-size: 5` |
+
+Two deviations worth noting: the build stage uses the `maven:3.9-eclipse-temurin-25` tag —
+that image *is* eclipse-temurin 25 JDK with Maven preinstalled, and this repo has no Maven
+wrapper to use on the bare JDK image. And `curl` is **not** installed in the runtime stage:
+Amazon Linux 2023 ships `curl-minimal`, and installing the full `curl` package fails with a
+package conflict. The preinstalled binary serves the healthcheck.
+
+---
+
+## Step 6 (original outline — superseded by the record above)
 
 - [ ] Add a root `.dockerignore` (`target/`, `.git/`, `.idea/`, `*.log`, `.env`).
 - [ ] **Multi-stage builds**: build stage on `eclipse-temurin:25-jdk`, runtime stage on

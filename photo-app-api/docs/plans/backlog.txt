@@ -104,6 +104,20 @@ for this container. Do not leave it as-is.
 Priority: low, but resolve before Step 8 writes the compose env block.
 
 
+[2026-08-01 | Step 6] Runtime images are ~1 GB, mostly base image
+-----------------------------------------------------------------
+The eight images land at 914 MB - 1.06 GB. Almost all of it is the base:
+amazoncorretto:25 alone is 803 MB, so application layers are only ~150-250 MB.
+Slimmer bases exist and were confirmed available: amazoncorretto:25-alpine and
+amazoncorretto:25-headless. A jlink-produced custom runtime would be smaller
+still.
+Not changed now because the runtime base was specified as amazoncorretto:25, and
+switching to alpine changes the libc (musl vs glibc), which deserves its own
+verification pass rather than being slipped into the Dockerfile step.
+Relevant to: image pull times in CI and any future ECR/ECS work.
+Priority: low for local Docker, medium before the AWS phase.
+
+
 [2026-08-01 | Step 5] Audit remaining DTO/entity name mismatches
 ----------------------------------------------------------------
 The MapStruct migration exposed that AccountDTO.accountTypeDTO never received
