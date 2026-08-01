@@ -104,6 +104,24 @@ for this container. Do not leave it as-is.
 Priority: low, but resolve before Step 8 writes the compose env block.
 
 
+[2026-08-01 | Step 5] Audit remaining DTO/entity name mismatches
+----------------------------------------------------------------
+The MapStruct migration exposed that AccountDTO.accountTypeDTO never received
+Account.accountType under ModelMapper — the API returned null while the database
+held PREMIUM. Fixed by an explicit @Mapping.
+The naming convention that caused it is still in place: AccountDTO and
+CreateAccountInputDTO use the suffixed name "accountTypeDTO" for a field the
+entity calls "accountType". Every other DTO field matches its entity field name
+exactly, so this is the only current instance, and MapStruct's
+unmappedTargetPolicy=ERROR now makes any recurrence a build failure rather than a
+silent null.
+Consider renaming AccountDTO.accountTypeDTO -> accountType and
+CreateAccountInputDTO.accountTypeDTO -> accountType for consistency with every
+other DTO. NOTE: this is an API-breaking change, since the field name appears in
+request and response JSON. Not done for that reason.
+Priority: low. Decide alongside any future API versioning work.
+
+
 [2026-08-01 | Step 3] Redundant tracing dependency in the five services   [RESOLVED]
 -----------------------------------------------------------------------------------
 RESOLVED 2026-08-01: io.micrometer:micrometer-tracing-bridge-brave removed from

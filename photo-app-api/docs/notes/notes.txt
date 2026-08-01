@@ -531,11 +531,6 @@ Plan y progreso actualizado – 14 Junio 2026
   • Deploy a AWS con pipelines
 
 
-6. Udemy lecciones pendientes.
-
-- Lesson 38: Eureka Server cluster – highly available and fault tolerant service discovery
-
-
 Hikari?
 Donde estoy usando micrometer?
 Hacer Unit testing

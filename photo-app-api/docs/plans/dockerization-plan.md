@@ -785,16 +785,72 @@ Step 8):
 > sitting. Adding it would have been exactly the kind of dead config deleted from the
 > Config Server. See `backlog.txt` for the corrected entry and the measured behaviour.
 
-## Step 5 — MapStruct migration in `photo-app-commons` (requirement B)
+## Step 5 — MapStruct migration in `photo-app-commons` ✅ DONE
 
-- [ ] Add MapStruct + `mapstruct-processor` to the parent's dependency management and to
-      `photo-app-commons`; wire the annotation processor into `maven-compiler-plugin`
-      (ordering matters alongside Lombok — `lombok-mapstruct-binding` is required).
-- [ ] Write `@Mapper` interfaces for: `User`, `Role`, `RoleName`, `Account`, `AccountType`,
-      `Album`, `Photo`, and nested/composite DTOs such as `CreateAccountInputDTO`.
-- [ ] Delete `ModelMapperConfig` and the `modelmapper` dependency.
-- [ ] Update every call site injecting `ModelMapper` to use the generated mapper.
-- [ ] Full reactor build must pass; smoke test each service's endpoints natively.
+- [x] MapStruct `1.6.3` replaces ModelMapper in the parent's properties and dependency
+      management; `mapstruct-processor` and `lombok-mapstruct-binding` `0.2.0` added to
+      `annotationProcessorPaths`, the binding sitting **between** lombok and
+      mapstruct-processor so Lombok-generated accessors are visible to MapStruct.
+- [x] `@Mapper` interfaces written, all with `componentModel = "spring"` and
+      `unmappedTargetPolicy = ReportingPolicy.ERROR` so an unmapped target fails the build:
+  - in `photo-app-commons`: `RoleMapper` (`Role`↔`RoleDTO`, `RoleName`↔`RoleNameDTO`),
+    `UserMapper` (`User`→`UserDTO`, delegating roles to `RoleMapper`), `AccountMapper`
+    (`Account`→`AccountDTO`, `CreateAccountInputDTO`→`Account`,
+    `AccountType`↔`AccountTypeDTO`), `AlbumMapper`, `PhotoMapper`
+  - in the owning services: `UserInputMapper`, `AlbumInputMapper`, `PhotoInputMapper`
+- [x] `ModelMapperConfig` deleted, plus the four per-service `*MapperConfig` classes that
+      registered `typeMap` overrides. The `modelmapper` dependency is gone from the parent
+      and from `photo-app-commons`.
+- [x] All **28** call sites rewired across four services.
+- [x] Full reactor build passes; verified natively — see below.
+
+**Two structural facts that shaped the result:**
+
+1. **`photo-app-commons` did not depend on `photo-app-entity-model-lib`.** Mappers need
+   both sides of a pair, so the dependency was added. Safe: `entity-model-lib` has no
+   internal dependencies, so no cycle is possible. This does mean `commons` now carries the
+   JPA entity library — consistent with the accepted coupling in the non-goal section.
+2. **Not every mapper can live in `commons`.** `CreateUserInputDTO`, `CreateAlbumInputDTO`
+   and `CreatePhotoInputDTO` are owned by their services; `commons` cannot reference them
+   without a cycle. Their mappers therefore live in the owning service. Everything whose
+   DTO already lives in `commons` is mapped there, as intended.
+
+Also worth knowing: MapStruct builds entities through Lombok's `@Builder`, which does not
+expose inherited `BaseEntity` fields. `id` / `version` / `createdAt` / `updatedAt` are
+consequently unreachable from any input mapper **by construction** — the old explicit
+`mapper.skip(...)` calls are structurally unnecessary now.
+
+### Step 5 verification — behavioural diff against a pre-migration baseline
+
+Live responses were captured **before** the migration and re-captured after, same data,
+same endpoints:
+
+| Endpoint | Result |
+|---|---|
+| `GET /users/1` | identical |
+| `GET /users?page=0&size=3` | identical |
+| `GET /albums/1` | identical |
+| `GET /photos/1` | identical |
+| `GET /accounts/1` | **differs — a bug fix, see below** |
+
+**The one difference is a defect ModelMapper was hiding.** `AccountDTO` names the field
+`accountTypeDTO` while `Account` names it `accountType`; ModelMapper's fuzzy matching never
+bridged it and silently produced `null`, so the account type never reached the API even
+though the database held `PREMIUM`:
+
+```
+before: {"id":1,...,"accountTypeDTO":null,   "activeAccount":true,...}
+after:  {"id":1,...,"accountTypeDTO":"PREMIUM","activeAccount":true,...}
+```
+
+MapStruct's `ReportingPolicy.ERROR` would have refused to compile the mapper without an
+explicit `@Mapping(source = "accountType", target = "accountTypeDTO")` — exactly the class
+of silent failure the migration was meant to eliminate.
+
+Write paths were exercised too: `POST /users` produced a bcrypt hash (60 chars, `$2a$10$`),
+`activeUser = true` from `@Builder.Default`, and the default `ROLE_USER`; `POST /accounts`
+persisted `account_type = PREMIUM` and round-tripped it. Both test rows were deleted after
+verification.
 
 ## Step 6 — Dockerfiles (requirement / decision: temurin build, corretto runtime)
 

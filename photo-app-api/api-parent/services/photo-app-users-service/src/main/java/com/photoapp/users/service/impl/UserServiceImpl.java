@@ -6,6 +6,7 @@ import com.photoapp.commons.dto.role.RoleAction;
 import com.photoapp.commons.dto.role.RoleNameDTO;
 import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.commons.mapper.UserMapper;
 import com.photoapp.entity.Role;
 import com.photoapp.entity.RoleName;
 import com.photoapp.entity.User;
@@ -17,13 +18,12 @@ import com.photoapp.users.dto.CreateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserRolesInputDTO;
 import com.photoapp.users.dto.UserFilterDTO;
+import com.photoapp.users.mapper.UserInputMapper;
 import com.photoapp.users.repository.RoleRepository;
 import com.photoapp.users.repository.UserRepository;
 import com.photoapp.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.photoapp.commons.mapper.UserMapper;
-import com.photoapp.users.mapper.UserInputMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -135,7 +135,7 @@ public class UserServiceImpl implements UserService {
         Page<UserDTO> result = userRepository.findAll(
                 fromFilter(mapToFilter(filters, UserFilterDTO.class)),
                 mapToPageable(filters)
-        ).map(user -> userMapper.toDTO(user));
+        ).map(userMapper::toDTO);
         log.info("Users listed successfully count={}", result.getTotalElements());
         return result;
     }
