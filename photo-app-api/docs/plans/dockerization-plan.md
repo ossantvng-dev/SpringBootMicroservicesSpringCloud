@@ -870,8 +870,11 @@ decision 3):
       `EUREKA_INSTANCE_HOSTNAME=<container name>` on every registering component.
 - [ ] `photo-app-config-server`: `GIT_USERNAME`, `GIT_TOKEN` (the new PAT),
       `KEYSTORE_PASSWORD`, `CONFIG_SERVER_ADMIN_USER`, `CONFIG_SERVER_ADMIN_PASSWORD`,
-      `EUREKA_URL`, `SPRING_RABBITMQ_HOST/PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`;
+      `SPRING_RABBITMQ_HOST/PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`;
       keystore bind mount; depends on `photo-app-rabbitmq` (healthy).
+      **No `EUREKA_URL`** — the Config Server is deliberately not registered with Eureka
+      (clients reach it by direct URL via `spring.config.import`, so registering it would
+      only add a bootstrap chicken-and-egg problem). Its Eureka properties were deleted.
 - [ ] `photo-app-discovery-service`: `SPRING_CONFIG_IMPORT` (with Basic-Auth credentials),
       `EUREKA_INSTANCE_HOSTNAME`, `EUREKA_CLIENT_SERVICEURL_DEFAULTZONE`,
       `SPRING_SECURITY_USER_NAME/PASSWORD`. Single instance — the cluster module is not

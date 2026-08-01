@@ -58,8 +58,17 @@ Relevant to: Step 7 (compose infrastructure).
 Priority: medium — decide before writing the healthchecks.
 
 
-[2026-08-01 | Step 3] Config Server's Eureka properties are dead config
------------------------------------------------------------------------
+[2026-08-01 | Step 3] Config Server's Eureka properties are dead config   [RESOLVED]
+------------------------------------------------------------------------------------
+RESOLVED 2026-08-01: both properties deleted. Decision — the Config Server is
+deliberately NOT registered with Eureka: every client reaches it by direct URL
+through spring.config.import, so registering it would only introduce a bootstrap
+chicken-and-egg problem for no benefit, since nothing needs to discover it
+dynamically. EUREKA_URL is therefore not required by this container and must not
+be added to its Step 8 compose environment. Verified by starting the Config
+Server with EUREKA_URL unset: clean start, no unresolved placeholder.
+Original finding below.
+
 Its application.properties declares
   eureka.client.service-url.defaultZone=${EUREKA_URL}
   eureka.instance.prefer-ip-address=true
@@ -76,12 +85,15 @@ for this container. Do not leave it as-is.
 Priority: low, but resolve before Step 8 writes the compose env block.
 
 
-[2026-08-01 | Step 3] Redundant tracing dependency in the five business services
---------------------------------------------------------------------------------
-Each service declares both spring-boot-micrometer-tracing-brave AND
-io.micrometer:micrometer-tracing-bridge-brave; the Boot module already brings the
-bridge. The three infrastructure components were given only the two Boot starters
-in Step 3, which is the cleaner form. Harmless, but the five services are now
-inconsistent with the three infra components.
-Fix: drop micrometer-tracing-bridge-brave from the five service poms.
-Priority: low, cosmetic.
+[2026-08-01 | Step 3] Redundant tracing dependency in the five services   [RESOLVED]
+-----------------------------------------------------------------------------------
+RESOLVED 2026-08-01: io.micrometer:micrometer-tracing-bridge-brave removed from
+all five service poms. spring-boot-starter-zipkin provides it transitively —
+confirmed by dependency:tree, which now shows the bridge arriving solely through
+that starter. All eight components declare the same two Boot artifacts.
+Verified at runtime against a freshly restarted (emptied) Zipkin: the gateway,
+discovery service, config server, users service and albums service all reported
+spans after the dependency was removed.
+Original finding: each service declared both spring-boot-micrometer-tracing-brave
+and the explicit bridge, leaving the five services inconsistent with the three
+infrastructure components after Step 3.
