@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets ###
+# Keystores stay on disk but are never tracked. A fresh clone therefore has no
+# keystore and the Config Server will not start until one is supplied.
+*.p12
+*.jks
+.env

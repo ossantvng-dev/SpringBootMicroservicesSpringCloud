@@ -35,6 +35,12 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- Spring Security: HTTP Basic over the config endpoints -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
 		<!-- Spring Cloud Config Server -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
