@@ -1,0 +1,22 @@
+# Build output - the image builds its own jars from source
+**/target/
+**/logs/
+
+# Secrets: keystores must never enter the build context, otherwise Maven packages
+# them into BOOT-INF/classes and every image ships the private key.
+# The Config Server receives its keystore as a bind mount at runtime instead.
+**/*.p12
+**/*.jks
+.env
+**/.env
+
+# VCS and tooling
+.git/
+.gitignore
+.idea/
+.vscode/
+**/*.iml
+
+# Docs and local scratch
+docs/
+**/*.md
