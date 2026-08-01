@@ -92,24 +92,57 @@ WHAT IS RULED OUT (all measured, not assumed):
     beans exist; BraveAutoConfiguration, ZipkinAutoConfiguration and
     ZipkinWithBraveTracingAutoConfiguration are all present.
 
-THE CONTRADICTION TO CHASE: the reporter raises ConnectException against an
-endpoint that plain curl reaches from the same container, in the same instant.
-That points at the sender rather than at configuration or networking - likely the
-address the sender was actually constructed with, as opposed to the value the
-Environment reports.
+ROOT CAUSE (found 2026-08-01, second investigation pass)
+The failure is in the HTTP transport, not in configuration or networking. Full
+stack trace from the reporter:
 
-SUGGESTED NEXT STEPS:
-  1. Set MANAGEMENT_ZIPKIN_TRACING_ENDPOINT to a deliberately distinct port and
-     see whether the error changes. If it does not, the sender is not using the
-     property at all and something else supplies its address.
-  2. Inspect the ZipkinConnectionDetails bean's actual value at runtime rather
-     than the Environment's, since it is what ZipkinAutoConfiguration hands the
-     sender.
-  3. Enable FINE/DEBUG on zipkin2.reporter.internal to get the failing URL: the
-     first failure logs at WARN and every later one is demoted, so the URL never
-     appears at default levels.
+  java.net.ConnectException
+    at jdk.internal.net.http.HttpClientImpl.send
+    at org.springframework.boot.zipkin.autoconfigure.ZipkinHttpClientSender.postSpans
+    at zipkin2.reporter.internal.AsyncReporter$BoundedAsyncReporter.flush
+  Caused by: java.net.ConnectException
+    at jdk.internal.net.http.PlainHttpConnection.connectAsync
+  Caused by: java.nio.channels.ClosedChannelException
+    at sun.nio.ch.SocketChannelImpl.ensureOpen
+    at sun.nio.ch.SocketChannelImpl.connect
+
+Boot 4 sends spans through ZipkinHttpClientSender, which uses the JDK
+java.net.http.HttpClient. The socket channel is ALREADY CLOSED when connect is
+attempted - ensureOpen fails before any network I/O happens. That is why the
+address is irrelevant and why nothing outside the JVM can observe a failure.
+
+BOTH SUGGESTED LEADS WERE TESTED AND RULED OUT:
+  1. IPv4/IPv6 preference - NOT the cause. A probe inside the service container
+     shows java.net.preferIPv4Stack unset, "photo-app-zipkin" resolving to a
+     single IPv4 address (172.19.0.2, ipv6=false), a successful TCP connect to
+     172.19.0.2:9411, and HttpURLConnection returning 200. Adding
+     -Djava.net.preferIPv4Stack=true would change nothing.
+  2. Property/bean binding timing - NOT the cause. /actuator/env with
+     show-values reports the endpoint correctly from systemEnvironment, and the
+     sender demonstrably uses it: pointing it at a dead port (19411) fails the
+     same way, and pointing it at the raw IP instead of the hostname also fails
+     the same way. The value is right and it is being used.
+
+DECISIVE CONTROL: a freshly constructed java.net.http.HttpClient, in the same
+container, on a clean thread, POSTing to the same URL returns HTTP 202. The JDK
+client, the network and the collector are all fine - only the long-lived client
+inside the running application is broken.
+
+WHERE TO GO NEXT:
+  - ClosedChannelException on a fresh channel is the classic symptom of the
+    calling thread carrying an interrupt flag: NIO auto-closes interruptible
+    channels on interrupt. Find what interrupts AsyncReporter$Flusher, or what
+    breaks the HttpClient's selector state. Note the app is otherwise healthy,
+    so this is confined to the reporter's thread/client.
+  - Practical workaround if the root trigger proves elusive: replace the
+    transport. Boot lets a custom BytesMessageSender bean override
+    ZipkinHttpClientSender - zipkin-sender-urlconnection or the OkHttp sender
+    avoids the JDK HttpClient entirely, and HttpURLConnection is already proven
+    to work in this exact container.
+  - Worth checking whether Step 3's native run used the same sender; if it did,
+    the trigger is environmental rather than a code difference.
 Priority: HIGH - observability is a stated goal of the containerised stack, and
-the native path already proves the application side works.
+everything except span delivery is verified working.
 
 
 [2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503
