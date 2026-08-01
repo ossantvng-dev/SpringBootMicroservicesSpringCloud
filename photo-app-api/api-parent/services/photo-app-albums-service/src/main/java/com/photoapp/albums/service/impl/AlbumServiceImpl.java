@@ -15,7 +15,8 @@ import com.photoapp.feign.client.PhotoFeignClient;
 import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
+import com.photoapp.albums.mapper.AlbumInputMapper;
+import com.photoapp.commons.mapper.AlbumMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,8 @@ public class AlbumServiceImpl implements AlbumService {
     private final AccountFeignClient accountFeignClient;
     private final PhotoFeignClient photoFeignClient;
     private final AlbumLimitsProperties albumLimitsProperties;
-    private final ModelMapper modelMapper;
+    private final AlbumMapper albumMapper;
+    private final AlbumInputMapper albumInputMapper;
     private final CurrentUserService currentUserService;
 
     @Override
@@ -64,13 +66,13 @@ public class AlbumServiceImpl implements AlbumService {
                 }
             }
 
-            Album album = modelMapper.map(normalizedInput, Album.class);
+            Album album = albumInputMapper.toEntity(normalizedInput);
             album.setAccountId(account.getId());
             album.setActiveAlbum(true);
             Album savedAlbum = albumRepository.saveAndFlush(album);
 
             log.info("Album created successfully albumId={} accountId={}", savedAlbum.getId(), account.getId());
-            return modelMapper.map(savedAlbum, AlbumDTO.class);
+            return albumMapper.toDTO(savedAlbum);
         }
         throw new ApplicationException("You can only create albums in your own accounts", HttpStatus.FORBIDDEN);
     }
@@ -92,7 +94,7 @@ public class AlbumServiceImpl implements AlbumService {
                         throw new ApplicationException("Account is not active", HttpStatus.FORBIDDEN);
                     }
                     log.info("Album retrieved successfully albumId={}", id);
-                    return modelMapper.map(existingAlbum, AlbumDTO.class);
+                    return albumMapper.toDTO(existingAlbum);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
     }
@@ -126,7 +128,7 @@ public class AlbumServiceImpl implements AlbumService {
         }
 
         Page<AlbumDTO> result = albumRepository.findAll(fromFilter(albumFilterDTO), mapToPageable(filters))
-                .map(album -> modelMapper.map(album, AlbumDTO.class));
+                .map(album -> albumMapper.toDTO(album));
         log.info("Albums listed successfully count={}", result.getTotalElements());
         return result;
     }
@@ -155,7 +157,7 @@ public class AlbumServiceImpl implements AlbumService {
                     existingAlbum.setDescription(normalizedInput.getDescription());
                     Album updated = albumRepository.saveAndFlush(existingAlbum);
                     log.info("Album updated successfully albumId={}", id);
-                    return modelMapper.map(updated, AlbumDTO.class);
+                    return albumMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
     }
@@ -179,7 +181,7 @@ public class AlbumServiceImpl implements AlbumService {
                     existingAlbum.setActiveAlbum(activate);
                     Album updated = albumRepository.saveAndFlush(existingAlbum);
                     log.info("Album state updated successfully albumId={} active={}", id, activate);
-                    return modelMapper.map(updated, AlbumDTO.class);
+                    return albumMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("Album not found", HttpStatus.NOT_FOUND));
     }

@@ -22,7 +22,8 @@ import com.photoapp.users.repository.UserRepository;
 import com.photoapp.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
+import com.photoapp.commons.mapper.UserMapper;
+import com.photoapp.users.mapper.UserInputMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,7 +47,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final ModelMapper modelMapper;
+    private final UserMapper userMapper;
+    private final UserInputMapper userInputMapper;
     private final PasswordEncoder passwordEncoder;
     private final AccountFeignClient accountFeignClient;
     private final AlbumFeignClient albumFeignClient;
@@ -68,12 +70,12 @@ public class UserServiceImpl implements UserService {
                 ? mapRoleNamesToRoles(createUserInputDTO.getRoles())
                 : Set.of(defaultRole);
 
-        User newUser = modelMapper.map(inputDTO, User.class);
+        User newUser = userInputMapper.toEntity(inputDTO);
         newUser.setRoles(roles);
         newUser.setPasswordHash(passwordEncoder.encode(inputDTO.getPassword()));
         User savedUser = userRepository.save(newUser);
         log.info("User registered successfully userId={}", savedUser.getId());
-        return modelMapper.map(savedUser, UserDTO.class);
+        return userMapper.toDTO(savedUser);
     }
 
     @Override
@@ -87,7 +89,7 @@ public class UserServiceImpl implements UserService {
             User validatedUser = validateAndSetUser(existingUser, updateUserInputDTO);
             User savedUser = userRepository.saveAndFlush(validatedUser);
             log.info("User updated successfully userId={}", id);
-            return modelMapper.map(savedUser, UserDTO.class);
+            return userMapper.toDTO(savedUser);
         }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 
@@ -101,7 +103,7 @@ public class UserServiceImpl implements UserService {
                         throw new ApplicationException("You can only view your own user data", HttpStatus.FORBIDDEN);
                     }
                     log.info("User retrieved successfully userId={}", id);
-                    return modelMapper.map(existingUser, UserDTO.class);
+                    return userMapper.toDTO(existingUser);
                 })
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
@@ -113,7 +115,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email)
                 .map(existingUser -> {
                     log.info("User retrieved successfully email={}", email);
-                    return modelMapper.map(existingUser, UserDTO.class);
+                    return userMapper.toDTO(existingUser);
                 })
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
@@ -133,7 +135,7 @@ public class UserServiceImpl implements UserService {
         Page<UserDTO> result = userRepository.findAll(
                 fromFilter(mapToFilter(filters, UserFilterDTO.class)),
                 mapToPageable(filters)
-        ).map(user -> modelMapper.map(user, UserDTO.class));
+        ).map(user -> userMapper.toDTO(user));
         log.info("Users listed successfully count={}", result.getTotalElements());
         return result;
     }
@@ -146,7 +148,7 @@ public class UserServiceImpl implements UserService {
             existingUser.setActiveUser(activate);
             User updated = userRepository.saveAndFlush(existingUser);
             log.info("User state updated successfully userId={} active={}", id, activate);
-            return modelMapper.map(updated, UserDTO.class);
+            return userMapper.toDTO(updated);
         }).orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }
 
@@ -170,7 +172,7 @@ public class UserServiceImpl implements UserService {
                     }
                     User updated = userRepository.saveAndFlush(existingUser);
                     log.info("User roles updated successfully userId={}", id);
-                    return modelMapper.map(updated, UserDTO.class);
+                    return userMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("User not found", HttpStatus.NOT_FOUND));
     }

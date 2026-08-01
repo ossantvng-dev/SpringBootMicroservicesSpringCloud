@@ -15,7 +15,8 @@ import com.photoapp.photos.service.PhotoService;
 import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
+import com.photoapp.commons.mapper.PhotoMapper;
+import com.photoapp.photos.mapper.PhotoInputMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,8 @@ import static com.photoapp.photos.repository.specification.PhotoSpecification.fr
 public class PhotoServiceImpl implements PhotoService {
 
     private final PhotoRepository photoRepository;
-    private final ModelMapper modelMapper;
+    private final PhotoMapper photoMapper;
+    private final PhotoInputMapper photoInputMapper;
     private final AlbumFeignClient albumFeignClient;
     private final AccountFeignClient accountFeignClient;
     private final CurrentUserService currentUserService;
@@ -57,12 +59,12 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         if (currentUserService.canAccessResource(String.valueOf(account.getUserId()))) {
-            Photo photo = modelMapper.map(normalizedInput, Photo.class);
+            Photo photo = photoInputMapper.toEntity(normalizedInput);
             photo.setAlbumId(album.getId());
             photo.setActivePhoto(true);
             Photo saved = photoRepository.saveAndFlush(photo);
             log.info("Photo created successfully photoId={} albumId={}", saved.getId(), album.getId());
-            return modelMapper.map(saved, PhotoDTO.class);
+            return photoMapper.toDTO(saved);
         }
         throw new ApplicationException("You can only create photos in your own albums", HttpStatus.FORBIDDEN);
     }
@@ -83,7 +85,7 @@ public class PhotoServiceImpl implements PhotoService {
                     }
                     if (currentUserService.canAccessResource(String.valueOf(account.getUserId()))) {
                         log.info("Photo retrieved successfully photoId={}", id);
-                        return modelMapper.map(existingPhoto, PhotoDTO.class);
+                        return photoMapper.toDTO(existingPhoto);
                     }
                     throw new ApplicationException("You can only view your own photos", HttpStatus.FORBIDDEN);
                 })
@@ -116,7 +118,7 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         Page<PhotoDTO> result = photoRepository.findAll(fromFilter(photoFilterDTO), mapToPageable(filters))
-                .map(photo -> modelMapper.map(photo, PhotoDTO.class));
+                .map(photo -> photoMapper.toDTO(photo));
         log.info("Photos listed successfully count={}", result.getTotalElements());
         return result;
     }
@@ -144,7 +146,7 @@ public class PhotoServiceImpl implements PhotoService {
                         existingPhoto.setFileUrl(normalizedInput.getFileUrl());
                         Photo updated = photoRepository.saveAndFlush(existingPhoto);
                         log.info("Photo updated successfully photoId={}", id);
-                        return modelMapper.map(updated, PhotoDTO.class);
+                        return photoMapper.toDTO(updated);
                     }
                     throw new ApplicationException("You can only update your own photos", HttpStatus.FORBIDDEN);
                 })
@@ -169,7 +171,7 @@ public class PhotoServiceImpl implements PhotoService {
                         existingPhoto.setActivePhoto(activate);
                         Photo updated = photoRepository.saveAndFlush(existingPhoto);
                         log.info("Photo state updated successfully photoId={} active={}", id, activate);
-                        return modelMapper.map(updated, PhotoDTO.class);
+                        return photoMapper.toDTO(updated);
                     }
                     throw new ApplicationException("You can only activate/deactivate your own photos", HttpStatus.FORBIDDEN);
                 })

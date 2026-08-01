@@ -14,7 +14,7 @@ import com.photoapp.feign.client.UserFeignClient;
 import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
+import com.photoapp.commons.mapper.AccountMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ import static com.photoapp.commons.util.PaginationUtil.mapToPageable;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final ModelMapper modelMapper;
+    private final AccountMapper accountMapper;
     private final AlbumFeignClient albumFeignClient;
     private final UserFeignClient userFeignClient;
     private final CurrentUserService currentUserService;
@@ -44,10 +44,10 @@ public class AccountServiceImpl implements AccountService {
         log.info("Creating account for userId={}", input.getUserId());
         if (userFeignClient.isActive(input.getUserId())) {
             CreateAccountInputDTO normalized = normalizeInputDTO(input);
-            Account account = modelMapper.map(normalized, Account.class);
+            Account account = accountMapper.toEntity(normalized);
             Account saved = accountRepository.saveAndFlush(account);
             log.info("Account created successfully accountId={} userId={}", saved.getId(), saved.getUserId());
-            return modelMapper.map(saved, AccountDTO.class);
+            return accountMapper.toDTO(saved);
         }
         throw new ApplicationException("User is not active", HttpStatus.FORBIDDEN);
     }
@@ -74,7 +74,7 @@ public class AccountServiceImpl implements AccountService {
                     existingAccount.setAccountName(normalizedName);
                     Account updated = accountRepository.saveAndFlush(existingAccount);
                     log.info("Account name updated successfully accountId={}", accountId);
-                    return modelMapper.map(updated, AccountDTO.class);
+                    return accountMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -91,7 +91,7 @@ public class AccountServiceImpl implements AccountService {
                     account.setAccountType(AccountType.valueOf(accountTypeDTO.name()));
                     Account updated = accountRepository.saveAndFlush(account);
                     log.info("Account type updated successfully accountId={}", accountId);
-                    return modelMapper.map(updated, AccountDTO.class);
+                    return accountMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -106,7 +106,7 @@ public class AccountServiceImpl implements AccountService {
                         throw new ApplicationException("You can only query your own user data", HttpStatus.FORBIDDEN);
                     }
                     log.info("Account found accountId={}", accountId);
-                    return modelMapper.map(existingAccount, AccountDTO.class);
+                    return accountMapper.toDTO(existingAccount);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }
@@ -127,7 +127,7 @@ public class AccountServiceImpl implements AccountService {
             }
         }
         Page<AccountDTO> result = accountRepository.findAll(fromFilter(accountFilterDTO), mapToPageable(filters))
-                .map(account -> modelMapper.map(account, AccountDTO.class));
+                .map(account -> accountMapper.toDTO(account));
         log.info("Accounts listed successfully count={}", result.getTotalElements());
         return result;
     }
@@ -144,7 +144,7 @@ public class AccountServiceImpl implements AccountService {
                     existing.setActiveAccount(activate);
                     Account updated = accountRepository.saveAndFlush(existing);
                     log.info("Account state updated successfully accountId={} active={}", accountId, activate);
-                    return modelMapper.map(updated, AccountDTO.class);
+                    return accountMapper.toDTO(updated);
                 })
                 .orElseThrow(() -> new ApplicationException("Account not found", HttpStatus.NOT_FOUND));
     }

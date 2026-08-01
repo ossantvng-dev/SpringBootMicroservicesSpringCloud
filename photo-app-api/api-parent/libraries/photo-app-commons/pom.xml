@@ -49,10 +49,17 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- ModelMapper -->
+        <!-- MapStruct: compile-time mapping, processor wired in the parent pom -->
         <dependency>
-            <groupId>org.modelmapper</groupId>
-            <artifactId>modelmapper</artifactId>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+        </dependency>
+
+        <!-- Entities: required by the mappers, which need both sides of every pair.
+             entity-model-lib has no internal dependencies, so this cannot cycle. -->
+        <dependency>
+            <groupId>com.photoapp.domain</groupId>
+            <artifactId>photo-app-entity-model-lib</artifactId>
         </dependency>
 
         <!-- Lombok -->
