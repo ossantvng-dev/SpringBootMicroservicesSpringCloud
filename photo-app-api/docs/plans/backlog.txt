@@ -68,6 +68,50 @@ VERIFIED after the fix, on two different services and two different endpoints:
   Denials logged as ACCESS_DENIED at WARN; UNHANDLED_EXCEPTION count zero.
 
 
+[2026-08-01 | Step 8] HIGH — no traces reach Zipkin from containers
+--------------------------------------------------------------------
+Tracing worked in the Step 3 NATIVE run (all eight components reported spans).
+In containers it does not: Zipkin receives nothing from any application service.
+Everything else in Step 8 verified fine, so this is isolated to span delivery.
+
+WHAT IS RULED OUT (all measured, not assumed):
+  - Configuration is correct. /actuator/env with show-values enabled reports
+    management.zipkin.tracing.endpoint = http://photo-app-zipkin:9411/api/v2/spans
+    sourced from systemEnvironment (origin: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT),
+    and management.tracing.sampling.probability = 1.0 from the config server.
+  - Spans ARE being created and sampled: the service logs
+    "Dropped 37 spans due to ConnectException()" - it has spans to send.
+  - The collector is healthy and reachable FROM THE SERVICE CONTAINER:
+      curl http://photo-app-zipkin:9411/health            -> 200
+      curl -X POST .../api/v2/spans with a hand-written span -> 202,
+    and that manual span IS stored and queryable (service "manual-probe-svc"
+    appears in /api/v2/services). So DNS, routing and the collector all work.
+  - Not a restart-ordering artifact: restarting a single service while Zipkin had
+    been stable for minutes still produced 9 drops and no stored spans.
+  - Tracing auto-configuration is active: braveTracer and zipkinConnectionDetails
+    beans exist; BraveAutoConfiguration, ZipkinAutoConfiguration and
+    ZipkinWithBraveTracingAutoConfiguration are all present.
+
+THE CONTRADICTION TO CHASE: the reporter raises ConnectException against an
+endpoint that plain curl reaches from the same container, in the same instant.
+That points at the sender rather than at configuration or networking - likely the
+address the sender was actually constructed with, as opposed to the value the
+Environment reports.
+
+SUGGESTED NEXT STEPS:
+  1. Set MANAGEMENT_ZIPKIN_TRACING_ENDPOINT to a deliberately distinct port and
+     see whether the error changes. If it does not, the sender is not using the
+     property at all and something else supplies its address.
+  2. Inspect the ZipkinConnectionDetails bean's actual value at runtime rather
+     than the Environment's, since it is what ZipkinAutoConfiguration hands the
+     sender.
+  3. Enable FINE/DEBUG on zipkin2.reporter.internal to get the failing URL: the
+     first failure logs at WARN and every later one is demoted, so the URL never
+     appears at default levels.
+Priority: HIGH - observability is a stated goal of the containerised stack, and
+the native path already proves the application side works.
+
+
 [2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503
 ---------------------------------------------------------------------------------
 When no instance of a downstream service is registered, the load balancer raises

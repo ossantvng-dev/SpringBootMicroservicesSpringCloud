@@ -26,7 +26,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 # One-shot jobs that should not linger in `docker ps -a` once they have run.
-INIT_SERVICES=(photo-app-liquibase photo-app-elk-certs photo-app-elk-users)
+INIT_SERVICES=(photo-app-liquibase photo-app-elk-certs photo-app-elk-users photo-app-logs-init)
 
 log() { printf '[stack] %s\n' "$*"; }
 

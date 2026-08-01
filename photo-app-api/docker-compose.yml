@@ -38,6 +38,18 @@ volumes:
   photo-app-logstash-data:
   photo-app-maven-cache:
 
+# Shared by every Config Server client. Defined at top level rather than on one
+# service, so that no service can accidentally inherit another's identity.
+x-config-client: &config-client
+  SPRING_PROFILES_ACTIVE: dev
+  # Overrides the host inside the packaged spring.config.import. Together with
+  # fail-fast below this makes an unreachable Config Server a loud failure rather
+  # than a silent boot with no configuration.
+  CONFIG_SERVER_URL: http://photo-app-config-server:8888
+  SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_ADMIN_USER}
+  SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_ADMIN_PASSWORD}
+  SPRING_CLOUD_CONFIG_FAIL_FAST: "true"
+
 services:
 
   # ------------------------------------------------------------------ MySQL
@@ -233,3 +245,189 @@ services:
       # Replaces the old host bind mount of api-parent/services
       - photo-app-logs:/var/log/photo-app:ro
       - photo-app-logstash-data:/usr/share/logstash/data
+
+  # =====================================================================
+  # Application services (Step 8)
+  #
+  # Every one keeps SPRING_PROFILES_ACTIVE=dev - there is no "docker" profile.
+  # Only the network-location-dependent properties are overridden here, through
+  # OS environment variables, which outrank Config Server properties in Spring
+  # Boot's resolution order. Business configuration stays in the config repo.
+  # =====================================================================
+
+  # Docker seeds a named volume's ownership from the image only when the volume is
+  # empty AND the app image is the first thing to mount it. Anything else touching
+  # it first - a debugging container, a previous stack version - leaves it owned by
+  # root, and the non-root app user then cannot create its log directory. This
+  # one-shot removes that ordering dependency by setting ownership explicitly.
+  photo-app-logs-init:
+    image: alpine:3
+    container_name: photo-app-logs-init
+    volumes:
+      - photo-app-logs:/logs
+    # 999:999 is the photoapp user created in the Dockerfile.
+    command: ["sh", "-c", "chown -R 999:999 /logs && chmod 755 /logs"]
+    restart: "no"
+
+  photo-app-config-server:
+    build:
+      context: .
+      args:
+        MODULE_PATH: infrastructure/photo-app-configuration-server
+        JAR_NAME: photo-app-configuration-server-0.0.1-SNAPSHOT.jar
+        SERVICE_PORT: 8888
+    image: photo-app-configuration-server:local
+    container_name: photo-app-config-server
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-logs-init:
+        condition: service_completed_successfully
+      photo-app-rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: git
+      GIT_USERNAME: ${GIT_USERNAME:?set GIT_USERNAME in .env}
+      GIT_TOKEN: ${GIT_TOKEN:?set GIT_TOKEN in .env}
+      KEYSTORE_PASSWORD: ${KEYSTORE_PASSWORD:?set KEYSTORE_PASSWORD in .env}
+      CONFIG_SERVER_ADMIN_USER: ${CONFIG_SERVER_ADMIN_USER}
+      CONFIG_SERVER_ADMIN_PASSWORD: ${CONFIG_SERVER_ADMIN_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      SPRING_RABBITMQ_HOST: photo-app-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://photo-app-zipkin:9411/api/v2/spans
+      # No EUREKA_URL: this server is deliberately not registered with Eureka.
+      # Clients reach it by direct URL, so registering it would only add a
+      # bootstrap chicken-and-egg problem.
+    volumes:
+      - photo-app-logs:/var/log/photo-app
+      # The image contains no keystore; it is supplied only at runtime.
+      - ./api-parent/infrastructure/photo-app-configuration-server/src/main/resources/keystore.p12:/app/BOOT-INF/classes/keystore.p12:ro
+
+  photo-app-discovery-service:
+    build:
+      context: .
+      args:
+        MODULE_PATH: infrastructure/photo-app-discovery-service
+        JAR_NAME: photo-app-discovery-service-0.0.1-SNAPSHOT.jar
+        SERVICE_PORT: 8761
+    image: photo-app-discovery-service:local
+    container_name: photo-app-discovery-service
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-config-server:
+        condition: service_healthy
+    ports:
+      - "8761:8761"
+    environment:
+      <<: *config-client
+    # Discovery-specific: it registers nothing but must still report traces.
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://photo-app-zipkin:9411/api/v2/spans
+      EUREKA_INSTANCE_HOSTNAME: photo-app-discovery-service
+    volumes:
+      - photo-app-logs:/var/log/photo-app
+
+  photo-app-api-gateway:
+    build:
+      context: .
+      args:
+        MODULE_PATH: infrastructure/photo-app-api-gateway
+        JAR_NAME: photo-app-api-gateway-0.0.1-SNAPSHOT.jar
+        SERVICE_PORT: 8080
+    image: photo-app-api-gateway:local
+    container_name: photo-app-api-gateway
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-discovery-service:
+        condition: service_healthy
+    # The only application port published: everything else is reached through it.
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *config-client
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@photo-app-discovery-service:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: photo-app-api-gateway
+      SPRING_RABBITMQ_HOST: photo-app-rabbitmq
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://photo-app-zipkin:9411/api/v2/spans
+    volumes:
+      - photo-app-logs:/var/log/photo-app
+
+  # The five business services differ only by module, jar, port and hostname.
+  # Ports are deliberately NOT published: they are reached through the gateway.
+  photo-app-users-service:
+    build:
+      context: .
+      args: {MODULE_PATH: services/photo-app-users-service, JAR_NAME: photo-app-users-service-0.0.1-SNAPSHOT.jar, SERVICE_PORT: 8081}
+    image: photo-app-users-service:local
+    container_name: photo-app-users-service
+    networks: [photo-app-net]
+    depends_on: &business-deps
+      photo-app-logs-init:
+        condition: service_completed_successfully
+      photo-app-discovery-service:
+        condition: service_healthy
+      photo-app-mysql:
+        condition: service_healthy
+    environment: &business-env
+      <<: *config-client
+      SPRING_DATASOURCE_URL: jdbc:mysql://photo-app-mysql:3306/${MYSQL_DATABASE:-photo_app}?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_RABBITMQ_HOST: photo-app-rabbitmq
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://photo-app-zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@photo-app-discovery-service:8761/eureka
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_INSTANCE_HOSTNAME: photo-app-users-service
+    volumes: &business-volumes
+      - photo-app-logs:/var/log/photo-app
+
+  photo-app-accounts-service:
+    build:
+      context: .
+      args: {MODULE_PATH: services/photo-app-accounts-service, JAR_NAME: photo-app-accounts-service-0.0.1-SNAPSHOT.jar, SERVICE_PORT: 8082}
+    image: photo-app-accounts-service:local
+    container_name: photo-app-accounts-service
+    networks: [photo-app-net]
+    depends_on: *business-deps
+    environment:
+      <<: *business-env
+      EUREKA_INSTANCE_HOSTNAME: photo-app-accounts-service
+    volumes: *business-volumes
+
+  photo-app-albums-service:
+    build:
+      context: .
+      args: {MODULE_PATH: services/photo-app-albums-service, JAR_NAME: photo-app-albums-service-0.0.1-SNAPSHOT.jar, SERVICE_PORT: 8083}
+    image: photo-app-albums-service:local
+    container_name: photo-app-albums-service
+    networks: [photo-app-net]
+    depends_on: *business-deps
+    environment:
+      <<: *business-env
+      EUREKA_INSTANCE_HOSTNAME: photo-app-albums-service
+    volumes: *business-volumes
+
+  photo-app-photos-service:
+    build:
+      context: .
+      args: {MODULE_PATH: services/photo-app-photos-service, JAR_NAME: photo-app-photos-service-0.0.1-SNAPSHOT.jar, SERVICE_PORT: 8084}
+    image: photo-app-photos-service:local
+    container_name: photo-app-photos-service
+    networks: [photo-app-net]
+    depends_on: *business-deps
+    environment:
+      <<: *business-env
+      EUREKA_INSTANCE_HOSTNAME: photo-app-photos-service
+    volumes: *business-volumes
+
+  photo-app-authorization-service:
+    build:
+      context: .
+      args: {MODULE_PATH: services/photo-app-authorization-service, JAR_NAME: photo-app-authorization-service-0.0.1-SNAPSHOT.jar, SERVICE_PORT: 8085}
+    image: photo-app-authorization-service:local
+    container_name: photo-app-authorization-service
+    networks: [photo-app-net]
+    depends_on: *business-deps
+    environment:
+      <<: *business-env
+      EUREKA_INSTANCE_HOSTNAME: photo-app-authorization-service
+    volumes: *business-volumes
