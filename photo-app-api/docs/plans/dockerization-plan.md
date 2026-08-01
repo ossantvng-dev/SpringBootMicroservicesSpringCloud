@@ -762,18 +762,28 @@ Step 8):
 | JSON log files | ✅ 8 files, each with `traceId` / `spanId` / `service` / `environment` fields |
 | `LOG_BASE` env override | ✅ restarting the gateway with `LOG_BASE=<tmp>` redirected its log to `<LOG_BASE>/photo-app-api-gateway/logs/…` — the mechanism the Step 7 named volume depends on |
 
-## Step 4 — HikariCP sizing (§3) + actuator path fix
+## Step 4 — HikariCP sizing (§3) ✅ DONE
 
-- [ ] Add explicit sizing to each of the five service `*-dev.properties`:
-      `spring.datasource.hikari.maximum-pool-size=5`, `minimum-idle=1`, plus
-      `connection-timeout` and `max-lifetime`. Today nothing is set anywhere, so five
-      services × the 10-connection default = 50 connections against one MySQL container.
-- [ ] Set `spring.cloud.function.web.enabled=false` on the five services **and** the
-      gateway. Spring Cloud Function's web handler arrives transitively via
-      `spring-cloud-starter-bus-amqp` and shadows `/actuator/<sub-path>` requests — see
-      `backlog.txt`, found during Step 1. Folded in here because it touches the same
-      properties files.
-- [ ] Commit and push the config repo changes to `main`.
+- [x] Explicit sizing added to each of the five service `*-dev.properties`:
+      `pool-name=<service>-pool`, `maximum-pool-size=5`, `minimum-idle=1`,
+      `connection-timeout=30000`, `idle-timeout=300000`, `max-lifetime=1800000`.
+      Previously nothing was set anywhere, so five services × the 10-connection default
+      allowed 50 connections; the cap is now 25 against a server whose `max_connections`
+      is 151. Pools are named per service so logs and metrics identify the owner.
+- [x] Committed and pushed to `main` (`e3a9cb0`); the running Config Server picked the
+      values up through `force-pull`.
+- [x] Verified at runtime — all five services logged `<service>-pool - Starting...`,
+      `/actuator/metrics/hikaricp.connections.max` reported **5.0** on every service, and
+      MySQL showed 11 live connections for `photo_app_user` instead of the ~50 the old
+      defaults permitted.
+
+> ~~Set `spring.cloud.function.web.enabled=false`~~ — **dropped, it is a no-op.**
+> `spring-cloud-function-web` is not on any module's classpath (only
+> `spring-cloud-function-context`, via `spring-cloud-stream-binder-rabbit`). Measured on
+> the gateway with and without the flag: identical results. The Step 1 reading that it
+> helped was a false inference — the improvement came from permitting `/error` in the same
+> sitting. Adding it would have been exactly the kind of dead config deleted from the
+> Config Server. See `backlog.txt` for the corrected entry and the measured behaviour.
 
 ## Step 5 — MapStruct migration in `photo-app-commons` (requirement B)
 
