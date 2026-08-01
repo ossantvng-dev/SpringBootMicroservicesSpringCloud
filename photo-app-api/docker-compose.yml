@@ -1,0 +1,219 @@
+# Step 7 - infrastructure only. Application services arrive in Step 8.
+#
+# All backing services are dedicated to this project: the standalone mysql-v8,
+# rabbitmq and zipkin containers on the host are deliberately not reused, and the
+# standard ports are used because those containers are not running (decision 3).
+
+name: photo-app
+
+networks:
+  photo-app-net:
+    name: photo-app-net
+
+volumes:
+  photo-app-mysql-data:
+  photo-app-es-data:
+  photo-app-certs:
+  # Shared by every application container and by Logstash. LOG_BASE points the
+  # logback config here, so all eight components write into one place.
+  photo-app-logs:
+  # Without a persisted sincedb Logstash re-ingests every file from the beginning
+  # on each restart and duplicates documents in Elasticsearch.
+  photo-app-logstash-data:
+  photo-app-maven-cache:
+
+services:
+
+  # ------------------------------------------------------------------ MySQL
+  photo-app-mysql:
+    image: mysql:8.4
+    container_name: photo-app-mysql
+    networks: [photo-app-net]
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-photo_app}
+      MYSQL_USER: ${MYSQL_USER:-photo_app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+    volumes:
+      - photo-app-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ------------------------------------------------- Liquibase (one-shot)
+  # Builds the schema from scratch into the empty database, seed data included.
+  # Runs to completion and exits; nothing else may write DDL.
+  # Runs the database module's own liquibase-maven-plugin rather than the
+  # liquibase/liquibase image. That image ships no MySQL driver, and adding one
+  # would pin the driver version in a second place; here the module's pom stays
+  # the single source of truth for both the changelogs and the connector.
+  photo-app-liquibase:
+    image: maven:3.9-eclipse-temurin-25
+    container_name: photo-app-liquibase
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-mysql:
+        condition: service_healthy
+    working_dir: /work
+    volumes:
+      - ./database:/work:ro
+      - photo-app-maven-cache:/root/.m2
+    command: >
+      mvn -B -q liquibase:update
+      -Ddb.host=photo-app-mysql
+      -Ddb.port=3306
+      -Ddb.name=${MYSQL_DATABASE:-photo_app}
+      -Ddb.username=${MYSQL_USER:-photo_app_user}
+      -Ddb.password=${MYSQL_PASSWORD}
+    restart: "no"
+
+  # --------------------------------------------------------------- RabbitMQ
+  photo-app-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: photo-app-rabbitmq
+    networks: [photo-app-net]
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  # ----------------------------------------------------------------- Zipkin
+  photo-app-zipkin:
+    image: openzipkin/zipkin
+    container_name: photo-app-zipkin
+    networks: [photo-app-net]
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9411/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ------------------------------------------------- ELK bootstrap, stage 1
+  # One-shot: generates a self-signed CA and an Elasticsearch server certificate
+  # into a shared volume, then exits. Must complete before Elasticsearch starts.
+  # Self-signed is fine locally; the point is that the security model is the same
+  # one production requires.
+  photo-app-elk-certs:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION:-8.13.0}
+    container_name: photo-app-elk-certs
+    networks: [photo-app-net]
+    user: "0"
+    volumes:
+      - photo-app-certs:/certs
+      - ./docker/elk/setup/certs.sh:/certs.sh:ro
+    command: ["bash", "/certs.sh"]
+    restart: "no"
+
+  # ------------------------------------------------- ELK bootstrap, stage 2
+  # kibana_system has no usable password until it is set through the API, which
+  # requires a running cluster - hence a second one-shot after ES is healthy.
+  photo-app-elk-users:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION:-8.13.0}
+    container_name: photo-app-elk-users
+    networks: [photo-app-net]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - photo-app-certs:/certs:ro
+      - ./docker/elk/setup/users.sh:/users.sh:ro
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?set ELASTIC_PASSWORD in .env}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:?set KIBANA_SYSTEM_PASSWORD in .env}
+    command: ["bash", "/users.sh"]
+    restart: "no"
+
+  # ---------------------------------------------------------- Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION:-8.13.0}
+    container_name: photo-app-elasticsearch
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-elk-certs:
+        condition: service_completed_successfully
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: certs/es/es.key
+      xpack.security.http.ssl.certificate: certs/es/es.crt
+      xpack.security.http.ssl.certificate_authorities: certs/ca/ca.crt
+      xpack.license.self_generated.type: basic
+    volumes:
+      - photo-app-es-data:/usr/share/elasticsearch/data
+      - photo-app-certs:/usr/share/elasticsearch/config/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s --cacert /usr/share/elasticsearch/config/certs/ca/ca.crt -u elastic:${ELASTIC_PASSWORD} https://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  # ---------------------------------------------------------------- Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELK_VERSION:-8.13.0}
+    container_name: photo-app-kibana
+    networks: [photo-app-net]
+    depends_on:
+      photo-app-elk-users:
+        condition: service_completed_successfully
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: https://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD}
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: /usr/share/kibana/config/certs/ca/ca.crt
+    volumes:
+      - photo-app-certs:/usr/share/kibana/config/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:5601/api/status | grep -q 200"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+
+  # -------------------------------------------------------------- Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELK_VERSION:-8.13.0}
+    container_name: photo-app-logstash
+    networks: [photo-app-net]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: -Xms512m -Xmx512m
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      # Logstash's monitoring/license reader keeps its own connection and defaults
+      # to http://elasticsearch:9200, which cannot work once TLS is enforced. The
+      # pipeline output is configured separately and is unaffected.
+      XPACK_MONITORING_ENABLED: "false"
+    volumes:
+      - ./docker/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - photo-app-certs:/usr/share/logstash/config/certs:ro
+      # Replaces the old host bind mount of api-parent/services
+      - photo-app-logs:/var/log/photo-app:ro
+      - photo-app-logstash-data:/usr/share/logstash/data

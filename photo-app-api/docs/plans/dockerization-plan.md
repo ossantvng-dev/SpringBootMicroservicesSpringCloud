@@ -943,7 +943,69 @@ package conflict. The preinstalled binary serves the healthcheck.
       would also try to migrate — keep the migration container the only thing that talks to
       the database, and do not build this module inside the service images.
 
-## Step 7 — docker-compose: infrastructure
+## Step 7 — docker-compose: infrastructure ✅ DONE
+
+Delivered `photo-app-api/docker-compose.yml` (infrastructure only — application services
+are Step 8), `photo-app-api/.env.example`, `photo-app-api/docker/elk/`, and
+`photo-app-api/tools/local/setup.sh`.
+
+- [x] Network `photo-app-net`; volumes for MySQL data, ES data, certs, the shared
+      `photo-app-logs`, a persisted Logstash sincedb, and a Maven cache.
+- [x] `photo-app-mysql` (mysql:8.4) on **3306**, `photo-app-rabbitmq` on **5672/15672**,
+      `photo-app-zipkin` on **9411** — dedicated containers, standard ports (decision 3).
+      All three healthchecked and reaching `healthy`.
+- [x] `photo-app-liquibase` one-shot, gated on MySQL health, `restart: "no"`.
+- [x] Local bootstrap script `tools/local/setup.sh` with `--status` / `--drop` modes.
+- [x] ELK moved in-repo to `docker/elk/`, **`xpack.security.enabled=true`**, TLS, a
+      two-stage bootstrap, authenticated Logstash output, persisted sincedb.
+
+**Liquibase container — chose the Maven shape, not `liquibase/liquibase`.** The official
+image ships **no MySQL driver** (it failed with *"Cannot find database driver:
+com.mysql.jdbc.Driver"*, having guessed the legacy class from the URL). Adding a driver
+would pin the connector version in a second place; running the module's own
+`liquibase-maven-plugin` keeps its pom the single source of truth for both changelogs and
+the `mysql-connector-j` version. A named Maven cache volume keeps reruns fast.
+
+**ELK bootstrap is two one-shot stages, not one.** Certificates must exist *before*
+Elasticsearch starts, but `kibana_system` has no usable password until the cluster is
+running — a single container cannot do both. So `photo-app-elk-certs` (generates CA +
+server cert, idempotent) runs first, then Elasticsearch, then `photo-app-elk-users` (sets
+the `kibana_system` password), then Kibana. Certificate SANs cover `elasticsearch`,
+`photo-app-elasticsearch` and `localhost`.
+
+**`XPACK_MONITORING_ENABLED=false` on Logstash.** Its licence/monitoring reader keeps a
+separate connection that defaults to `http://elasticsearch:9200` and cannot work once TLS
+is enforced; it logged a repeating "Elasticsearch Unreachable" error while the pipeline
+itself was fine. The pipeline output is configured independently and is unaffected.
+
+### Step 7 verification
+
+| Check | Result |
+|---|---|
+| `docker compose config` | ✅ valid |
+| MySQL / RabbitMQ / Zipkin | ✅ all `healthy` |
+| Liquibase into an empty DB | ✅ **12 of 12 changesets applied** |
+| Seed data present | ✅ 100 users, 2 roles, 199 accounts, 597 albums, 5 970 photos, 100 user_roles |
+| Migration idempotent | ✅ rerun: `Run: 0, Previously run: 12` |
+| Elasticsearch | ✅ `healthy` with security + TLS |
+| Plain HTTP to ES | ✅ **refused** — TLS enforced |
+| HTTPS without credentials | ✅ **401** |
+| HTTPS with `elastic` | ✅ 200 |
+| Kibana | ✅ `healthy`, `/api/status` 200 — proves `kibana_system` auth works |
+| Logstash → ES | ✅ authenticated over TLS, pipeline running |
+| **Log ingestion end to end** | ✅ a JSON file written into `photo-app-logs` appeared in index `photoapp-logs-2026.08.01`, searchable by `traceId` |
+| **sincedb fix** | ✅ restart produced **no duplicate** (1 doc before, 1 after); `sincedb_photoapp` persisted with the correct byte offset |
+| `tools/local/setup.sh --status` | ✅ "is up to date" |
+| `tools/local/setup.sh` | ✅ no-op on an already-migrated database |
+
+Note on the script: it must `cd` into the `database` module before invoking Maven. The
+pom's `searchPath` is the relative `src/main/resources`, which Liquibase resolves against
+the **current directory**, not the pom's location — running with `-f` from elsewhere fails
+with *"changelog-master.xml was not found in the configured search path"*.
+
+---
+
+## Step 7 (original outline — superseded by the record above)
 
 **Backing services** (standard ports — the standalone host containers are not running,
 decision 3):
