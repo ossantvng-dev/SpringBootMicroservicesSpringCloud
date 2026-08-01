@@ -3,6 +3,22 @@
 # All backing services are dedicated to this project: the standalone mysql-v8,
 # rabbitmq and zipkin containers on the host are deliberately not reused, and the
 # standard ports are used because those containers are not running (decision 3).
+#
+# ONE-SHOT INIT JOBS
+# photo-app-liquibase, photo-app-elk-certs and photo-app-elk-users run once and
+# exit. They stay listed as "Exited (0)" afterwards because the Compose
+# specification has no declarative auto-remove - there is no auto_remove/rm key,
+# and `up` has no equivalent of `docker run --rm`. Removing them at the end of a
+# run therefore has to happen outside the file:
+#
+#     tools/local/stack.sh up      # up -d, then remove the finished init jobs
+#     tools/local/stack.sh clean   # remove them without restarting anything
+#
+# The gating below (depends_on: condition: service_completed_successfully) is
+# what makes the ordering correct, so it is kept here rather than moved into the
+# script: a plain `docker compose up -d` still produces a correct stack, just
+# with three tidy-up containers left behind. All three jobs are idempotent, so
+# removing and re-running them is safe.
 
 name: photo-app
 
