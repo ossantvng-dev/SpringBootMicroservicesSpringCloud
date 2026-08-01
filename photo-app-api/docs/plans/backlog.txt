@@ -1,0 +1,58 @@
+BACKLOG — findings deferred out of the step that found them
+===========================================================
+
+Running list of things worth fixing that were out of scope when discovered.
+Append here rather than only mentioning them in a summary, so nothing is lost
+between sessions. Format: [YYYY-MM-DD | Step N] title, then detail.
+
+
+[2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503
+---------------------------------------------------------------------------------
+When no instance of a downstream service is registered, the load balancer raises
+HttpServerErrorException: 503, which propagates as a servlet exception and the
+error dispatch renders HTTP 500. The WebFlux stack surfaced 503 directly.
+Only affects the service-unavailable error path. A dedicated exception handler at
+the gateway would restore fidelity.
+Priority: low.
+
+
+[2026-08-01 | Step 1] Actuator sub-paths shadowed by Spring Cloud Function's web handler
+----------------------------------------------------------------------------------------
+Spring Cloud Function's web handler arrives transitively via
+spring-cloud-starter-bus-amqp and intercepts /actuator/<sub-path> requests,
+turning e.g. /actuator/gateway into
+"Failed to lookup function to route based on the value of
+'spring.cloud.function.definition' property 'actuator/gateway'".
+Pre-existing across all five business services as well — not introduced by the
+webmvc migration.
+Fix: spring.cloud.function.web.enabled=false.
+Scheduled: Step 4, alongside the HikariCP settings (same properties files).
+
+
+[2026-08-01 | Step 2] Wrong/missing config-server credentials degrade silently
+------------------------------------------------------------------------------
+New failure mode introduced by putting HTTP Basic in front of the Config Server.
+With spring.config.import=optional:configserver:..., a 401 is logged as a WARN
+("Could not locate PropertySource ... 401") and startup CONTINUES with no remote
+configuration at all. Whether the app then fails depends entirely on whether some
+bean happens to need a property only the server provides — the gateway does fail,
+because JwtClaimsParser requires ${photoapp.jwt.secret}, but that is luck, not a
+guard. A component whose remote properties are all optional would boot silently
+misconfigured.
+Fix: drop the "optional:" prefix so a 401 or an unreachable server is fatal.
+Already planned for containers via SPRING_CONFIG_IMPORT in Step 8; consider doing
+the same for the packaged properties so native runs fail loudly too.
+Priority: medium.
+
+
+[2026-08-01 | Step 2] Config Server health is DOWN whenever RabbitMQ is down
+----------------------------------------------------------------------------
+/actuator/health is deliberately left unauthenticated for container healthchecks,
+but it aggregates the Rabbit health indicator (Spring Cloud Bus), so it returns
+503 DOWN whenever RabbitMQ is unavailable — confirmed during the Step 2 smoke
+test. A compose HEALTHCHECK on that endpoint therefore reports the Config Server
+unhealthy on any Rabbit blip, and ordering must gate the Config Server on
+rabbitmq being service_healthy.
+Consider a dedicated health group for the readiness probe that excludes rabbit.
+Relevant to: Step 7 (compose infrastructure).
+Priority: medium — decide before writing the healthchecks.

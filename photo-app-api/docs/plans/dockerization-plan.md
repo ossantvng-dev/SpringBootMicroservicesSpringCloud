@@ -649,47 +649,69 @@ and survives container restarts (which change IPs). Flagged as an open question.
       reactive chain — and the servlet `JwtFilter`'s 401-on-expiry is the only expiry
       semantics left.
 
-**Two observations from the smoke test, deliberately not acted on (raise if you disagree):**
-
-1. **Backend failures surface as 500, not 503.** With no instances registered, the
-   load balancer's `HttpServerErrorException: 503` propagates as a servlet exception and
-   the error dispatch renders **500**. WebFlux surfaced 503 directly. Only affects the
-   service-unavailable path; a dedicated exception handler at the gateway would restore
-   fidelity. Candidate for Step 8 or the backlog.
-2. **Spring Cloud Function's web handler shadows `/actuator/**` sub-paths.** It comes in
-   transitively via `spring-cloud-starter-bus-amqp` and turns
-   `/actuator/gateway` into *"Failed to lookup function to route based on … 'actuator/gateway'"*.
-   Pre-existing (the same dependency chain exists in all five services), not caused by this
-   migration. `spring.cloud.function.web.enabled=false` fixes it if the gateway actuator
-   endpoints are ever wanted.
+**Two observations from the smoke test, deferred to `backlog.txt`:** the 500-instead-of-503
+rendering of backend-unavailable failures (low priority), and Spring Cloud Function's web
+handler shadowing `/actuator/<sub-path>` (pre-existing across all five services; scheduled
+into Step 4).
 
 > Note: `spring-boot-starter-webflux` remains on the gateway's classpath transitively via
 > `spring-cloud-starter-bus-amqp` — identical to all five business services. Boot still
 > deduces `SERVLET` because `DispatcherServlet` is present, confirmed by Tomcat 11 starting
 > on `:8080`. No exclusion needed.
 
-## Step 2 — Config Server security + keystore un-tracking
+## Step 2 — Config Server security + keystore un-tracking ✅ DONE (encryption deferred)
 
 **Basic Auth (decision 5):**
 
-- [ ] Add `spring-boot-starter-security` to `photo-app-configuration-server`.
-- [ ] Single admin user from `CONFIG_SERVER_ADMIN_USER` / `CONFIG_SERVER_ADMIN_PASSWORD`
-      env vars. **Do not use `photo-app-security-lib`** — wrong consumer model (see
-      decision 5).
-- [ ] Filter chain: authenticate `/encrypt/**`, `/decrypt/**`, `/{app}/{profile}` and
-      `/actuator/busrefresh`; permit `/actuator/health` anonymously for healthchecks.
-- [ ] CSRF disabled for these machine-to-machine endpoints; stateless session policy.
-- [ ] Every config client (8 modules) must send the credentials —
-      `spring.cloud.config.username` / `spring.cloud.config.password`, driven by env vars
-      in Docker. Verify a native run still boots.
+- [x] Add `spring-boot-starter-security` to `photo-app-configuration-server`.
+- [x] Single admin user from `CONFIG_SERVER_ADMIN_USER` / `CONFIG_SERVER_ADMIN_PASSWORD`,
+      bound through `spring.security.user.name` / `.password` so Boot's in-memory user is
+      driven entirely by the environment and no credential is committed.
+      **`photo-app-security-lib` deliberately not used** — wrong consumer model (decision 5).
+- [x] Filter chain in `com.photoapp.config.server.configuration.SecurityConfiguration`:
+      `/actuator/health` and `/actuator/health/**` permitted anonymously, `anyRequest()`
+      authenticated — which covers `/encrypt/**`, `/decrypt/**`, `/{app}/{profile}` and
+      `/actuator/busrefresh` without enumerating them.
+- [x] CSRF disabled, `SessionCreationPolicy.STATELESS`, HTTP Basic.
+- [x] All **seven** config clients send the credentials via
+      `spring.cloud.config.username` / `spring.cloud.config.password` in their packaged
+      `application.properties`. (Seven, not eight: `photo-app-discovery-service-cluster`
+      has no `spring.config.import` and is not in the compose stack — decision 6.)
+- [x] Verified natively — see the evidence table below.
 
 **Keystore (decision 4):**
 
-- [ ] Add `*.p12` / `*.jks` to `.gitignore`; `git rm --cached` `keystore.p12` and
-      `keystore.jks` — untracked, still on disk. **Keep the current keypair.**
+- [x] Added `*.p12`, `*.jks` and `.env` to `.gitignore`; `git rm --cached` on
+      `keystore.p12` and `keystore.jks` — untracked, still on disk. **Current keypair kept.**
 - [ ] The Config Server `Dockerfile` must **not** `COPY` the keystore (Step 6).
-- [ ] `docker-compose.yml` bind-mounts the host keystore into the container at the location
-      `encrypt.keyStore.location` points to (Step 7).
+      ⚠️ **Not sufficient on its own.** `keystore.p12` lives in `src/main/resources`, so
+      `mvn package` bakes it into the fat jar and any image built from that jar contains it.
+      To honour "never baked into the image", the **`.dockerignore` must exclude `*.p12` /
+      `*.jks`** so the build context has no keystore and the jar built inside the image is
+      clean. Local native runs keep working because the local build still packages it.
+- [ ] `docker-compose.yml` bind-mounts the host keystore into the container (Step 7).
+      With the planned layered extraction the app runs from a real directory, so the mount
+      target is `…/BOOT-INF/classes/keystore.p12` and `encrypt.keyStore.location` can stay
+      `classpath:/keystore.p12` unchanged.
+
+**Property encryption — deliberately deferred.** Not started: it must come after every
+config-repo property edit is final (Steps 3, 4 and 8 all still add properties), and it
+needs `KEYSTORE_PASSWORD`, which only you hold. Checklist retained below.
+
+**Step 2 verification (Config Server on `:8888`, native profile, Basic Auth active):**
+
+| Request | No credentials | Valid credentials | Wrong password |
+|---|---|---|---|
+| `/actuator/health` | 503 *(reachable — DOWN only because Rabbit was off)* | 503 | — |
+| `/actuator/info` | **401** | 200 | — |
+| `/actuator/busrefresh` | **401** | — | — |
+| `/photo-app-users-service/dev` | **401** | 200 | **401** |
+| `/encrypt/status` | **401** | reached *(500: keystore disabled for this test)* | — |
+| `/decrypt` | **401** | — | — |
+
+Gateway as a client: with the env vars set it authenticated and logged
+`Located environment: name=photo-app-api-gateway, profiles=[dev]`, then served its routes.
+Without them it got 401 from the server.
 
 **Property encryption** (apply once all config-repo property edits are final — re-verify at
 Step 8):
@@ -725,12 +747,17 @@ Step 8):
 - [ ] Verify natively: traces from all eight components appear in Zipkin, and eight JSON log
       files are produced.
 
-## Step 4 — HikariCP sizing (§3)
+## Step 4 — HikariCP sizing (§3) + actuator path fix
 
 - [ ] Add explicit sizing to each of the five service `*-dev.properties`:
       `spring.datasource.hikari.maximum-pool-size=5`, `minimum-idle=1`, plus
       `connection-timeout` and `max-lifetime`. Today nothing is set anywhere, so five
       services × the 10-connection default = 50 connections against one MySQL container.
+- [ ] Set `spring.cloud.function.web.enabled=false` on the five services **and** the
+      gateway. Spring Cloud Function's web handler arrives transitively via
+      `spring-cloud-starter-bus-amqp` and shadows `/actuator/<sub-path>` requests — see
+      `backlog.txt`, found during Step 1. Folded in here because it touches the same
+      properties files.
 - [ ] Commit and push the config repo changes to `main`.
 
 ## Step 5 — MapStruct migration in `photo-app-commons` (requirement B)

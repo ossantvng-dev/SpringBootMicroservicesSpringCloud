@@ -1,0 +1,37 @@
+Spring Boot Actuator - Endpoints más importantes
+
+/health
+  - Estado de la aplicación (UP/DOWN).
+  - Integración con Kubernetes, Docker, AWS load balancers.
+
+/info
+  - Información de la aplicación (versión, build, etc.).
+  - Útil para validar despliegues y CI/CD.
+
+/metrics
+  - Métricas de runtime (CPU, memoria, requests).
+  - Base para alertas y monitoreo de performance.
+
+/mappings
+  - Lista de todos los @RequestMapping expuestos.
+  - Ayuda a depurar rutas y endpoints.
+
+/httpexchanges
+  - Últimas solicitudes/respuestas HTTP.
+  - Útil para trazabilidad y debugging.
+
+/env
+  - Propiedades de entorno cargadas.
+  - Confirmar valores desde Config Server (⚠️ restringir acceso).
+
+/loggers
+  - Ver y modificar niveles de log en runtime.
+  - Útil para debugging dinámico sin redeploy.
+
+/circuitbreakers
+  - Estado de circuit breakers (resiliencia).
+  - Importante en microservicios con fallos de red.
+
+/bus-refresh
+  - Refresca configuración vía Spring Cloud Bus.
+  - Confirma propagación de cambios con RabbitMQ.
