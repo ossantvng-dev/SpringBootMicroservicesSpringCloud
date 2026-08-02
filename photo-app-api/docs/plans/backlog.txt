@@ -164,6 +164,48 @@ Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
 
 
+[2026-08-02 | observation] PKCE flow is not a genuine PKCE implementation
+--------------------------------------------------------------------------
+KNOWN SIMPLIFICATION, NOT A BUG. PLATFORM-VISION.md already says the
+authorization service "registers an in-memory PKCE client; it is a stepping
+stone, not the product". Logged so it is not forgotten.
+
+/auth/login accepts a codeVerifier directly in the login request body. That is a
+JWT login with an extra field, not the PKCE authorization code flow, which
+requires a client-generated code_verifier and derived code_challenge, a redirect
+to an authorization endpoint, a temporary authorization code, and an exchange of
+that code for a token using the original verifier.
+
+VERIFIED IN THE CODE (2026-08-02), and it is thinner than the description above
+suggests:
+  - LoginRequestDTO declares codeVerifier with
+    @NotBlank("Code verifier is required for PKCE"), so callers are FORCED to
+    send one.
+  - Nothing consumes it. Grepping the whole service for "odeVerifier" outside
+    that DTO returns no hits. The value is required, then discarded - it is not
+    hashed, compared, or stored. So the field is validation theatre rather than
+    a partial implementation.
+  - The service exposes /auth/login, /auth/refresh and /auth/revoke. There is no
+    authorization endpoint at all, so no authorization code can ever be issued.
+  - AuthorizationServerConfig registers a client with grant type
+    AUTHORIZATION_CODE and redirect URI http://localhost:8080/callback, but
+    nothing in the login path uses that RegisteredClientRepository. The config is
+    inert. The redirect URI also points at localhost, which would not resolve
+    correctly from inside a container.
+
+CORRECT FIX: build the real authorization server on Spring Authorization Server,
+per the platform vision. Do NOT patch the custom endpoint into something
+PKCE-shaped piecemeal - that would entrench the stepping stone.
+
+Small cleanup worth considering in the meantime, independent of that initiative:
+either drop the unused codeVerifier field, or document it in place as a
+placeholder. As it stands it requires every caller to send a value that is
+ignored, which reads as a working PKCE check to anyone new to the code.
+
+Priority: aligned with the future authorization-server initiative, not urgent for
+the dockerization scope. See PLATFORM-VISION.md.
+
+
 [2026-08-01 | Step 8] MEDIUM — endpoints are slow through the gateway in Docker
 --------------------------------------------------------------------------------
 Not blocking; the stack is functionally correct. Observed in Zipkin traces once
