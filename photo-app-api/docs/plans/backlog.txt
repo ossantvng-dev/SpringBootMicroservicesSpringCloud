@@ -172,10 +172,31 @@ tracing started working:
     POST /auth/login    ~7.0s total at the gateway
                         ~6.3s of that inside photo-app-authorization-service
     GET  /users         3.2s total, listing 100 records
+    GET  /accounts      4.828s total, 17 spans across 3 services
+                        traceId 6a6ea8fed78d9418f5aff2b0ec6c6fd4
 
 Far higher than expected for a local environment at this data volume. BCrypt's
 deliberate cost factor could account for part of the login figure, but the
 /users listing has no such excuse - it is a simple paginated read.
+
+The /accounts trace confirms the problem is NOT confined to one service. Three
+services and 17 spans for one request means the cost compounds per hop, so a
+systemic per-hop overhead fits the evidence better than one slow component. That
+strengthens starting point 1 below: resource contention would degrade every hop
+at once, which is exactly the shape observed.
+
+The fan-out is via Feign and is already identified from earlier work in this
+session: accounts-service calls users-service through
+UserFeignClient#isActive - visible in a Step 8 stack trace as
+"Failure on isActive. The photo-app-users-service is not available" when
+users-service was down. The third service in the trace is the gateway. So the
+path is gateway -> accounts-service -> users-service.
+
+Additional angle worth checking: whether any Feign calls in the accounts flow
+are sequential where they could run in parallel. Look at AccountServiceImpl and
+the Feign clients in photo-app-feign-lib. Note this is a code-shaped fix and the
+latency may well be environmental - measure before restructuring anything,
+otherwise it is optimising the wrong layer.
 
 Investigation starting points:
   1. Docker Desktop resource allocation (CPU and RAM given to the engine).
