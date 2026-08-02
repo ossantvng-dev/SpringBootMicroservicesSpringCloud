@@ -164,6 +164,64 @@ Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
 
 
+[2026-08-02 | config] MEDIUM — review logging levels across the config repo
+----------------------------------------------------------------------------
+The Hibernate fix applied earlier today addressed one logger. This is the
+systematic pass.
+
+PRINCIPLE
+Local and dev can stay reasonably verbose - small volume, active debugging. What
+is missing is a defined production posture: INFO as the default floor for most
+packages, with DEBUG and TRACE reserved for specific loggers switched on
+temporarily during an investigation rather than left on permanently.
+
+AUDIT OF WHAT IS ACTUALLY SET (2026-08-02), so the work starts from facts:
+
+  Still at TRACE in every dev profile - the loudest remaining, and considerably
+  noisier than the Hibernate binder that was just lowered:
+      org.springframework.cloud.openfeign=TRACE       (5 files)
+      org.springframework.cloud.circuitbreaker=TRACE  (5 files)
+      io.github.resilience4j=TRACE                    (5 files)
+  These fire on every inter-service call, so they scale with traffic rather than
+  with data volume.
+
+  Application packages at DEBUG in dev, one per service:
+      com.photoapp.{users,accounts,albums,photos,auth}=DEBUG
+
+  Gateway: org.springframework.cloud.gateway is DEBUG in dev, INFO in prod, plus
+  ...gateway.server.mvc.handler=TRACE in dev.
+
+GOOD NEWS - THE DEV/PROD SPLIT PARTLY EXISTS ALREADY
+The prod profiles are not simply copies. They already lower the Hibernate loggers
+to info while dev runs them hotter, so the pattern this item asks for is
+established; it just has not been applied to the Feign, circuit-breaker and
+resilience4j loggers, which prod does not mention at all and therefore inherits
+at the root level. Extending the existing pattern is the job, not inventing one.
+
+CONCRETE LEFTOVER WORTH FIXING FIRST
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder still appears in the
+PROD files (4 at info, 1 at trace elsewhere). That logger is DEAD on Hibernate
+7.2.7 - the class moved to org.hibernate.type.descriptor.jdbc, verified against
+hibernate-core-7.2.7.Final.jar during the earlier fix. It was deleted from the dev
+profiles but survives in prod. Delete it there too; it can never emit.
+
+SCOPE
+Audit every logging.level.* entry across all service properties, group by package,
+and document the intended level per environment in a new LOGGING.md.
+NOTE: DATABASE.md does not exist in this repository - LOGGING.md as a new file is
+the cleaner home, and Step 9 documentation is the natural moment to add it.
+
+CONNECTION TO THE LATENCY ITEM
+Logging volume was measured and ruled out as the dominant cause for /accounts
+specifically - that endpoint produced only two binder lines per request. The
+broader principle still holds: verbose logging has real cost at scale, and the
+Feign and resilience4j TRACE loggers above are per-call rather than per-row, so
+they will scale with production traffic in a way the Hibernate binder did not with
+one developer's manual testing.
+
+Priority: MEDIUM.
+
+
 [2026-08-02 | initiative] HIGH — comprehensive unit and integration testing
 ----------------------------------------------------------------------------
 Deferred throughout the whole dockerization effort (Steps 1-9) by deliberate
