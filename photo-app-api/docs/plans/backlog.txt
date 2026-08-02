@@ -68,7 +68,26 @@ VERIFIED after the fix, on two different services and two different endpoints:
   Denials logged as ACCESS_DENIED at WARN; UNHANDLED_EXCEPTION count zero.
 
 
-[2026-08-01 | Step 8] HIGH — no traces reach Zipkin from containers
+[2026-08-01 | Step 8] No traces reach Zipkin from containers        [FIXED]
+---------------------------------------------------------------------------
+FIXED 2026-08-01 by replacing the span transport. Boot 4 sends spans through
+ZipkinHttpClientSender, built on the JDK java.net.http.HttpClient, which fails
+permanently in containers (see root cause below). photo-app-tracing-lib now
+publishes a BytesMessageSender backed by URLConnectionSender; Boot declares its
+own sender under @ConditionalOnMissingBean(BytesMessageSender.class), so it
+backs off. HttpURLConnection was already proven to work in these exact
+containers during diagnosis.
+
+The library is registered as an auto-configuration ordered before
+ZipkinAutoConfiguration, not as a @Component, because the Config Server and the
+Discovery Service do not component-scan any com.photoapp package. It is a new
+module because no existing library is shared by all eight deployables - those
+two depend on none of them.
+
+The underlying trigger that breaks the JDK client is NOT fixed, only bypassed.
+It is tracked as a separate follow-up item below.
+
+Original diagnosis retained:
 --------------------------------------------------------------------
 Tracing worked in the Step 3 NATIVE run (all eight components reported spans).
 In containers it does not: Zipkin receives nothing from any application service.
@@ -143,6 +162,43 @@ WHERE TO GO NEXT:
     the trigger is environmental rather than a code difference.
 Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
+
+
+[2026-08-01 | Step 8] Find what interrupts the Zipkin reporter thread
+----------------------------------------------------------------------
+Follow-up to the FIXED transport-swap item above. The swap restores
+observability but only bypasses the defect; the JDK java.net.http.HttpClient is
+still broken inside these containers and anything else that uses it would hit
+the same wall.
+
+What is established: the reporter fails with ClosedChannelException at
+SocketChannelImpl.ensureOpen, i.e. the socket channel is already closed before
+connect is attempted. That is the signature of a thread carrying an interrupt
+flag, because NIO auto-closes interruptible channels on interrupt and never
+reopens them. A freshly built client on a clean thread in the same container
+returns 202 for the same request, so the JDK client itself is fine.
+
+HYPOTHESIS FOR THE LOOSE END (why Step 3's native run worked but containers do
+not) - NOT CONFIRMED, offered as a starting point:
+  Virtual threads. spring.threads.virtual.enabled=true was added in Step 1 and
+  may interact differently with NIO channel interruption under container CPU and
+  memory constraints than in an unconstrained native JVM. A virtual thread that
+  is unmounted, or carrier-thread pinning under CPU pressure, could plausibly
+  leave an interrupt flag set on the thread performing the connect.
+  Note the setting is currently on the GATEWAY only, while every service loses
+  spans - so if virtual threads are the cause, the mechanism cannot be direct
+  and that itself is informative. Check whether anything else enables virtual
+  threads globally before pursuing this.
+
+Suggested approach:
+  - Reproduce with a minimal Boot app in a container, then bisect: with and
+    without virtual threads, with and without CPU limits.
+  - Instrument AsyncReporter$Flusher to log Thread.currentThread().isInterrupted()
+    before each flush, which would confirm or kill the interrupt theory outright.
+  - If confirmed, report upstream: this affects any Boot 4 application sending
+    spans over the default sender in a container.
+Priority: LOW-MEDIUM. Observability works via the URLConnection sender; this is
+about the underlying defect, not the symptom.
 
 
 [2026-08-01 | Step 1] Gateway: backend-unavailable failures render as 500, not 503

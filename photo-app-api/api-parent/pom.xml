@@ -40,6 +40,7 @@
 		<module>libraries/photo-app-entity-model-lib</module>
 		<module>libraries/photo-app-feign-lib</module>
 		<module>libraries/photo-app-security-lib</module>
+		<module>libraries/photo-app-tracing-lib</module>
 
 		<!-- Services -->
 		<module>services/photo-app-authorization-service</module>
@@ -105,6 +106,11 @@
 			<dependency>
 				<groupId>com.photoapp.domain</groupId>
 				<artifactId>photo-app-entity-model-lib</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>com.photoapp.tracing</groupId>
+				<artifactId>photo-app-tracing-lib</artifactId>
 				<version>1.0-SNAPSHOT</version>
 			</dependency>
 			<dependency>

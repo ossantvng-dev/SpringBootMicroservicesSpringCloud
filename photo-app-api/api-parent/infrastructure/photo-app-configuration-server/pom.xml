@@ -58,6 +58,12 @@
 			<artifactId>spring-cloud-stream-binder-rabbit</artifactId>
 		</dependency>
 
+		<!-- Span transport: replaces Boot's JDK-HttpClient sender -->
+		<dependency>
+			<groupId>com.photoapp.tracing</groupId>
+			<artifactId>photo-app-tracing-lib</artifactId>
+		</dependency>
+
 		<!-- Zipkin y Micrometer -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
