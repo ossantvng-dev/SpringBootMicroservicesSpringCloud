@@ -198,6 +198,49 @@ the Feign clients in photo-app-feign-lib. Note this is a code-shaped fix and the
 latency may well be environmental - measure before restructuring anything,
 otherwise it is optimising the wrong layer.
 
+LIKELY ROOT CAUSE IDENTIFIED - Hibernate TRACE logging (evidence, not hypothesis)
+In trace 6a6ea9c1ae30762e70012572db19d123 (albums-service) there is a ~1.8s gap
+between "JWT validated successfully" at 02:21:54.842 and the first Hibernate
+"binding parameter" line at 02:21:56.664, for a query that should take under
+100ms. TRACE-level Hibernate logging emits one line per bound parameter per
+query; every line is serialised to JSON and written to the shared log volume,
+which plausibly accounts for multi-second latencies on any endpoint that touches
+the database.
+
+CONFIRMED CONFIGURATION - identical in all five service *-dev.properties:
+    spring.jpa.show-sql=true
+    spring.jpa.properties.hibernate.format_sql=true
+    logging.level.org.hibernate.SQL=debug
+    logging.level.org.hibernate.orm.jdbc.bind=trace
+    logging.level.org.hibernate.type.descriptor.sql.BasicBinder=trace
+So the TRACE levels are explicit, not inherited defaults. Three observations:
+  - show-sql=true duplicates what org.hibernate.SQL=debug already logs; one of
+    the two is redundant.
+  - format_sql=true pretty-prints each statement across multiple lines, which
+    multiplies the volume written per query on top of the per-parameter lines.
+  - org.hibernate.type.descriptor.sql.BasicBinder is the Hibernate 5 binder
+    logger. This project runs Hibernate 7.2.7, where it was replaced by
+    org.hibernate.orm.jdbc.bind - which is also set. The BasicBinder line is
+    therefore almost certainly dead config; verify, then delete it rather than
+    just lowering it.
+
+PROPOSED FIX - NOT APPLIED:
+Lower org.hibernate logging in the config repo's dev profile. Keep it granular
+rather than switching Hibernate logging off: org.hibernate.SQL at DEBUG shows the
+statement itself without every parameter bind and is cheap and useful. The
+expensive parts are the per-parameter TRACE loggers and format_sql.
+
+CONFIRM THE SCALE FIRST, in Kibana:
+    logger_name:org.hibernate* AND traceId:"<any recent traceId>"
+counts exactly how many log lines one request produces. Worth doing before and
+after so the improvement is measured rather than assumed - and it also tells you
+whether this fully explains the numbers or only part of them.
+
+Note the interaction with starting point 1 below: heavy log writing and engine
+resource contention would compound, so both may be contributing. Fixing the
+logging is cheap and reversible, so do it first and re-measure before spending
+time on engine tuning.
+
 Investigation starting points:
   1. Docker Desktop resource allocation (CPU and RAM given to the engine).
      Fourteen containers run at once - eight application plus six infrastructure
