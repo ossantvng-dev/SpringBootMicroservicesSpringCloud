@@ -1,0 +1,44 @@
+======================================
+PASOS MANUALES POST-ARRANQUE (no automatizados en Step 7)
+======================================
+
+Estos pasos NO se ejecutan solos al hacer `docker compose up` — hay que 
+hacerlos manualmente cada vez que se crea el volumen de Elasticsearch desde cero
+(no hace falta repetirlos si el volumen ya existe y solo reinicias contenedores).
+
+--------------------------------------
+1. Acceso a las UIs
+--------------------------------------
+
+Zipkin (tracing, sin login):
+  http://localhost:9411
+
+RabbitMQ Management:
+  http://localhost:15672
+  Usuario/password -> ver .env, variables RABBITMQ_USER / RABBITMQ_PASSWORD
+
+Kibana:
+  http://localhost:5601
+  Usuario: elastic
+  Password -> ver .env, variable ELASTIC_PASSWORD
+
+--------------------------------------
+2. Kibana: crear el Data View (una sola vez por volumen de ES)
+--------------------------------------
+
+Sin esto, Discover no muestra nada aunque los logs SÍ estén en Elasticsearch.
+
+1. Menú hamburguesa (☰) -> Stack Management -> Data Views
+2. "Create data view"
+3. Name / Index pattern: photoapp-logs-*
+   (el * es necesario, el índice real es photoapp-logs-YYYY.MM.dd y cambia cada día)
+4. Timestamp field: @timestamp
+5. "Save data view to Kibana"
+6. Ir a Discover (☰ -> Discover) y seleccionar photoapp-logs-* en el dropdown
+
+--------------------------------------
+Notas
+--------------------------------------
+- Las passwords reales viven SOLO en .env (nunca en este archivo, nunca en git)
+- Si se borra el volumen de Elasticsearch (docker compose down -v), hay que 
+  repetir el paso 2 la próxima vez que arranque

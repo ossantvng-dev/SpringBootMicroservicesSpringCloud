@@ -1,5 +1,6 @@
 package com.photoapp.security.model;
 
+import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,6 +9,7 @@ import java.util.Collection;
 
 public class CustomUserPrincipal implements UserDetails {
 
+    @Getter
     private final String userId;
     private final String username;
     private final String password;
@@ -21,10 +23,6 @@ public class CustomUserPrincipal implements UserDetails {
         this.username = username;
         this.password = password;
         this.authorities = authorities;
-    }
-
-    public String getUserId() {
-        return userId;
     }
 
     @Override
