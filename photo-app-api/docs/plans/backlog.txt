@@ -164,6 +164,69 @@ Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
 
 
+[2026-08-02 | platform decision] Use an OIDC provider for real projects, but design
+against the protocol rather than the vendor
+-----------------------------------------------------------------------------------
+STRATEGIC / LONG-TERM. Not a defect, and NOT a plan to migrate
+photo-app-authorization-service. That service stays exactly as it is: its value is
+that it was built from scratch as a learning exercise. This records the decision
+for the NEXT project and for the generic security library, so the reasoning is not
+lost. Closely related to the PKCE item below.
+
+DECISION
+Adopt Keycloak - or any OIDC-compliant provider - as the default identity provider
+for future projects handling real customer data, while writing all application code
+against the OIDC/OAuth2 standard rather than against a specific provider.
+
+WHY NOT KEEP THE CUSTOM IMPLEMENTATION
+Authentication is one of the few areas where a subtle implementation error becomes
+a direct security breach rather than a bug. Keycloak, Okta and Auth0 have absorbed
+years of dedicated security review; a self-built issuer has not. The learning value
+is real, the production risk is not worth taking.
+
+THE MECHANISM FOR STAYING PROVIDER-AGNOSTIC
+Every OIDC-compliant provider - Keycloak, Okta, Auth0, or a future custom server
+built on Spring Authorization Server - exposes a standard issuer-uri and a JWKS
+endpoint for public-key verification. Spring Security's oauth2-resource-server
+consumes that natively:
+
+    spring:
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: https://your-provider.com/realms/your-app
+
+From that one property Spring discovers the JWKS endpoint, fetches and caches the
+public keys, and validates signature, expiry and issuer on every request. No custom
+JWT parsing code at all.
+
+WHY THIS IS A DIFFERENT SHAPE FROM WHAT EXISTS TODAY
+The current setup signs with HS256 using a symmetric secret, so every service needs
+the SAME shared secret in order to verify - which is also why photoapp.jwt.secret
+is duplicated across seven config files today, and why decision 7 in the
+dockerization plan kept that arrangement for the current round. Changing providers
+under that model means replacing the mechanism outright.
+
+With OIDC and JWKS the keys are asymmetric: only the identity provider holds the
+private signing key, and each microservice needs nothing but the public key, fetched
+automatically from the issuer-uri. Swapping providers becomes a configuration change
+- the issuer-uri value, and possibly a claim name for roles - instead of a rewrite.
+It also removes the current property that every service can MINT tokens, not merely
+verify them.
+
+IMPLICATION FOR THE FUTURE SECURITY LIBRARY (see PLATFORM-VISION.md)
+Build it on Spring's standard JwtAuthenticationConverter and
+JwtGrantedAuthoritiesConverter, mapping standard JWT claims onto CustomUserPrincipal.
+No Keycloak-specific code anywhere inside the library. Only the issuer-uri and the
+claim-name mappings are provider-specific, and those stay configuration - swappable
+per environment or per client without touching how the services integrate with the
+library.
+
+Priority: strategic. Revisit when starting the next real project, or when
+generalising photo-app-security-lib into the toolkit.
+
+
 [2026-08-02 | observation] PKCE flow is not a genuine PKCE implementation
 --------------------------------------------------------------------------
 KNOWN SIMPLIFICATION, NOT A BUG. PLATFORM-VISION.md already says the
