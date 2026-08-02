@@ -164,6 +164,47 @@ Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
 
 
+[2026-08-01 | Step 8] MEDIUM — endpoints are slow through the gateway in Docker
+--------------------------------------------------------------------------------
+Not blocking; the stack is functionally correct. Observed in Zipkin traces once
+tracing started working:
+
+    POST /auth/login    ~7.0s total at the gateway
+                        ~6.3s of that inside photo-app-authorization-service
+    GET  /users         3.2s total, listing 100 records
+
+Far higher than expected for a local environment at this data volume. BCrypt's
+deliberate cost factor could account for part of the login figure, but the
+/users listing has no such excuse - it is a simple paginated read.
+
+Investigation starting points:
+  1. Docker Desktop resource allocation (CPU and RAM given to the engine).
+     Fourteen containers run at once - eight application plus six infrastructure
+     - so contention is plausible. Check the engine's limits before anything
+     else, since everything below is downstream of it.
+  2. JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75" from the Step 6 Dockerfile.
+     Compare the percentage against each container's actual memory limit and
+     look for GC pressure; no per-container memory limits are set in
+     docker-compose.yml, so the percentage resolves against whatever the engine
+     exposes.
+  3. HikariCP maximum-pool-size=5 from Step 4. Unlikely to bottleneck a single
+     request, but worth ruling out under concurrent load later.
+  4. Overhead from photo-app-tracing-lib (Step 8). Unlikely at this magnitude -
+     URLConnectionSender reports asynchronously off the request thread.
+     CAVEAT: comparing against a pre-fix trace is probably not possible. Zipkin
+     runs with in-memory storage and its container was restarted several times
+     during the Step 8 investigation, so no pre-fix traces should survive. A
+     cleaner comparison is to run the same endpoints natively, where Step 3
+     already showed working tracing, and diff the durations.
+
+Useful extra signal for whoever picks this up: the same endpoints were exercised
+natively in Steps 3 and 5 and did not feel slow, which points at the container
+environment rather than at application code. Nothing was measured then, so that
+is an impression rather than a baseline - capturing a native baseline first would
+make the comparison meaningful.
+Priority: MEDIUM.
+
+
 [2026-08-01 | Step 8] Find what interrupts the Zipkin reporter thread
 ----------------------------------------------------------------------
 Follow-up to the FIXED transport-swap item above. The swap restores
