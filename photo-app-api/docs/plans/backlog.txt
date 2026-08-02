@@ -164,6 +164,74 @@ Priority: HIGH - observability is a stated goal of the containerised stack, and
 everything except span delivery is verified working.
 
 
+[2026-08-02 | initiative] HIGH — comprehensive unit and integration testing
+----------------------------------------------------------------------------
+Deferred throughout the whole dockerization effort (Steps 1-9) by deliberate
+decision, not oversight. Promoted here to its own item rather than living as an
+out-of-scope note inside dockerization-plan.md.
+
+Spring Boot project, on WebMVC since Step 1: use @SpringBootTest and @WebMvcTest
+with MockMvc. Not Micronaut tooling.
+
+GOAL
+Catch design-level errors that only surfaced under real usage - exactly like the
+authorization defect found while investigating after Step 8, where a ROLE_USER
+token on an ADMIN endpoint returned 500 instead of 403 because @PreAuthorize's
+AuthorizationDeniedException was swallowed by GlobalExceptionHandler's
+@ExceptionHandler(Exception.class) catch-all. Worth stressing: that bug was
+PRE-EXISTING, not introduced by any step, and it survived undetected only because
+every manual test token happened to carry ADMIN. Write tests for the whole CLASS
+of defect, not the single instance.
+
+COVERAGE SCOPE - five business services plus the gateway
+  1. Happy path. CRUD per controller: create, read, update, delete, list with
+     pagination. Assert status codes AND response shape.
+     NOTE - correction to the original framing: there is no PagedResponseDTO in
+     this codebase. Listing endpoints return Spring's Page<T>, and commons holds
+     only PaginationInputDTO, SortInputDTO and PaginationUtil on the input side.
+     Serialising Page<T> over JSON is itself historically fragile, so assert the
+     concrete serialised shape rather than assuming it is stable.
+  2. Authorization matrix. For EVERY @PreAuthorize endpoint: no token -> 401,
+     wrong role -> 403, correct role -> reaches business logic. Systematically,
+     across all endpoints, not only those already known to be protected. This is
+     the Step 8 bug class.
+  3. Exception handling. Every branch of GlobalExceptionHandler:
+     MethodArgumentNotValidException, ConstraintViolationException, not-found,
+     OptimisticLockException, DataAccessException, AccessDeniedException (the
+     Step 8 fix) and the catch-all. Assert the exact status and ApiErrorDTO shape,
+     not merely that a response came back.
+  4. Feign behaviour. Four clients exist: AccountFeignClient, AlbumFeignClient,
+     PhotoFeignClient, UserFeignClient. Known live paths include accounts ->
+     users (UserFeignClient#isActive) and albums -> accounts
+     (AccountFeignClient#findById) - both observed during Step 8. For each: the
+     success path, a downstream 4xx decoded by CustomFeignErrorDecoder, and a
+     downstream 5xx or unavailable producing the correct fallback. The fallbacks
+     already exist and are worth asserting directly - isActiveFallback,
+     findByUsernameAndActiveUserFallback, findAllFallback.
+  5. Resilience4j. Circuit breaker transitions closed -> open -> half-open, retry
+     behaviour, and fallbacks returning the expected shape and status rather than
+     leaking a raw exception.
+  6. Repository and persistence. For non-trivial query logic - filters,
+     pagination, ownership-scoped queries - test against Testcontainers with
+     MySQL rather than H2, so dialect differences cannot mask real bugs.
+  7. MapStruct mappers. Step 5 proved ModelMapper had a silent field-name
+     mismatch that returned null to the API for months. ReportingPolicy.ERROR now
+     catches that at compile time, so mapper tests are the runtime safety net on
+     top of the compile-time guarantee, not a substitute for it.
+
+NOT YET DECIDED
+  - coverage targets and thresholds
+  - whether the four library modules get their own suites or are covered only
+    indirectly through the services consuming them
+  - whether to add mutation testing, e.g. PIT, to check the tests are meaningful
+    rather than merely present
+
+Priority: HIGH conceptually. The Step 8 defect is concrete proof this class of
+bug is real and currently undetected everywhere else in the codebase.
+Deliberately sequenced AFTER Step 9 documentation, as its own initiative rather
+than squeezed into dockerization scope.
+
+
 [2026-08-02 | platform decision] Use an OIDC provider for real projects, but design
 against the protocol rather than the vendor
 -----------------------------------------------------------------------------------
