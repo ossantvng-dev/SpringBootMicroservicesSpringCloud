@@ -224,7 +224,51 @@ So the TRACE levels are explicit, not inherited defaults. Three observations:
     therefore almost certainly dead config; verify, then delete it rather than
     just lowering it.
 
-PROPOSED FIX - NOT APPLIED:
+FIX APPLIED 2026-08-01 (config repo 719e5ee) - BUT IT DID NOT EXPLAIN THE NUMBERS
+All four changes were made and verified live: org.hibernate.orm.jdbc.bind is now
+WARN, show-sql and format_sql are gone, and the dead BasicBinder line is deleted.
+org.hibernate.SQL stays at DEBUG and still works - a real request logs 2 SQL
+statements, confirmed after the change.
+
+The BasicBinder deletion was verified before removal, not assumed:
+org/hibernate/type/descriptor/sql/BasicBinder.class is ABSENT from
+hibernate-core-7.2.7.Final.jar. The class moved to
+org.hibernate.type.descriptor.jdbc, so nothing could ever have logged under the
+configured name.
+
+MEASURED EFFECT - much smaller than the hypothesis predicted. A/B on the same
+container, toggling the binder logger through the actuator, interleaved twice to
+control for drift, 10 requests each, every response verified 200:
+
+    bind=TRACE   avg 0.057s / 0.048s
+    bind=WARN    avg 0.053s / 0.039s
+
+A ~10-20% difference, inside the min/max spread - not a multi-second win. Log
+volume tells the same story: 3 requests to /accounts produced 24 lines at TRACE
+versus 18 at WARN, i.e. only 2 binder lines per request. That endpoint binds few
+parameters (pagination limit and offset), so there was little noise to remove.
+The hypothesis should hold better on endpoints that bind many parameters or that
+issue N+1 queries - it was simply the wrong endpoint to test it against.
+
+THE 4.828s FIGURE COULD NOT BE REPRODUCED AT ALL
+GET /accounts in steady state runs at roughly 30-60ms, cold or warm, before and
+after the change. The original 4.828s, 3.2s and 7s figures were almost certainly
+FIRST-REQUEST-AFTER-STACK-START measurements, which fold in JIT warm-up, Eureka
+registration propagation, gateway route and load-balancer resolution, Feign
+client initialisation and connection-pool fill. That reframes the whole item:
+there may be no steady-state latency problem, only an expensive first request.
+
+WHAT TO DO NEXT
+  - Re-measure deliberately: capture first-request-after-startup separately from
+    steady state, for each endpoint. If only the first request is slow, this is a
+    warm-up characteristic and not a defect.
+  - If a steady-state problem does show up on other endpoints, starting point 1
+    below (engine resources) remains the best lead.
+  - The logging change is kept regardless: it removed redundant and dead
+    configuration and reduces log volume, which is worth having on its own terms
+    even though it was not the cause.
+
+ORIGINAL PROPOSED FIX (now applied, retained for context):
 Lower org.hibernate logging in the config repo's dev profile. Keep it granular
 rather than switching Hibernate logging off: org.hibernate.SQL at DEBUG shows the
 statement itself without every parameter bind and is cheap and useful. The
