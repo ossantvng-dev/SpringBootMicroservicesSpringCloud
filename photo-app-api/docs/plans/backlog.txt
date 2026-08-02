@@ -173,7 +173,33 @@ that it was built from scratch as a learning exercise. This records the decision
 for the NEXT project and for the generic security library, so the reasoning is not
 lost. Closely related to the PKCE item below.
 
-DECISION
+DECISION (updated 2026-08-02): AWS COGNITO
+The provider is AWS Cognito, deployed alongside ECS Fargate and intended to carry
+through to PRODUCTION, not just local development. Chosen for this project and as
+the default going forward, pending future business-model clarity.
+
+Application code is still written against the OIDC/OAuth2 standard rather than
+against Cognito. That principle is unchanged by the choice, for two reasons:
+
+  1. Cognito's OIDC compliance has AWS-specific quirks worth insulating against.
+     Ones to verify at implementation time, since Cognito's behaviour has shifted
+     over the years:
+       - access tokens historically carry no "aud" claim, using client_id instead,
+         which breaks Spring's default audience validation. ID tokens do carry aud.
+       - group membership arrives as "cognito:groups", not a standard claim, so the
+         authorities mapping needs an explicit claim name.
+       - the logout endpoint is /logout rather than a standard end_session_endpoint.
+       - issuer-uri takes the form
+         https://cognito-idp.{region}.amazonaws.com/{userPoolId}
+     Each of these is a configuration or converter concern, and none should leak
+     into the library.
+  2. It keeps per-client provider swaps open. If an enterprise client later requires
+     on-prem Keycloak, that becomes a configuration change rather than a rewrite.
+
+The original decision text follows, and still holds - only the provider is now
+settled.
+
+ORIGINAL FRAMING
 Adopt Keycloak - or any OIDC-compliant provider - as the default identity provider
 for future projects handling real customer data, while writing all application code
 against the OIDC/OAuth2 standard rather than against a specific provider.
@@ -223,8 +249,22 @@ claim-name mappings are provider-specific, and those stay configuration - swappa
 per environment or per client without touching how the services integrate with the
 library.
 
+NOT YET DECIDED - delivery and hosting model
+Whether future client work runs in an own AWS account or in the client's own
+infrastructure is an open BUSINESS question, deliberately out of scope for this
+project's technical decisions. It is recorded here only because it is the thing
+most likely to force a per-client provider swap, which is precisely what the
+protocol-not-vendor principle above is there to absorb. Do not let it block
+technical work; the design already tolerates either outcome.
+
 Priority: strategic. Revisit when starting the next real project, or when
 generalising photo-app-security-lib into the toolkit.
+
+Note on the AWS backlog section of dockerization-plan.md: it lists "true OAuth2
+PKCE flow" and "RSA/JWK signing with verify-only resource servers" as production
+items. Both are subsumed by this decision - Cognito provides the authorization
+server and the JWKS endpoint, so those entries should be read as "integrate with
+Cognito", not as "build it".
 
 
 [2026-08-02 | observation] PKCE flow is not a genuine PKCE implementation
