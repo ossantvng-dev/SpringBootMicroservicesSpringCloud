@@ -529,12 +529,78 @@ registration propagation, gateway route and load-balancer resolution, Feign
 client initialisation and connection-pool fill. That reframes the whole item:
 there may be no steady-state latency problem, only an expensive first request.
 
+COLD-START BOOT TIMES MEASURED 2026-08-02 - the hypothesis above, now with numbers
+Gathered incidentally while fixing an unrelated problem (healthcheck start-period,
+90s -> 240s; see the separate note at the end of this section). These are DIRECTLY
+MEASURED container boot times, not latency inferred from request timings, which
+makes them a much stronger data point than the 4.828s/3.2s/7s figures above.
+
+Source: Spring's own "Started ...Application in X seconds (process running for Y)"
+line, Y quoted below. Scenario: a genuine `docker compose down -v` followed by a
+full `stack.sh up` - every volume destroyed, empty page cache, six JVMs
+initialising simultaneously, 12GB WSL2 engine.
+
+  Run 1                      Run 2 (repeat, same conditions)
+    users           171.7s     users           168.0s
+    accounts        170.8s     accounts        165.4s
+    photos          168.6s     photos          165.7s
+    albums          164.4s     albums          172.9s
+    authorization   162.7s     authorization   172.9s
+    gateway         110.9s     gateway         107.9s
+    config-server    25.1s
+    discovery        18.7s
+
+Two independent runs, so this is reproducible rather than a one-off. Spread across
+runs is ~8s per service; the ordering of the five business services shuffles
+between runs, which is itself consistent with contention rather than with any one
+service being intrinsically slow.
+
+WHAT THIS CONFIRMS
+The five business services and the gateway take 108-173s to boot under this exact
+contention scenario, while config-server and discovery are up in under 30s. That
+is a 5-7x difference between components running the same Spring Boot startup
+machinery, differing mainly in that the six slow ones start AT THE SAME TIME as
+each other while the two fast ones start alone, earlier in the dependency chain.
+
+That is the shape of resource contention during simultaneous JVM initialisation,
+not of anything specific to any one service's code. It corroborates the
+"expensive first request" reframing above with hard numbers: a request arriving
+while the JVM is still 100+ seconds from ready will of course look like a
+multi-second endpoint.
+
+SCOPE - what this does NOT say
+  - Nothing here measures STEADY-STATE latency. GET /accounts still runs at
+    ~30-60ms once warm; that finding is unchanged.
+  - Warm restarts are believed to be considerably faster, but that was NOT
+    measured the same way and should not be quoted as if it were. The only
+    supporting observation is that a mid-session `stack.sh up` against warm
+    volumes reached all-healthy about 80s after `up` returned - a different
+    metric (time-to-healthy, not JVM boot) and only an upper bound. Anyone
+    picking this up should measure a warm boot with the same "process running
+    for" line before comparing.
+  - The cold-start time itself was NOT addressed. The 2026-08-02 session only
+    fixed the false "unhealthy" signal it caused: the healthcheck marked a
+    container unhealthy at start-period + retries*interval = 90 + 5*15 = 165s,
+    which the five business services straddled at 162-173s, so they flipped to
+    unhealthy and then recovered on their own. start-period is now 240s. The
+    gateway at ~110s had also already exceeded the old 90s start-period and was
+    surviving only by needing fewer than 5 retries.
+
 WHAT TO DO NEXT
-  - Re-measure deliberately: capture first-request-after-startup separately from
-    steady state, for each endpoint. If only the first request is slow, this is a
-    warm-up characteristic and not a defect.
-  - If a steady-state problem does show up on other endpoints, starting point 1
-    below (engine resources) remains the best lead.
+  - Start with starting point 1 (engine resources). The boot-time numbers above
+    now point at it directly rather than by elimination.
+  - Capture a WARM boot baseline using the same "process running for" line, so
+    the cold/warm delta is measured rather than assumed.
+  - Re-measure request latency deliberately: capture first-request-after-startup
+    separately from steady state, for each endpoint. If only the first request is
+    slow, this is a warm-up characteristic and not a defect. Note the boot-time
+    data makes it likely that the original figures were taken before the JVM had
+    finished starting at all.
+  - A cheap experiment that would isolate contention conclusively: start the five
+    business services ONE AT A TIME against an otherwise idle engine and record
+    the same boot line. If a lone service boots in ~25-30s like config-server,
+    contention is proven and the fix is engine resources or staggered startup,
+    not application code.
   - The logging change is kept regardless: it removed redundant and dead
     configuration and reduces log volume, which is worth having on its own terms
     even though it was not the cause.
@@ -558,9 +624,36 @@ time on engine tuning.
 
 Investigation starting points:
   1. Docker Desktop resource allocation (CPU and RAM given to the engine).
+     *** NOW THE LEADING CANDIDATE, not merely a plausible one - promoted by the
+     2026-08-02 cold-start measurements above. ***
      Fourteen containers run at once - eight application plus six infrastructure
-     - so contention is plausible. Check the engine's limits before anything
-     else, since everything below is downstream of it.
+     - so contention was always plausible. The boot-time data makes it concrete:
+     six components starting simultaneously take 108-173s, while the two that
+     start alone earlier in the dependency chain take under 30s, on the same
+     startup machinery.
+
+     ENGINE ALLOCATION MEASURED 2026-08-02 (`docker info`):
+         NCPU     = 6          host has 12 logical CPUs
+         MemTotal = 11.7 GiB   (the 12GB .wslconfig setting)
+
+     Six CPUs, and exactly six components boot simultaneously - gateway plus the
+     five business services. That is ONE core per JVM during the phase where JVM
+     startup most wants several: JIT compiler threads, parallel GC threads and
+     classloading all contend. config-server and discovery boot earlier in the
+     dependency chain with all six cores to themselves, and come up in 19-25s.
+
+     The 1:1 core-to-JVM ratio at the exact moment of the slowdown is a
+     quantitative fit for the observed 5-7x difference, not just a directional
+     one. This is now a specific, testable claim rather than a general suspicion.
+
+     Cheapest test: raise the WSL2 engine to 8-10 CPUs in .wslconfig and repeat
+     the cold-start measurement. If boot times drop substantially, confirmed.
+     Note the host has 12 logical CPUs, so there is real headroom - but leave a
+     couple for the host or the machine becomes unusable during a cold start.
+     A staggered startup (or accepting a slow cold boot) is the alternative if
+     the cores are not available.
+
+     Everything below is downstream of this, so check it before anything else.
   2. JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75" from the Step 6 Dockerfile.
      Compare the percentage against each container's actual memory limit and
      look for GC pressure; no per-container memory limits are set in
