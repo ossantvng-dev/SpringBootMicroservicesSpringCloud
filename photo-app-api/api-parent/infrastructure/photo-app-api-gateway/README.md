@@ -29,6 +29,27 @@ routes they depend on.
 Prod uses `discovery.locator.enabled=true` (dynamic routes by service id) rather than explicit
 routes, so aggregation is currently dev-only.
 
+### Why the gateway sets `trusted-proxies`
+
+```properties
+spring.cloud.gateway.server.webmvc.trusted-proxies=<RFC1918 + loopback regex>
+```
+
+springdoc derives the OpenAPI `servers[0].url` from the incoming request. The gateway rewrites
+`Host` to the `lb://` target when it proxies, so without this each service advertised its own
+internal container address (`http://photo-app-users-service:8081`) and Swagger UI's "Try it out"
+called a host the browser cannot resolve.
+
+The fix is `X-Forwarded-*`, and this property is the half that is easy to miss: Gateway MVC does
+**not** send those headers by default. `xForwardedRequestHeadersFilter` is
+`@Conditional(TrustedProxies.XForwardedTrustedProxiesCondition)` and its factory asserts
+`trustedProxies must not be null`, so with the property unset no filter exists and nothing is
+emitted. The five business services pair it with `server.forward-headers-strategy=framework`
+(note: `forward-`, not `forwarded-`).
+
+The value here is a **dev** value. In production it must be narrowed to the real load balancer's
+address, otherwise a client can spoof its apparent origin.
+
 ## webmvc, not webflux
 
 Deliberate. `spring-cloud-starter-gateway-server-webmvc` puts the gateway on the same servlet

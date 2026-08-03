@@ -893,3 +893,77 @@ at TRACE is the expensive one — it logs every JDBC parameter on every statemen
 and it is the same setting that was measured as a latency contributor in dev.
 On an auth service that meant every credential lookup had its bind parameters
 written to disk and shipped to Elasticsearch.
+
+
+[2026-08-02 | Step 9] OpenAPI advertised the internal container URL   [FIXED]
+------------------------------------------------------------------------------
+FIXED 2026-08-02 (config repo fb329e4, corrected in 8f3ee25).
+
+SYMPTOM
+In the aggregated Swagger UI at http://localhost:8080/swagger-ui.html, the
+Servers field showed each service's INTERNAL container address. "Try it out"
+then failed at the fetch: the browser cannot resolve a Docker-network hostname,
+and the target was a different origin from the UI page. The Servers dropdown is
+not editable in this setup, so there was no manual workaround.
+
+BEFORE / AFTER - servers[0].url as served through the gateway
+  before:  http://photo-app-authorization-service:8085
+           http://photo-app-users-service:8081
+           http://photo-app-accounts-service:8082
+           http://photo-app-albums-service:8083
+           http://photo-app-photos-service:8084
+  after:   http://localhost:8080   (all five)
+
+Fetched directly inside a container the same spec always said
+http://localhost:8085, which localised the cause to the proxy hop rather than to
+springdoc configuration.
+
+CAUSE
+springdoc derives servers[0].url from the incoming request. The gateway rewrites
+Host to the lb:// target when it proxies, so each service saw its own internal
+address as the request Host and advertised that.
+
+FIX - two properties, and the gateway half is the non-obvious one
+  1. gateway:  spring.cloud.gateway.server.webmvc.trusted-proxies=<regex>
+     Gateway MVC does NOT send X-Forwarded-* by default. The
+     xForwardedRequestHeadersFilter bean is
+     @Conditional(TrustedProxies.XForwardedTrustedProxiesCondition) and its
+     factory asserts "trustedProxies must not be null", so with the property
+     unset no filter exists and no headers are emitted. Setting only the service
+     property would have been a complete no-op.
+     Value is RFC1918 plus loopback - a DEV value. In production it must be
+     narrowed to the real load balancer's address, or a client can spoof its
+     apparent origin by sending its own X-Forwarded-Host.
+  2. five business services:  server.forward-headers-strategy=framework
+     Installs Spring's ForwardedHeaderFilter, which rebuilds scheme/host/port
+     from those headers before springdoc reads the request.
+
+TRAP WORTH REMEMBERING - the property is forward-headers-strategy, NOT
+forwarded-headers-strategy. The first attempt used the "forwarded" spelling.
+Spring binds unknown properties without complaint, so it appeared in
+/actuator/env with a value and looked applied, while no ForwardedHeaderFilter
+bean was ever created and nothing changed. Confirmed against Boot's own metadata
+in spring-boot-web-server-4.0.6.jar. When a property seems ignored, check
+/actuator/beans for the bean it is supposed to create, not /actuator/env for the
+property - env proves only that the string was read, never that anything uses it.
+
+VERIFIED
+  - servers[0].url is http://localhost:8080 for all five services through the
+    gateway; ForwardedHeaderFilter present in /actuator/beans.
+  - The exact call Swagger UI makes - POST /auth/login, same-origin, with
+    Origin and Referer set to the UI page - returns HTTP 200 carrying
+    accessToken, refreshToken, tokenType, expiresIn, refreshTokenExpiresIn.
+  - CORS is now moot rather than merely permitted: the UI page and the target
+    are the same origin (http://localhost:8080), so no preflight is issued at
+    all. The earlier failure was cross-origin AND unresolvable.
+  - NOT verified in a real browser: the Chrome extension was not connected
+    during this session, so the UI was not clicked through by hand. Everything
+    above is the equivalent request reproduced with curl. A human click-through
+    of Try it out is still worth doing once.
+
+NOTE ON APPLYING IT
+Both properties live in the config repo, so no image rebuild is needed - a
+container restart is enough. The five business services were restarted and the
+three that returned 500 immediately afterwards were transient: Eureka
+registration and the load-balancer cache had not caught up. A retry seconds
+later returned 200 from all five.
