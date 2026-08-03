@@ -14,10 +14,11 @@ Three rules, and they are not negotiable:
 3. **A changeset is immutable once applied.** Liquibase stores a checksum. Editing an applied
    changeset makes the next `update` fail with a checksum mismatch. Fix forward with a new one.
 
-> **Stale config warning:** the `*-prod.properties` files in the config repo still contain
-> `spring.flyway.*` properties left over from an earlier iteration. Flyway is not a dependency
-> of any module, so those lines are inert — but they contradict rule 1 and should be deleted.
-> Tracked in [plans/backlog.txt](plans/backlog.txt).
+Rule 1 is enforced by absence, not by configuration: Flyway is not a dependency of any module in
+the reactor, and there is no `classpath:db/migration` directory. Four leftover `spring.flyway.*`
+properties in `photo-app-users-service-prod.properties` were deleted on 2026-08-02 — they were
+inert, but they contradicted this rule and would have become live the moment the dependency ever
+appeared.
 
 ## Module layout
 

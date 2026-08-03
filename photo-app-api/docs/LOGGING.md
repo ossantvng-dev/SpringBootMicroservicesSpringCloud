@@ -93,11 +93,10 @@ before that they were unset in prod, which meant they inherited the root level b
 rather than by decision. Naming them makes the intent explicit and stops a future root-level
 change from silently switching TRACE-capable loggers on in production.
 
-**One file does not comply.** `photo-app-authorization-service-prod.properties` keeps
-`org.hibernate.SQL=debug` and `org.hibernate.orm.jdbc.bind=trace` — the expensive one, on the
-service that handles credentials. It was left as-is because changing a deliberate-looking level
-is a separate decision from the cleanup above; it is logged as a backlog item with a
-recommendation to set both to `info`.
+**All five business services now agree in prod.** `photo-app-authorization-service-prod.properties`
+had kept `org.hibernate.SQL=debug` and `org.hibernate.orm.jdbc.bind=trace` — the expensive one,
+on the service that handles credentials, so every credential lookup had its bind parameters
+written to disk and shipped to Elasticsearch. Both were lowered to `info` to match the others.
 
 ### Gateway
 
