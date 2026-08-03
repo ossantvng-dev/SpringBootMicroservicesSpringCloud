@@ -76,7 +76,30 @@ ENV LOG_BASE=/var/log/photo-app \
 
 EXPOSE ${SERVICE_PORT}
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=5 \
+# start-period sized from a measured cold start: `docker compose down -v` then a
+# full `up`, six JVMs booting at once against an empty page cache. Spring reported
+# "process running for" 171.7s (users), 170.8s (accounts), 168.6s (photos),
+# 164.4s (albums), 162.7s (authorization), 110.9s (gateway); config-server and
+# discovery came up in ~25s and ~19s.
+#
+# The old window marked a container unhealthy at start-period + retries*interval
+# = 90 + 5*15 = 165s, which the five business services straddled - they flipped
+# to unhealthy and then recovered on their own once they finished booting. 240s
+# clears the slowest measured boot by ~40%, and the unhealthy verdict now lands
+# at 240 + 75 = 315s.
+#
+# A longer start-period does NOT slow down a normal start: Docker still runs the
+# check on the same interval during the period, and the first success marks the
+# container healthy immediately. `depends_on: service_healthy` therefore gates on
+# first success and is unaffected. The only cost is that a genuinely broken
+# service takes longer to be reported, which is the right trade here - a
+# false unhealthy on every cold start trains you to ignore the signal.
+#
+# One value for all eight: the infrastructure components boot far faster and
+# could run tighter, but a per-service override would have to be plumbed through
+# as a build arg, and HEALTHCHECK flags are not subject to Dockerfile variable
+# substitution - only the CMD is.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=240s --retries=5 \
     CMD curl -fsS "http://localhost:${SERVICE_PORT}/actuator/health" || exit 1
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
