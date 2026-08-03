@@ -1134,6 +1134,9 @@ re-litigated.
    is **not** containerized — same treatment as the Config Server's `native` profile.
 7. **JWT scheme — resolved: keep the shared HMAC secret** across all services this round.
    RSA/JWK verify-only is a backlog item for the future generic security library.
+   *(Later superseded: the identity provider decision in [backlog.txt](backlog.txt) settles
+   on AWS Cognito, so RSA/JWK arrives as its JWKS endpoint rather than as something built
+   here. See the Security entry in the AWS backlog below.)*
 8. **Config repo changes — resolved: in scope.** All edits to
    `photo-app-configuration-repo` (route prefix rename, new env-var-driven properties,
    Hikari settings, tracing config for gateway/discovery/config-server) must be
@@ -1228,11 +1231,22 @@ Not elaborated here; captured so nothing is lost.
   (Cloud Map vs Eureka cluster on ECS).
 - **Persistence:** RDS MySQL instead of containerized MySQL; encrypted credentials in
   Config Server / AWS Secrets Manager; explicit HikariCP sizing per task.
-- **Security:** true OAuth2 **PKCE** flow (the current
-  `AuthorizationServerConfig` registers an in-memory PKCE client but the login path is a
-  custom JWT endpoint); **role-level security at the Gateway**; RSA/JWK signing with
-  verify-only resource servers (decision 7 keeps shared HMAC for now); promote the Config
-  Server's Basic Auth (delivered in Step 2) to mTLS or a secrets-manager-backed credential.
+- **Security:** **integrate with AWS Cognito as the identity provider** — do not build an
+  authorization server. This supersedes what this entry originally said ("true OAuth2 PKCE
+  flow", "RSA/JWK signing with verify-only resource servers"): both are now things Cognito
+  provides rather than things to implement here. See the Cognito decision in
+  [backlog.txt](backlog.txt) for the reasoning — the commitment is to the OIDC protocol,
+  not to the vendor.
+  - The real PKCE flow becomes Cognito's hosted UI / authorization endpoint. The current
+    `AuthorizationServerConfig` registers an in-memory PKCE client while the login path is
+    a custom JWT endpoint, so it is not a genuine PKCE implementation; it gets deleted, not
+    completed.
+  - RSA/JWK signing likewise comes from Cognito's JWKS endpoint. `photo-app-security-lib`
+    drops its shared-HMAC parsing (decision 7 keeps HMAC for the local round) and becomes a
+    verify-only resource server configured with `issuer-uri`.
+  - Still genuinely ours to build: **role-level security at the Gateway**, and promoting the
+    Config Server's Basic Auth (delivered in Step 2) to mTLS or a secrets-manager-backed
+    credential.
 - **Observability:** ELK retention policies and index lifecycle management; CA/cert rotation
   and a real (non-self-signed) certificate chain — `xpack.security` itself is **enabled this
   round** (requirement C). Add a Prometheus registry and actual application metrics (§2 —

@@ -48,6 +48,17 @@ public class SecurityConfiguration {
                         // Servlet ERROR dispatch: without this every downstream failure
                         // is re-authorized as /error and masked as a 401
                         .requestMatchers("/error").permitAll()
+                        /*
+                            OpenAPI, anonymous like /actuator/health. These must stay above the
+                            role rules below: request matchers are evaluated in declaration order.
+                            /api-docs/** is the gateway-side aggregation prefix; the specs it
+                            proxies are served from /v3/api-docs on each business service.
+                            Note this publishes the endpoint inventory (not the data) to anyone
+                            who can reach the port - acceptable while the stack is local-only.
+                         */
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api-docs/**").permitAll()
                         // Protected Endpoints by Role
                         .requestMatchers("/users/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/accounts/**").hasAnyRole("USER","ADMIN")

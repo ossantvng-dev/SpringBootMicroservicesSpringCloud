@@ -30,6 +30,8 @@
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 		<datasource-micrometer.version>2.2.1</datasource-micrometer.version>
 		<logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
+		<!-- 3.0.x is the Boot 4 line; 3.1.0 targets Boot 4.1 and is ahead of this reactor -->
+		<springdoc.version>3.0.3</springdoc.version>
 	</properties>
 	<!-- =================================================================== -->
 	<!-- Modules -->
@@ -96,6 +98,11 @@
 				<groupId>net.logstash.logback</groupId>
 				<artifactId>logstash-logback-encoder</artifactId>
 				<version>${logstash-logback-encoder.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>${springdoc.version}</version>
 			</dependency>
 			<!-- Internal Libraries -->
 			<dependency>

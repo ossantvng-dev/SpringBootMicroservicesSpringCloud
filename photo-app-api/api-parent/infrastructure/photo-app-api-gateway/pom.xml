@@ -106,6 +106,13 @@
 			<artifactId>spring-boot-starter-zipkin</artifactId>
 		</dependency>
 
+		<!-- OpenAPI / Swagger UI: the gateway serves only the aggregating UI shell,
+		     the specs themselves are fetched from the five business services -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		</dependency>
+
 		<!-- Logstash Logback Encoder -->
 		<dependency>
 			<groupId>net.logstash.logback</groupId>

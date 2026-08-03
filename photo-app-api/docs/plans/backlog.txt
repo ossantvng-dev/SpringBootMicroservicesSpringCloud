@@ -763,3 +763,42 @@ spans after the dependency was removed.
 Original finding: each service declared both spring-boot-micrometer-tracing-brave
 and the explicit bridge, leaving the five services inconsistent with the three
 infrastructure components after Step 3.
+
+
+[2026-08-02 | Step 9] Dead spring.flyway.* properties in a prod config file
+---------------------------------------------------------------------------
+photo-app-users-service-prod.properties still carries five Flyway properties:
+  spring.flyway.enabled=true
+  spring.flyway.clean-disabled=true
+  spring.flyway.validate-on-migrate=true
+  spring.flyway.locations=classpath:db/migration
+They are inert — Flyway is not a dependency of any module in the reactor, and
+there is no classpath:db/migration directory — so nothing reads them today.
+They are nonetheless wrong: schema migration is Liquibase, centralized in the
+database/ module, and Boot 4 would attempt to auto-configure Flyway the moment
+the dependency ever appeared. Leaving them in place also contradicts the rule
+stated in docs/DATABASE.md.
+Fix: delete the five lines. Confirm none of the other prod files carry them
+(checked 2026-08-02: only the users-service file does).
+Not done as part of Step 9 because it was outside the requested scope of that
+step, which was documentation plus the specific logging-level changes.
+Priority: low (inert today), but trivial to fix.
+
+
+[2026-08-02 | Step 9] Authorization service prod logging contradicts the INFO floor
+-----------------------------------------------------------------------------------
+docs/LOGGING.md states the principle: INFO is the default floor per package in
+prod, with DEBUG/TRACE reserved for temporary investigation.
+photo-app-authorization-service-prod.properties violates it:
+  logging.level.org.hibernate.SQL=debug
+  logging.level.org.hibernate.orm.jdbc.bind=trace
+The other four business services set both to info in prod. The bind logger at
+TRACE is the expensive one — it logs every JDBC parameter on every statement,
+and it is the same setting that was measured as a latency contributor in dev.
+On an auth service that means every credential lookup gets its bind parameters
+written to disk and shipped to Elasticsearch.
+Fix: set both to info, matching the other four.
+Not changed during Step 9 because the requested scope was to delete the dead
+BasicBinder line and to add the openfeign/circuitbreaker/resilience4j entries —
+changing an existing deliberate-looking level is a separate decision.
+Priority: medium. Decide before any real prod deployment.
