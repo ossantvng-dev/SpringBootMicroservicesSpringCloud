@@ -30,21 +30,63 @@ INIT_SERVICES=(photo-app-liquibase photo-app-elk-certs photo-app-elk-users photo
 
 log() { printf '[stack] %s\n' "$*"; }
 
+# How long to wait for an init job to finish before giving up on it.
+# Liquibase against an empty database with a cold Maven cache is the slow case.
+INIT_TIMEOUT="${INIT_TIMEOUT:-300}"
+
+# Block until an init container reaches a terminal state.
+#
+# `docker compose up -d` returns as soon as every DECLARED dependency is
+# satisfied, so it only waits for a job that something depends on. Any job with
+# no dependents is not waited for and can still be running when we get here -
+# photo-app-liquibase was exactly that case until it was given dependents in
+# docker-compose.yml. Polling makes this correct regardless of the dependency
+# graph, so the script does not silently depend on that edge existing.
+#
+# Returns 0 if the container reached a terminal state (or vanished), 1 on timeout.
+wait_for_exit() {
+  local cid="$1" deadline=$(( SECONDS + INIT_TIMEOUT ))
+  while (( SECONDS < deadline )); do
+    case "$(docker inspect "${cid}" --format '{{.State.Status}}' 2>/dev/null || echo gone)" in
+      exited|dead|gone) return 0 ;;
+    esac
+    sleep 1
+  done
+  return 1
+}
+
 # Remove an init container only when it exited 0. A non-zero exit is left in
 # place on purpose so the failure is still inspectable with `docker logs`.
+#
+# Every branch below reports what it did. The previous version had no final
+# `else`, so a job still in `running` matched neither branch and was skipped in
+# total silence - no removal and no message.
 clean_init() {
   for svc in "${INIT_SERVICES[@]}"; do
-    cid=$(docker compose ps -aq "${svc}" 2>/dev/null || true)
+    # container_name is fixed per service, so there is at most one; head -n1
+    # keeps a multi-line result from corrupting the docker inspect arguments.
+    cid=$(docker compose ps -aq "${svc}" 2>/dev/null | head -n1 || true)
     [[ -z "${cid}" ]] && continue
 
-    state=$(docker inspect "${cid}" --format '{{.State.Status}}' 2>/dev/null || echo unknown)
-    code=$(docker inspect "${cid}" --format '{{.State.ExitCode}}' 2>/dev/null || echo 1)
+    if ! wait_for_exit "${cid}"; then
+      log "KEEPING ${svc}: still running after ${INIT_TIMEOUT}s - inspect with 'docker logs ${svc}'"
+      continue
+    fi
 
-    if [[ "${state}" == "exited" && "${code}" == "0" ]]; then
-      docker rm -f "${cid}" >/dev/null
-      log "removed completed init job ${svc}"
-    elif [[ "${state}" == "exited" ]]; then
+    state=$(docker inspect "${cid}" --format '{{.State.Status}}' 2>/dev/null || echo gone)
+    [[ "${state}" == "gone" ]] && continue   # already removed elsewhere
+
+    code=$(docker inspect "${cid}" --format '{{.State.ExitCode}}' 2>/dev/null || echo 1)
+    if [[ "${code}" != "0" ]]; then
       log "KEEPING ${svc}: exited ${code} - inspect with 'docker logs ${svc}'"
+      continue
+    fi
+
+    # Check the removal actually happened rather than announcing it on faith.
+    if docker rm -f "${cid}" >/dev/null 2>&1; then
+      log "removed completed init job ${svc}"
+    else
+      log "FAILED to remove ${svc} (${cid:0:12}) - still present, remove by hand"
     fi
   done
 }

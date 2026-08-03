@@ -365,6 +365,14 @@ services:
     depends_on: &business-deps
       photo-app-logs-init:
         condition: service_completed_successfully
+      # Waiting on mysql alone is not enough: it reports healthy as soon as the
+      # server accepts connections, which on a fresh volume is BEFORE any table
+      # exists. With ddl-auto=none Hibernate validates nothing at startup, so a
+      # service would boot successfully and fail on its first real query instead.
+      # This edge also gives liquibase a dependent, which is what makes
+      # `docker compose up -d` actually wait for it to finish.
+      photo-app-liquibase:
+        condition: service_completed_successfully
       photo-app-discovery-service:
         condition: service_healthy
       photo-app-mysql:
