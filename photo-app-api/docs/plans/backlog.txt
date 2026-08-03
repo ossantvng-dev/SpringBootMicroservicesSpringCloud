@@ -956,10 +956,25 @@ VERIFIED
   - CORS is now moot rather than merely permitted: the UI page and the target
     are the same origin (http://localhost:8080), so no preflight is issued at
     all. The earlier failure was cross-origin AND unresolvable.
-  - NOT verified in a real browser: the Chrome extension was not connected
-    during this session, so the UI was not clicked through by hand. Everything
-    above is the equivalent request reproduced with curl. A human click-through
-    of Try it out is still worth doing once.
+  - VERIFIED IN A REAL BROWSER 2026-08-02, clicked through end to end. Opened
+    http://localhost:8080/swagger-ui.html, selected authorization-service from
+    the definitions dropdown, and the Servers field rendered
+    "http://localhost:8080 - Generated server url". Try it out on POST
+    /auth/login with admin/generic, then Execute: Request URL
+    http://localhost:8080/auth/login, Code 200, response body carrying
+    accessToken, refreshToken, tokenType Bearer, expiresIn 86400,
+    refreshTokenExpiresIn 2592000. No CORS or fetch error. The earlier curl
+    reproduction agreed with the real UI on every point.
+    (accounts-service, which the UI loads first by default, also rendered
+    http://localhost:8080 - so the fix is not specific to one definition.)
+
+INCIDENTAL EVIDENCE FOR THE PKCE ITEM
+The same login was executed twice through the UI: once with a body of
+{"username","password"} only, and once with a codeVerifier added
+("YAL9KbrRgGYyV12_YxRVnV8z54xhM2o8XpbMB1a01Ro"). BOTH returned 200 with valid
+tokens. That is direct behavioural confirmation of what the PKCE item above
+argues from code: codeVerifier is accepted, ignored and never validated - it is
+neither required when absent nor checked when present.
 
 NOTE ON APPLYING IT
 Both properties live in the config repo, so no image rebuild is needed - a
