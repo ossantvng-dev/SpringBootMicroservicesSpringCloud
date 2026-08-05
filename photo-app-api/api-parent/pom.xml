@@ -32,6 +32,13 @@
 		<logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
 		<!-- 3.0.x is the Boot 4 line; 3.1.0 targets Boot 4.1 and is ahead of this reactor -->
 		<springdoc.version>3.0.3</springdoc.version>
+		<!-- Test tooling -->
+		<testcontainers.version>1.20.4</testcontainers.version>
+		<wiremock.version>3.10.0</wiremock.version>
+		<awaitility.version>4.2.2</awaitility.version>
+		<json-unit.version>4.1.0</json-unit.version>
+		<jacoco.version>0.8.12</jacoco.version>
+		<maven-failsafe.version>3.5.2</maven-failsafe.version>
 	</properties>
 	<!-- =================================================================== -->
 	<!-- Modules -->
@@ -43,6 +50,8 @@
 		<module>libraries/photo-app-feign-lib</module>
 		<module>libraries/photo-app-security-lib</module>
 		<module>libraries/photo-app-tracing-lib</module>
+		<!-- Consumed at test scope only; never reaches a production image -->
+		<module>libraries/photo-app-test-support</module>
 
 		<!-- Services -->
 		<module>services/photo-app-authorization-service</module>
@@ -104,6 +113,34 @@
 				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 				<version>${springdoc.version}</version>
 			</dependency>
+			<!-- Test tooling. The Testcontainers BOM keeps its modules aligned. -->
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.wiremock</groupId>
+				<artifactId>wiremock-standalone</artifactId>
+				<version>${wiremock.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.awaitility</groupId>
+				<artifactId>awaitility</artifactId>
+				<version>${awaitility.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.javacrumbs.json-unit</groupId>
+				<artifactId>json-unit-assertj</artifactId>
+				<version>${json-unit.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.photoapp.test</groupId>
+				<artifactId>photo-app-test-support</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
 			<!-- Internal Libraries -->
 			<dependency>
 				<groupId>com.photoapp.commons</groupId>
@@ -141,6 +178,51 @@
 				<plugin>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>
+				</plugin>
+				<!--
+					Two tiers, split on the class-name suffix:
+					  *Test - fast, no Docker, run by surefire in the `test` phase
+					  *IT   - Testcontainers or full context, run by failsafe in `verify`
+					`mvn test` therefore stays fast and Docker-free, while `mvn verify` runs
+					everything. When CI arrives the two can be scheduled differently without
+					restructuring anything.
+				-->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-failsafe-plugin</artifactId>
+					<version>${maven-failsafe.version}</version>
+					<configuration>
+						<includes>
+							<include>**/*IT.java</include>
+						</includes>
+					</configuration>
+					<executions>
+						<execution>
+							<goals>
+								<goal>integration-test</goal>
+								<goal>verify</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<!-- Coverage for VISIBILITY only - deliberately no build-failing threshold.
+				     A global percentage rewards testing getters; the real targets are named
+				     in testing-plan.md Part 4 decision 6. -->
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>${jacoco.version}</version>
+					<executions>
+						<execution>
+							<id>prepare-agent</id>
+							<goals><goal>prepare-agent</goal></goals>
+						</execution>
+						<execution>
+							<id>report</id>
+							<phase>verify</phase>
+							<goals><goal>report</goal></goals>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>

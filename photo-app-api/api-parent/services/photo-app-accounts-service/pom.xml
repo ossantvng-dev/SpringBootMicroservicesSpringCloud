@@ -149,6 +149,14 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Shared test fixtures: JWT minting, principals, entity builders,
+		     and the slice config that loads the REAL security chain. -->
+		<dependency>
+			<groupId>com.photoapp.test</groupId>
+			<artifactId>photo-app-test-support</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 
 	</dependencies>
 

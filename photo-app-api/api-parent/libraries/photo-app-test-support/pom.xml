@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- =================================================================== -->
+    <!-- Parent -->
+    <!-- =================================================================== -->
+    <parent>
+        <groupId>com.ossantvng.photoapp</groupId>
+        <artifactId>api-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <!-- =================================================================== -->
+    <!-- Identity -->
+    <!-- =================================================================== -->
+    <groupId>com.photoapp.test</groupId>
+    <artifactId>photo-app-test-support</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>photo-app-test-support</name>
+    <description>Shared test fixtures for Photo App. Consumed at test scope only.</description>
+
+    <!--
+        Every consumer declares this with <scope>test</scope>, so nothing here can reach a
+        production image. Its own dependencies are compile-scoped so they arrive transitively
+        at the consumer's test scope - a test-scoped dependency would not.
+
+        This module is a deliberate exception to the library-proliferation non-goal recorded in
+        dockerization-plan.md. The alternative was five drifting copies of the security fixtures.
+    -->
+
+    <!-- =================================================================== -->
+    <!-- Dependencies -->
+    <!-- =================================================================== -->
+    <dependencies>
+
+        <!-- Spring Boot test stack: JUnit 5, AssertJ, Mockito, MockMvc -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+
+        <!-- @WithSecurityContext support for the custom principal annotation -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+        </dependency>
+
+        <!-- Supplies Boot's servlet security auto-configuration, which defines the
+             HttpSecurity bean that SecurityConfiguration#securityFilterChain consumes.
+             photo-app-security-lib brings spring-security-config/core/web but NOT the
+             auto-configuration, which is why the gateway also has to declare this
+             starter directly. Without it the slice context fails with
+             "required a bean of type HttpSecurity that could not be found". -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Needed to build a real HttpSecurity chain in slice tests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- Boot 4 moved @WebMvcTest / @AutoConfigureMockMvc / MockMvc out of
+             spring-boot-starter-test into this sliced starter. Without it the slice
+             annotations simply do not resolve. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+        </dependency>
+
+        <!-- The production security chain, CustomUserPrincipal and JwtTokenProvider.
+             Fixtures mint tokens with the SAME provider the application uses, so a test
+             token cannot drift from a real one. -->
+        <dependency>
+            <groupId>com.photoapp.security</groupId>
+            <artifactId>photo-app-security-lib</artifactId>
+        </dependency>
+
+        <!-- Entities, for the builders -->
+        <dependency>
+            <groupId>com.photoapp.domain</groupId>
+            <artifactId>photo-app-entity-model-lib</artifactId>
+        </dependency>
+
+        <!-- GlobalExceptionHandler, so the slice config can import the real advice -->
+        <dependency>
+            <groupId>com.photoapp.commons</groupId>
+            <artifactId>photo-app-commons</artifactId>
+        </dependency>
+
+        <!-- Testcontainers: real MySQL for the *IT tier -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+        </dependency>
+
+        <!-- Stubbing downstream services for the Feign/resilience tier -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+        </dependency>
+
+        <!-- Circuit-breaker state transitions without Thread.sleep -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+        </dependency>
+
+        <!-- Asserting ApiErrorDTO / Page<T> shape while ignoring volatile fields -->
+        <dependency>
+            <groupId>net.javacrumbs.json-unit</groupId>
+            <artifactId>json-unit-assertj</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+    </dependencies>
+
+    <!-- =================================================================== -->
+    <!-- Build -->
+    <!-- =================================================================== -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

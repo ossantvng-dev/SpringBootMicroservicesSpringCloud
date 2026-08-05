@@ -1,6 +1,6 @@
 # Testing Plan — comprehensive unit and integration testing
 
-**Status:** analysis and planning only. No test code written yet.
+**Status:** Phase 1 complete (2026-08-05). Phases 2-8 outstanding.
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -495,22 +495,22 @@ Structured like `dockerization-plan.md`: numbered phases, each with a stop-and-r
 Ordering is by **defect-finding value per unit of effort**, not by architectural layer — the
 Step 8 bug class comes first because it is proven to exist and proven to hide.
 
-## Phase 1 — Test infrastructure ⬜
+## Phase 1 — Test infrastructure ✅ DONE 2026-08-05
 
 Nothing below works until this is right.
 
-- ⬜ Normalize test dependencies across all five services; add `spring-security-test` to albums
-- ⬜ Add Testcontainers BOM + `mysql` + `junit-jupiter` + `spring-boot-testcontainers` to `api-parent`
-- ⬜ Add WireMock, Awaitility, json-unit
-- ⬜ Configure **failsafe** for `*IT`, keep surefire for `*Test`
-- ⬜ **Stop building with `-DskipTests`** — currently universal, so nothing is ever verified
-- ⬜ Shared test config that loads the real `SecurityConfiguration` under `@WebMvcTest`
-- ⬜ **Control test proving the real security chain is active** (USER on ADMIN endpoint → 403).
+- ✅ Normalize test dependencies across all five services; add `spring-security-test` to albums
+- ✅ Add Testcontainers BOM + `mysql` + `junit-jupiter` + `spring-boot-testcontainers` to `api-parent`
+- ✅ Add WireMock, Awaitility, json-unit
+- ✅ Configure **failsafe** for `*IT`, keep surefire for `*Test`
+- ✅ **Stop building with `-DskipTests`** — currently universal, so nothing is ever verified
+- ✅ Shared test config that loads the real `SecurityConfiguration` under `@WebMvcTest`
+- ✅ **Control test proving the real security chain is active** (USER on ADMIN endpoint → 403).
   Gate: if this passes with a permissive chain, Phase 3 is invalid.
-- ⬜ Test JWT minting helper + `@WithMockPhotoAppUser`
-- ⬜ Testcontainers MySQL base class, schema built from `database/` Liquibase changelogs
-- ⬜ Decide where shared fixtures live (§4, Q1)
-- ⬜ Fix or remove the `@Disabled` `contextLoads` tests, and the config-server test's hidden
+- ✅ Test JWT minting helper + `@WithMockPhotoAppUser`
+- ✅ Testcontainers MySQL base class, schema built from `database/` Liquibase changelogs
+- ✅ Decide where shared fixtures live (§4, Q1)
+- ✅ Fix or remove the `@Disabled` `contextLoads` tests, and the config-server test's hidden
   dependency on ambient machine env vars
 
 **Exit:** `mvn verify` runs green with a Testcontainers MySQL, and the control test proves
@@ -518,13 +518,21 @@ security is genuinely enforced.
 
 ## Phase 2 — Exception handling ⬜ *(highest priority)*
 
+> Phase 1 surfaced a large new target for this phase: MethodArgumentTypeMismatchException,
+> NoResourceFoundException and un-convertible query parameters ALL fall through to the 500
+> catch-all today - measured 8/8 on the running stack. See the 2026-08-05 entry in
+> backlog.txt. Roughly 20 {id} endpoints are affected, plus every mistyped URL.
+
 The Step 8 bug lived here. One shared advice, so one suite covers all five services.
 
 - ⬜ All 7 handlers: exact status + full `ApiErrorDTO` shape (ignoring `timeStamp` value)
 - ⬜ **`AccessDeniedException` resolves to #6, not the #7 catch-all** — the Step 8 regression test
 - ⬜ `ApplicationException` propagates its own status across 400/403/404/409/503
 - ⬜ Assert the log markers (`ACCESS_DENIED` @WARN, `UNHANDLED_EXCEPTION` @ERROR)
-- ⬜ Confirm the three §2.4 defects, then decide whether to fix in this phase or log them
+- ⬜ Add and test handlers for MethodArgumentTypeMismatchException (400),
+  NoResourceFoundException (404), HttpMessageNotReadableException (400) and
+  HttpRequestMethodNotSupportedException (405) - all currently 500
+- ⬜ Regression-test the three §2.4 defects fixed on 2026-08-05 (already fixed, not discovery)
 
 **Exit:** every handler branch covered; handler ordering pinned by test.
 
@@ -612,60 +620,85 @@ Deliberately last: lowest defect-finding value, and largely covered incidentally
 
 ---
 
-# PART 4 — Open questions / decisions needed from you
+# PART 4 — Decisions (resolved 2026-08-05)
 
-Same pattern as `dockerization-plan.md`: nothing below is assumed; each needs an explicit answer
-before the phase that depends on it.
+All nine open questions are answered. Recorded here in the same form as the resolved-decisions
+section of `dockerization-plan.md`, so the reasoning survives the conversation that produced it.
 
-1. **Where do shared test fixtures live?** JWT minting, `CustomUserPrincipal` builders and entity
-   builders are needed by all five services. Options: (a) a new `photo-app-test-support` module
-   with `<scope>test</scope>` — clean, but a 6th library and this project has an explicit
-   non-goal about library proliferation; (b) `test-jar` from `photo-app-commons` — no new module,
-   but couples test code to production packaging; (c) duplicate per service — no coupling, five
-   copies to keep in sync. **Recommendation: (a)**, since the alternative is five drifting copies
-   of security fixtures. *Blocks Phase 1.*
+1. **Shared test fixtures — resolved: a `photo-app-test-support` module.** New module under
+   `api-parent/libraries/`, consumed by every other module at `<scope>test</scope>` so nothing it
+   contains can reach a production image. Accepted over a `test-jar` from `photo-app-commons`
+   (which would couple test code to production packaging) and over per-service duplication
+   (which would mean five drifting copies of the security fixtures). This is a deliberate
+   exception to the library-proliferation non-goal: the alternative is worse.
 
-2. **Do the five library modules get their own suites, or only indirect coverage?** Listed as
-   undecided in the backlog. This inventory sharpens it: `photo-app-security-lib` and
-   `photo-app-commons` contain the highest-risk shared logic (the security chain and the shared
-   exception advice), and a bug in either breaks all five services at once.
-   **Recommendation: direct suites for `commons`, `security-lib`, `feign-lib`; indirect only for
-   `entity-model-lib` and `tracing-lib`.** *Blocks Phase 1.*
+2. **Library coverage — resolved: direct suites for `commons`, `security-lib` and `feign-lib`;
+   indirect only for `entity-model-lib` and `tracing-lib`.** The first three hold the shared
+   exception advice, the security chain and the Feign fallbacks — a bug in any one breaks all
+   five services at once. The other two are, respectively, annotated data classes and a single
+   auto-configuration whose behaviour is only observable in a running context.
 
-3. **How are circuit-breaker transitions tested?** Production values make one cycle take tens of
-   seconds (§1.4). Options: (a) test-only Resilience4j instances with tiny windows; (b) drive the
-   `CircuitBreaker` object directly from the registry; (c) accept slow tests in the `*IT` tier.
-   **Recommendation: (a) for behaviour, (b) for state-machine assertions.** *Blocks Phase 4.*
+3. **Circuit-breaker testing — resolved: test-only Resilience4j instances for behaviour, and
+   driving the `CircuitBreaker` object directly from the registry for state-machine assertions.**
+   Production values (`minimumNumberOfCalls=5`, `waitDurationInOpenState=10s`, retry backoff
+   2s→4s over 3 attempts) make one closed→open→half-open cycle take tens of seconds. Never drive
+   transitions through the production config.
 
-4. **Fix the three §2.4 defects during Phase 2, or log them and continue?** They are real 500s on
-   malformed input, reachable by any client today. Fixing mid-plan mixes remediation into a
-   testing initiative; deferring leaves known bugs live.
-   **Recommendation: write the failing tests in Phase 2 to prove them, fix immediately after,
-   exactly as the Step 8 defect was handled.** *Blocks Phase 2.*
+4. **The three §2.4 defects — resolved: FIXED 2026-08-05, not deferred to Phase 2.** All three
+   confirmed 500 before and 400/401 after, against the running stack. Phase 2 therefore inherits
+   them as *regression* tests rather than as discovery work. Details in the commit history and in
+   [backlog.txt](backlog.txt). Two of the three turned out to be wider than first written up:
+   `PaginationUtil` had the same unguarded parse on `size` and on `direction`, and the
+   `accountIds` parse existed twice — the second copy in `AlbumServiceImpl.findAll`, on the
+   non-admin path only, so fixing the Specification alone would have left the 500 live for
+   exactly the callers the ownership check protects.
 
-5. **Is the `Clock` refactor in scope?** Without it, token-expiry tests need `Thread.sleep` or
-   reflection. It touches `TokenHandlerServiceImpl`, `JwtTokenProvider` and `JwtClaimsParser` —
-   production code changed for testability, which needs your explicit approval.
-   **Recommendation: yes, in Phase 1** — it is small, and Phases 4 and 7 both depend on it.
+5. **Clock refactor — resolved: APPLIED 2026-08-05.** `java.time.Clock` is constructor-injected
+   into `TokenHandlerServiceImpl`, `JwtTokenProvider` and `JwtClaimsParser`, with
+   `Clock.systemUTC()` registered in `SecurityBeans` under `@ConditionalOnMissingBean`.
+   Behaviourally identical in production and verified as such. Note the code used `new Date()`
+   and `System.currentTimeMillis()`, not `Instant.now()`, so the substitutions are
+   `Date.from(clock.instant())` and `clock.millis()`. Phases 4 and 7 can now assert token issuance
+   and expiry with `Clock.fixed(...)` instead of sleeping.
 
-6. **Coverage targets.** Still undecided in the backlog. **Recommendation:** no global percentage
-   — it rewards testing getters. Instead require 100% of: `@PreAuthorize` endpoints (Phase 3),
-   `GlobalExceptionHandler` branches (Phase 2), mapper methods (Phase 5), Feign fallbacks
-   (Phase 4). Add JaCoCo for *visibility* without a build-failing threshold initially.
+6. **Coverage — resolved: no global percentage.** A global threshold rewards testing getters.
+   JaCoCo is added for *visibility* only, with no build-failing gate initially. The real target is
+   100% of four specific things: `@PreAuthorize` endpoints (Phase 3), `GlobalExceptionHandler`
+   branches (Phase 2), mapper methods (Phase 5), and Feign fallbacks (Phase 4).
 
-7. **Mutation testing (PIT)?** Also undecided in the backlog. **Recommendation: defer** until
-   Phases 1–5 are done. PIT against a near-empty suite reports noise; against a real suite it
-   answers a genuine question.
+7. **Mutation testing — resolved: deferred until Phases 1–5 are complete.** PIT against a
+   near-empty suite reports noise; against a real suite it answers a genuine question.
 
-8. **Does CI run the `*IT` tier?** Testcontainers needs a Docker daemon on the runner. If CI is
-   GitHub Actions (per the dockerization backlog's CI/CD item), Docker is available — but it
-   makes the pipeline slower and heavier. Options: run `*IT` on every PR, only on `main`, or
-   nightly. *Blocks the CI portion of Phase 1.*
+8. **CI `*IT` tier — resolved: not applicable yet.** No CI pipeline exists. Until GitHub Actions
+   is set up (see the CI/CD item in the AWS backlog of `dockerization-plan.md`), run the full
+   suite locally after each build. The `*Test` / `*IT` split still goes in now, so that when CI
+   arrives the two tiers can be scheduled differently without restructuring anything.
 
-9. **Should the design findings become their own backlog items?** Four surfaced during this
-   analysis that are **not testing work**: the `User` entity leaking across a service boundary
-   (§2.4 #8), the six unprotected Feign methods (#9), `BaseEntity` timestamping at construction
-   rather than `@PrePersist` (#10), unauthenticated `POST /auth/revoke` with no caller-to-owner
-   binding (#11), and no `@Valid` on any `/auth/*` request body. My inclination is to log them
-   separately in `backlog.txt` so this plan stays about testing — but they should be *recorded*
-   now rather than living only in this document.
+9. **Design findings — resolved: logged separately in [backlog.txt](backlog.txt).** They are not
+   testing work and this plan stays about testing.
+
+## Two fixes from 2026-08-05 that Phase 4 must cover as regressions
+
+Both were found and fixed the same day this plan's analysis was written, and both are exactly the
+class of defect this initiative exists to catch. Neither has a test.
+
+- **`/auth/refresh` required the caller's access token.** It called
+  `UserFeignClient#findById` → `GET /users/{id}`, which is `@PreAuthorize`-protected, while
+  `FeignAuthInterceptor` forwards only the *inbound* Authorization header — which a refreshing
+  client does not have. Redesigned to re-identify from the username now stored on the
+  refresh-token record and re-verify through the **public** `GET /users/username/{username}`, the
+  same lookup login uses. No caller credential and no service-to-service credential needed.
+  *Phase 4 must assert: refresh succeeds with NO Authorization header; a deactivated user is
+  refused; a revoked or unknown refresh token is refused; and the reissued token carries CURRENT
+  roles rather than the roles frozen at login.*
+
+- **A downstream 4xx tripped the circuit breaker and was flattened to 503.** Measured: five
+  logins with unknown usernames opened the users-service circuit, after which a *valid* login
+  also returned 503 — a denial of service reachable by ordinary user error. Fixed by
+  `DownstreamFailurePredicate` (wired as `recordFailurePredicate` and `retryExceptionPredicate`)
+  and `FeignFallbacks.translate`, which preserves a downstream 4xx instead of replacing it with a
+  blanket 503.
+  *Phase 4 must assert: N consecutive downstream 4xx responses do NOT open the circuit; a 4xx is
+  not retried; a downstream 4xx reaches the caller with its own status; and a genuine 5xx or
+  connection failure still opens the circuit and still produces 503. That last one matters — it is
+  the property the predicate could most easily break.*

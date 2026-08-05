@@ -1039,3 +1039,51 @@ POSSIBLE FIXES (decide, do not assume)
     surface as a 503.
 Priority: HIGH - the refresh flow is unusable as designed for its actual use
 case, and the whole point of Phase 4 of testing-plan.md is catching exactly this.
+
+
+[2026-08-05 | testing-plan Phase 1] HIGH — type-mismatch and no-handler both return 500
+----------------------------------------------------------------------------------------
+Found by the Phase 1 control test, then confirmed against the running stack. This is the
+Step 8 bug class again, and at far greater scale than the three defects fixed earlier
+the same day: it affects essentially every endpoint taking a typed parameter.
+
+GlobalExceptionHandler has no handler for Spring MVC's own request-binding failures, so
+they all fall through to @ExceptionHandler(Exception.class) and are reported as
+500 "Unexpected error occurred". Three distinct sub-classes, all measured at 500:
+
+  A. Non-numeric path variable on an existing {id} endpoint -> should be 400
+       GET /users/abc        500
+       GET /accounts/abc     500
+       GET /albums/abc       500
+       GET /photos/abc       500
+     Log: UNHANDLED_EXCEPTION ... Method parameter 'id': Failed to convert value of type
+     'java.lang.String' ... i.e. MethodArgumentTypeMismatchException.
+     Roughly 20 endpoints across the five services take @PathVariable Long id.
+
+  B. Genuinely unmapped path -> should be 404
+       GET /users/x/y/z      500
+       GET /accounts/a/b/c   500
+     NoResourceFoundException is a ServletException subclass and is swallowed the same way.
+     Every service therefore answers 500 for a typo in a URL.
+
+  C. Un-convertible query parameter -> should be 400
+       PATCH /users/1/activate?activate=maybe          500
+       PATCH /accounts/1/type?accountTypeDTO=GOLD      500
+     Bad boolean and bad enum respectively.
+
+WHY IT MATTERS BEYOND THE STATUS CODE
+Each of these logs at ERROR with the UNHANDLED_EXCEPTION marker and a full stack trace, so
+ordinary client mistakes are indistinguishable from genuine server faults in Kibana. The
+marker that should mean "something is broken" currently fires for a mistyped URL.
+
+FIX (Phase 2 of testing-plan.md - deliberately not done in Phase 1, which is infrastructure)
+Add handlers to GlobalExceptionHandler, ABOVE the catch-all, for:
+  - MethodArgumentTypeMismatchException  -> 400, naming the parameter and expected type
+  - NoResourceFoundException             -> 404
+  - HttpMessageNotReadableException      -> 400 (malformed JSON body; not yet measured,
+                                                 but the same mechanism applies)
+  - HttpRequestMethodNotSupportedException -> 405 (likewise unmeasured)
+Then extend the Phase 2 suite to cover each, since the handler ORDER is what the whole
+Step 8 lesson was about.
+Priority: HIGH. Reachable by any client on any typed endpoint, and it pollutes the error
+signal that the observability stack depends on.
