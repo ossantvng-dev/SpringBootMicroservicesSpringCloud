@@ -44,11 +44,13 @@ bash tools/local/stack.sh down          # keeps volumes
 | [DATABASE.md](docs/DATABASE.md) | You need to change the schema, or want to know what the seed data is |
 | [LOGGING.md](docs/LOGGING.md) | A log level is wrong, too noisy, or apparently being ignored |
 | [OBSERVABILITY.md](docs/OBSERVABILITY.md) | You're debugging and want the Kibana and Zipkin workflow, with copy-pasteable queries |
+| [TESTING.md](docs/TESTING.md) | You're writing or running tests — where they go, what to name them, and the `@WithMockUser` trap that silently makes them meaningless |
 
 Background and history, kept as a record rather than as instructions:
 
 - [docs/plans/PLATFORM-VISION.md](docs/plans/PLATFORM-VISION.md) — long-term direction
 - [docs/plans/dockerization-plan.md](docs/plans/dockerization-plan.md) — how the current shape was arrived at, and the AWS backlog
+- [docs/plans/testing-plan.md](docs/plans/testing-plan.md) — the phased testing plan, inventory and progress
 - [docs/plans/backlog.txt](docs/plans/backlog.txt) — open items and recorded decisions
 
 ## Modules
@@ -83,6 +85,7 @@ Every module has its own README with its port, dependencies and environment vari
 | [photo-app-feign-lib](api-parent/libraries/photo-app-feign-lib) | Feign clients, auth interceptor, error decoder |
 | [photo-app-security-lib](api-parent/libraries/photo-app-security-lib) | JWT filter and the shared security chain |
 | [photo-app-tracing-lib](api-parent/libraries/photo-app-tracing-lib) | Zipkin sender replacement |
+| [photo-app-test-support](api-parent/libraries/photo-app-test-support) | Shared test fixtures — **test scope only**, never in a production image |
 
 **Other**
 
@@ -95,12 +98,16 @@ Every module has its own README with its port, dependencies and environment vari
 
 ```bash
 cd api-parent
-mvn clean install -DskipTests
+mvn clean install     # runs the unit tier
+mvn verify            # unit + Testcontainers-backed integration tier, plus coverage
 ```
 
 Build from `api-parent`, not the root pom. The root aggregates the `database` module, whose
 `liquibase:update` is bound to `process-resources` and would try to reach a live database. The
 `Dockerfile` does the same for the same reason.
+
+**Don't reach for `-DskipTests`.** Every build in this project's history used it, which is how a
+suite that asserted almost nothing went unnoticed. See [TESTING.md](docs/TESTING.md).
 
 ## Configuration lives elsewhere
 

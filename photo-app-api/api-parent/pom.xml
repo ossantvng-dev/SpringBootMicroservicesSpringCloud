@@ -37,7 +37,7 @@
 		<wiremock.version>3.10.0</wiremock.version>
 		<awaitility.version>4.2.2</awaitility.version>
 		<json-unit.version>4.1.0</json-unit.version>
-		<jacoco.version>0.8.12</jacoco.version>
+		<jacoco.version>0.8.15</jacoco.version>
 		<maven-failsafe.version>3.5.2</maven-failsafe.version>
 	</properties>
 	<!-- =================================================================== -->
@@ -258,5 +258,21 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+		<!--
+			Actually BOUND in every module. pluginManagement above only pins versions and
+			configuration; a plugin declared there and nowhere else never executes. Without
+			this section `mvn verify` would run zero *IT tests and JaCoCo would emit no
+			report, both silently - the failure mode being that the command appears to work.
+		-->
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
 	</build>
 </project>
