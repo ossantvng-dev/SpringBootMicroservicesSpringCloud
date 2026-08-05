@@ -130,10 +130,8 @@ Note `-Dtest` targets surefire (`*Test`) and `-Dit.test` targets failsafe (`*IT`
 
 ### Coverage
 
-JaCoCo runs during `verify` and writes `target/site/jacoco/index.html` per module. It is
-**visibility only — there is deliberately no build-failing threshold.** A global coverage
-percentage rewards testing getters. The real targets are 100% of: `@PreAuthorize` endpoints,
-`GlobalExceptionHandler` branches, mapper methods, and Feign fallbacks.
+JaCoCo runs during `verify`. See [§9](#9-viewing-coverage-reports) for where the report lands
+and how to read it.
 
 ### Do not use `-DskipTests`
 
@@ -287,6 +285,133 @@ nothing else in the suite can be trusted.
   Use a test-only instance, or drive the `CircuitBreaker` from its registry.
 - **No `Thread.sleep`.** `Clock` is injectable, so mint an already-expired token with a rewound
   clock; use Awaitility for anything genuinely asynchronous.
+
+---
+
+## 9. Viewing coverage reports
+
+### Where it lands
+
+JaCoCo attaches an agent during `test`/`verify` and writes the report in the `verify` phase, so
+you need `mvn verify` — `mvn test` alone produces the raw `jacoco.exec` but no HTML.
+
+```bash
+cd photo-app-api/api-parent
+mvn verify -pl libraries/photo-app-test-support
+```
+
+Per module, under its own `target/`:
+
+| Path | What |
+|---|---|
+| `target/site/jacoco/index.html` | **The report — open this** |
+| `target/site/jacoco/jacoco.csv` | Same data, one row per class. Useful for grepping |
+| `target/site/jacoco/jacoco.xml` | For tooling |
+| `target/jacoco.exec` | Raw execution data the report is generated from |
+
+Open it with your file browser, or:
+
+```bash
+start target/site/jacoco/index.html                     # Windows
+python -m http.server 8000 --directory target/site/jacoco   # then browse localhost:8000
+```
+
+There is **no aggregated report across modules** — see the scoping note below.
+
+### Reading it
+
+Drill from package → class → source. The colours are per line, in the left gutter:
+
+| Colour | Means |
+|---|---|
+| 🟩 **Green** | Fully covered — every branch on that line was taken |
+| 🟥 **Red** | Not executed at all |
+| 🟨 **Yellow** | **Partially covered** — the line ran, but only some of its branches did |
+
+**Yellow is the interesting one.** It is where a test exercised an `if` but only ever with the
+condition true, or a `switch` with only some cases. Hover the diamond marker in the gutter and
+JaCoCo tells you exactly which branches were missed, e.g. *"1 of 2 branches missed"*.
+
+For this codebase that matters more than the percentage: `CustomFeignErrorDecoder` has five
+branches, `UserSpecification` has six date-range branches, and `GlobalExceptionHandler` has seven
+handlers. A class can read 100% *line* coverage while half its branches have never run.
+
+The columns in the table view are `Missed Instructions`, `Missed Branches`, `Cxty`, `Lines`,
+`Methods`, `Classes`. Sort by **Missed Branches** — that is the column that finds untested logic.
+
+### It is a visibility tool, not a gate
+
+**There is deliberately no coverage threshold, and no build fails on coverage.** This is a
+recorded decision (Part 4, decision 6 of [plans/testing-plan.md](plans/testing-plan.md)).
+
+A global percentage target rewards writing tests for getters and DTOs to move a number, which is
+the opposite of the point. The purpose here is to **find untested branches and dead code while
+you are writing tests** — you write the test you meant to write, then open the report to see what
+you missed.
+
+What is actually required is 100% of four specific things, checked by reading the report rather
+than by a build rule:
+
+- every `@PreAuthorize` endpoint (Phase 3)
+- every `GlobalExceptionHandler` branch (Phase 2)
+- every mapper method (Phase 5)
+- every Feign fallback (Phase 4)
+
+The report is also good at finding **dead code**: something red that you believe is reachable is
+either untested or unreachable, and both are worth knowing.
+
+### Scoping: a report covers only its own module's classes
+
+**This trips people up.** JaCoCo instruments the classes in *that module's* `target/classes`. It
+does not report on classes from dependency modules, however hard the tests exercise them.
+
+Verified concretely: `SecuritySliceControlTest` in `photo-app-test-support` drives
+`SecurityConfiguration` (from security-lib) and `GlobalExceptionHandler` (from commons) through
+eight tests — and neither class appears anywhere in test-support's report. Its packages are only
+`com.photoapp.test.support.*`.
+
+The practical consequence, which changes where you put a test if coverage matters to you:
+
+> To see **`GlobalExceptionHandler`** turn green, the tests must live in
+> **`photo-app-commons`'s own `src/test`**. Exception-handling tests written inside a *service*
+> module will assert correctly and prove the behaviour — but that service's coverage report will
+> not show them, because the advice is a commons class.
+
+This lines up with decision 2 in the plan: commons, security-lib and feign-lib get direct suites.
+Note commons and security-lib cannot use `photo-app-test-support` (module cycle — see §1), so
+their suites use plain JUnit.
+
+### Worked example — Phase 2
+
+After writing the exception-handler tests:
+
+```bash
+cd photo-app-api/api-parent
+mvn verify -pl libraries/photo-app-commons
+start libraries/photo-app-commons/target/site/jacoco/index.html
+```
+
+Drill into `com.photoapp.commons.exception` → `GlobalExceptionHandler` and confirm **all seven
+handler methods are green**:
+
+| # | Handler | Expect |
+|---|---|---|
+| 1 | `applicationExceptionHandler` | green |
+| 2 | `validationExceptionHandler` | green |
+| 3 | `constraintViolationHandler` | green |
+| 4 | `dataAccessExceptionHandler` | green |
+| 5 | `optimisticLockExceptionHandler` | green |
+| 6 | `accessDeniedHandler` | green — **the Step 8 fix** |
+| 7 | `genericExceptionHandler` | green |
+
+Then check `buildResponse` for **yellow**: it is shared by all seven, so partial branch coverage
+there means a status or body path never ran.
+
+This is a **double-check on top of the assertions, not a substitute for them.** Green only proves
+a line executed — it says nothing about whether you asserted the right status or the right
+`ApiErrorDTO` shape. A handler can be fully green and still be returning 500 where it should
+return 403, which is precisely how the Step 8 defect survived. Read the report to find what you
+*forgot* to test; trust the assertions for whether the behaviour is right.
 
 ## See also
 
