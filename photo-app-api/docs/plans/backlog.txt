@@ -555,6 +555,50 @@ runs is ~8s per service; the ordering of the five business services shuffles
 between runs, which is itself consistent with contention rather than with any one
 service being intrinsically slow.
 
+RUN 3 - 2026-08-05, CPU ALLOCATION RAISED 6 -> 10. HYPOTHESIS CONFIRMED.
+The experiment proposed below was run: .wslconfig CPUs raised to 10 (docker info
+NCPU=10, host has 12 logical), then the identical cold start - docker compose
+down -v followed by stack.sh up, all volumes destroyed, same extraction method.
+
+  component        run1(6cpu)  run2(6cpu)  run3(10cpu)   mean(6)   change
+  users               171.7       168.0        93.7       169.8    -44.8%
+  accounts            170.8       165.4        91.7       168.1    -45.4%
+  photos              168.6       165.7        93.0       167.1    -44.3%
+  albums              164.4       172.9        91.9       168.7    -45.5%
+  authorization       162.7       172.9        88.9       167.8    -47.0%
+  gateway             110.9       107.9        68.7       109.4    -37.2%
+  config-server        25.1          -         18.4        25.1    -26.7%
+  discovery            18.7          -         18.9        18.7     +1.1%
+
+THE CONTROL CASE IS WHAT SETTLES IT
+discovery-service boots ALONE, after config-server is healthy and before anything
+else starts, so it was never contended. It is UNCHANGED: 18.9s against 18.7s,
++1.1%, pure noise. Every component that boots simultaneously with five others
+dropped 37-47%.
+
+That is the signature CPU contention predicts and that nothing else explains. A
+slow disk, a cold page cache, or slow class loading would have sped up the
+uncontended component too. Only contention leaves the lone booter untouched while
+halving the time of the crowd.
+
+The magnitude agrees as well. Cores per simultaneously-booting JVM went from
+6/6 = 1.00 to 10/6 = 1.67, +67%. If boot time scaled linearly with cores per JVM
+the prediction is 60% of the previous time, i.e. -40%. Measured -45%. Slightly
+better than linear, which is what you expect when the extra headroom also relieves
+the infrastructure containers competing for the same cores.
+
+WHAT IT DOES NOT SAY
+Contention was the DOMINANT factor, not the only one. Six JVMs still take ~90s to
+boot with 1.67 cores each, which is not fast; there is a remaining component that
+more cores did not remove. Whoever picks this up next should treat ~90s as the new
+baseline rather than assuming the problem is closed.
+
+Also note the healthcheck start-period, set to 240s on 2026-08-02 to clear a
+172.9s worst case, now has far more headroom than intended - the slowest component
+is 93.7s. It can safely stay where it is; the only cost is slower reporting of a
+genuinely hung service. If it is ever retuned, retune it against these numbers and
+not the old ones.
+
 WHAT THIS CONFIRMS
 The five business services and the gateway take 108-173s to boot under this exact
 contention scenario, while config-server and discovery are up in under 30s. That
@@ -636,6 +680,10 @@ Investigation starting points:
          NCPU     = 6          host has 12 logical CPUs
          MemTotal = 11.7 GiB   (the 12GB .wslconfig setting)
 
+     ENGINE ALLOCATION 2026-08-05, after the fix:
+         NCPU     = 10         host still 12 logical CPUs
+         MemTotal = 11.7 GiB   (unchanged)
+
      Six CPUs, and exactly six components boot simultaneously - gateway plus the
      five business services. That is ONE core per JVM during the phase where JVM
      startup most wants several: JIT compiler threads, parallel GC threads and
@@ -646,14 +694,30 @@ Investigation starting points:
      quantitative fit for the observed 5-7x difference, not just a directional
      one. This is now a specific, testable claim rather than a general suspicion.
 
-     Cheapest test: raise the WSL2 engine to 8-10 CPUs in .wslconfig and repeat
-     the cold-start measurement. If boot times drop substantially, confirmed.
-     Note the host has 12 logical CPUs, so there is real headroom - but leave a
-     couple for the host or the machine becomes unusable during a cold start.
-     A staggered startup (or accepting a slow cold boot) is the alternative if
-     the cores are not available.
+     *** RESOLVED 2026-08-05 - CONFIRMED BY EXPERIMENT. ***
+     The proposed test was run: .wslconfig raised to 10 CPUs (docker info NCPU=10),
+     identical cold start repeated. The six simultaneously-booting components
+     dropped 37-47%, while discovery-service - which boots ALONE and was never
+     contended - was unchanged at +1.1%. See "RUN 3" in the cold-start section
+     above for the full table.
 
-     Everything below is downstream of this, so check it before anything else.
+     That control case is what makes it conclusive rather than merely suggestive:
+     a slow disk, a cold page cache or slow class loading would have sped up the
+     uncontended component too. Only CPU contention leaves the lone booter
+     untouched while nearly halving the time of the crowd. The magnitude also
+     agrees with the arithmetic - cores per booting JVM went 1.00 -> 1.67, which
+     predicts -40%, and -45% was measured.
+
+     REMAINING WORK ON THIS POINT
+     Contention was dominant, not total: six JVMs still take ~90s with 1.67 cores
+     each. Treat ~90s as the new baseline, not as "solved". If the boot time
+     matters further, the next lever is staggering startup so fewer JVMs
+     initialise at once - the dependency graph already serialises config-server
+     and discovery, and the same could be done to the business tier - rather than
+     buying more cores, since the host has only 12 and two should stay free.
+
+     Points 2-4 below are now the open ones; they were previously downstream of
+     this.
   2. JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75" from the Step 6 Dockerfile.
      Compare the percentage against each container's actual memory limit and
      look for GC pressure; no per-container memory limits are set in
