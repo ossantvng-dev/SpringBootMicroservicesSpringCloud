@@ -32,11 +32,30 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         log.info("AUTH LOGIN started username={}", loginRequestDTO.getUsername());
         log.info("AUTH LOGIN fetching user from users-service username={}", loginRequestDTO.getUsername());
 
-        User user = userFeignClient.findByUsernameAndActiveUser(loginRequestDTO.getUsername());
+        User user;
+        try {
+            user = userFeignClient.findByUsernameAndActiveUser(loginRequestDTO.getUsername());
+        } catch (ApplicationException ex) {
+            /*
+                users-service returns 404 for an unknown or deactivated username, so the
+                null check below never fires - the decoder throws first, and before this
+                catch existed the caller received that 404 verbatim, including the internal
+                Feign method signature in the message.
+
+                Answer 401 with the same wording an unknown username and a wrong password
+                both produce, so the response does not reveal which usernames exist.
+             */
+            if (ex.getHttpStatus().is4xxClientError()) {
+                log.warn("AUTH LOGIN user not found or inactive username={} downstream={}",
+                        loginRequestDTO.getUsername(), ex.getHttpStatus());
+                throw new ApplicationException("Invalid credentials", HttpStatus.UNAUTHORIZED);
+            }
+            throw ex;
+        }
 
         if (user == null) {
             log.warn("AUTH LOGIN user not found username={}", loginRequestDTO.getUsername());
-            throw new ApplicationException("User not found or inactive", HttpStatus.UNAUTHORIZED);
+            throw new ApplicationException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
 
         log.info("AUTH LOGIN user found userId={} username={}", user.getId(), loginRequestDTO.getUsername());
@@ -61,7 +80,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         log.info("AUTH LOGIN generating refresh token userId={}", user.getId());
 
-        String refreshToken = refreshTokenService.generateRefreshToken(user.getId().toString());
+        String refreshToken = refreshTokenService
+                .generateRefreshToken(user.getId().toString(), user.getUsername());
 
         long accessTokenExpiresIn = jwtTokenProvider.getValidityInMillis() / 1000;
         long refreshTokenExpiresIn = TokenHandlerServiceImpl.REFRESH_TOKEN_VALIDITY / 1000;

@@ -1,13 +1,12 @@
 package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.user.UserDTO;
-import com.photoapp.commons.exception.ApplicationException;
 import com.photoapp.entity.User;
+import com.photoapp.feign.resilience.FeignFallbacks;
 import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -41,24 +40,15 @@ public interface UserFeignClient {
     UserDTO findById(@PathVariable("id") Long id);
 
     default boolean isActiveFallback(Long id, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "isActive"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "isActive");
     }
 
     default User findByUsernameAndActiveUserFallback(String username, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findByUsernameAndActiveUser"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findByUsernameAndActiveUser");
     }
 
     default UserDTO findByIdFallback(Long id, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findById"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findById");
     }
 
 }

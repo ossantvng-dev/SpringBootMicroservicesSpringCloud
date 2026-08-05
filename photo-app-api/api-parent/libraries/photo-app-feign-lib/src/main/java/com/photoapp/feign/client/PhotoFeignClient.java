@@ -1,13 +1,12 @@
 package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.photo.PhotoDTO;
-import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.feign.resilience.FeignFallbacks;
 import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,16 +43,10 @@ public interface PhotoFeignClient {
     long countByAlbumIds(@RequestParam("albumIds") List<Long> albumIds);
 
     default void deleteByAlbumIdsFallback(List<Long> albumIds, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "deleteByAlbumIds"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "deleteByAlbumIds");
     }
     default long countByAlbumIdsFallback(List<Long> albumIds, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "countByAlbumIds"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "countByAlbumIds");
     }
 
 }

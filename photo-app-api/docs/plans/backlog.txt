@@ -984,8 +984,19 @@ registration and the load-balancer cache had not caught up. A retry seconds
 later returned 200 from all five.
 
 
-[2026-08-05 | testing-plan] POST /auth/refresh cannot work without an access token
------------------------------------------------------------------------------------
+[2026-08-05 | testing-plan] POST /auth/refresh cannot work without an access token   [FIXED]
+-------------------------------------------------------------------------------------------
+FIXED 2026-08-05. The refresh flow now re-identifies the user from the username
+stored on its own refresh-token record and re-verifies through the PUBLIC
+GET /users/username/{username} - the same lookup login uses - so it needs no
+caller credential and no service-to-service credential. Verified: refresh with no
+Authorization header returns 200 with a working access token.
+The misleading-503 half was fixed too, in two places: DownstreamFailurePredicate
+stops a downstream 4xx counting toward the circuit-breaker failure rate or being
+retried, and FeignFallbacks.translate preserves a downstream 4xx instead of
+replacing it with a blanket 503. See the 2026-08-05 commit for detail.
+
+Original finding:
 Found incidentally while smoke-testing the Clock refactor. PRE-EXISTING - not
 caused by that change, and reproduced against code that predates it.
 

@@ -4,8 +4,8 @@ import com.photoapp.auth.dto.AuthorizationResponseDTO;
 import com.photoapp.auth.dto.RefreshTokenDataDTO;
 import com.photoapp.auth.dto.RefreshTokenRequestDTO;
 import com.photoapp.auth.service.TokenHandlerService;
-import com.photoapp.commons.dto.user.UserDTO;
 import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.entity.User;
 import com.photoapp.feign.client.UserFeignClient;
 import com.photoapp.security.provider.JwtTokenProvider;
 import lombok.AllArgsConstructor;
@@ -41,11 +41,11 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
     private final Clock clock;
 
     @Override
-    public String generateRefreshToken(String userId) {
+    public String generateRefreshToken(String userId, String username) {
         log.info("REFRESH TOKEN generation started userId={}", userId);
         String token = UUID.randomUUID().toString();
         long expiryTime = clock.millis() + REFRESH_TOKEN_VALIDITY;
-        refreshTokens.put(token, new RefreshTokenDataDTO(userId, expiryTime));
+        refreshTokens.put(token, new RefreshTokenDataDTO(userId, username, expiryTime));
         log.info("REFRESH TOKEN generated userId={}", userId);
         return token;
     }
@@ -67,11 +67,47 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
         }
 
         log.info("REFRESH TOKEN valid userId={}", data.getUserId());
-        log.info("REFRESH TOKEN calling users-service userId={}", data.getUserId());
+        log.info("REFRESH TOKEN re-verifying user with users-service username={}", data.getUsername());
 
-        UserDTO user = userFeignClient.findById(Long.valueOf(data.getUserId()));
+        /*
+            Re-verification against users-service is deliberate, not incidental. A refresh
+            token lives 30 days, so without it a deactivated user - or one whose roles were
+            revoked - would keep minting valid access tokens until the refresh token expired.
+            The new access token must carry CURRENT roles, not the roles frozen at login.
 
-        if (user == null || !Boolean.TRUE.equals(user.getActiveUser())) {
+            The lookup is the PUBLIC GET /users/username/{username}, the same call login
+            makes. That matters: it needs no credential, so refresh works with no
+            Authorization header, which is the whole point of a refresh endpoint. It also
+            already filters on activeUser=true, so a deactivated user simply is not found.
+
+            The previous implementation called findById -> GET /users/{id}, which is
+            @PreAuthorize("hasRole('ADMIN') or hasRole('USER')"). FeignAuthInterceptor
+            forwards the INBOUND Authorization header, and a refreshing client has none,
+            so the call arrived anonymous, users-service answered 401, and the circuit
+            breaker fallback reported 503 "users-service is not available" - blaming the
+            downstream service for what was really a missing credential.
+         */
+        User user;
+        try {
+            user = userFeignClient.findByUsernameAndActiveUser(data.getUsername());
+        } catch (ApplicationException ex) {
+            /*
+                users-service answers 404 for a user that is missing OR deactivated (its
+                query filters activeUser=true), so the null check below never fires - the
+                decoder throws first. Translate any downstream 4xx into 401: from the
+                caller's point of view the refresh token no longer identifies a usable
+                account, which is an authentication outcome, not a missing web resource.
+                It also avoids echoing the internal Feign method signature to the client.
+             */
+            if (ex.getHttpStatus().is4xxClientError()) {
+                log.warn("REFRESH TOKEN user inactive or not found userId={} downstream={}",
+                        data.getUserId(), ex.getHttpStatus());
+                throw new ApplicationException("User not found or inactive", HttpStatus.UNAUTHORIZED);
+            }
+            throw ex;
+        }
+
+        if (user == null) {
             log.warn("REFRESH TOKEN user inactive or not found userId={}", data.getUserId());
             throw new ApplicationException("User not found or inactive", HttpStatus.UNAUTHORIZED);
         }

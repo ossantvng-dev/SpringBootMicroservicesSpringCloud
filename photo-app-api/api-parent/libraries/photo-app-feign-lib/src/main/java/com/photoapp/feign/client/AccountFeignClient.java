@@ -1,13 +1,12 @@
 package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.account.AccountDTO;
-import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.feign.resilience.FeignFallbacks;
 import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -41,25 +40,16 @@ public interface AccountFeignClient {
     @Retry(name = "photo-app-accounts-service-deleteByUserId")
     void deleteByUserId(@PathVariable("userId") Long userId);
 
-    default Page<AccountDTO> findAllFallback(Map<String,String> filters, Throwable ex) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findAll"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+    default Page<AccountDTO> findAllFallback(Map<String,String> filters, Throwable t) {
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findAll");
     }
 
     default void deleteByUserIdFallback(Long userId, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "deleteByUserId"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "deleteByUserId");
     }
 
     default AccountDTO findByIdFallback(Long id, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findById"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findById");
     }
 
 }

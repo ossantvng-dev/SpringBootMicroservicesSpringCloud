@@ -22,13 +22,25 @@ public interface TokenHandlerService {
 
     /**
      * Generate and persist a refresh token associated with the given user.
-     * @param userId the identifier of the user
+     * <p>
+     * The username is stored with the record because refreshing must work with NO
+     * caller credential - see refreshToken below.
+     *
+     * @param userId   the identifier of the user
+     * @param username the username of the user, used to re-verify at refresh time
      * @return the newly generated refresh token
      */
-    String generateRefreshToken(String userId);
+    String generateRefreshToken(String userId, String username);
 
     /**
      * Exchange a valid refresh token for a new access token.
+     * <p>
+     * MUST work with no Authorization header. A client refreshes precisely because its
+     * access token is missing or expired, so requiring one defeats the endpoint. The
+     * refresh token itself is the credential; it is validated against this service's own
+     * store, and the user is then re-verified through the PUBLIC
+     * GET /users/username/{username} lookup - the same one login uses.
+     *
      * @param refreshTokenRequestDTO contains the refresh token to be used
      * @return response containing new access and refresh tokens
      */

@@ -1,13 +1,12 @@
 package com.photoapp.feign.client;
 
 import com.photoapp.commons.dto.album.AlbumDTO;
-import com.photoapp.commons.exception.ApplicationException;
+import com.photoapp.feign.resilience.FeignFallbacks;
 import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,30 +47,18 @@ public interface AlbumFeignClient {
     long countByAccountId(@RequestParam("accountId") Long accountId);
 
     default AlbumDTO findByIdFallback(Long id, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findById"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findById");
     }
 
-    default Page<AlbumDTO> findAllFallback(Map<String,String> filters, Throwable ex) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "findAll"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+    default Page<AlbumDTO> findAllFallback(Map<String,String> filters, Throwable t) {
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findAll");
     }
 
     default void deleteByAccountIdsFallback(List<Long> accountIds, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "deleteByAccountIds"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "deleteByAccountIds");
     }
 
     default long countByAccountIdFallback(Long accountId, Throwable t) {
-        throw new ApplicationException(
-                String.format(ERROR_TEMPLATE, "countByAccountId"),
-                HttpStatus.SERVICE_UNAVAILABLE
-        );
+        throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "countByAccountId");
     }
 }
