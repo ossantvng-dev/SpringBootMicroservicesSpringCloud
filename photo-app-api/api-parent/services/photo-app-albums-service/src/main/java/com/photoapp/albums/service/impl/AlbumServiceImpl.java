@@ -5,6 +5,7 @@ import com.photoapp.albums.dto.AlbumFilterDTO;
 import com.photoapp.albums.dto.CreateAlbumInputDTO;
 import com.photoapp.albums.dto.UpdateAlbumInputDTO;
 import com.photoapp.albums.repository.AlbumRepository;
+import com.photoapp.albums.repository.specification.AlbumSpecification;
 import com.photoapp.albums.service.AlbumService;
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
@@ -22,7 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -111,10 +111,10 @@ public class AlbumServiceImpl implements AlbumService {
                 throw new ApplicationException("Non-admin users must provide accountIds filter", HttpStatus.BAD_REQUEST);
             }
 
-            List<Long> accountIds = Arrays.stream(albumFilterDTO.getAccountIds().split(","))
-                    .map(String::trim)
-                    .map(Long::valueOf)
-                    .toList();
+            // Same parser the Specification uses, so a malformed id is a 400 on BOTH paths.
+            // This block runs only for non-admins, so leaving it unguarded would have kept
+            // the 500 alive for exactly the callers the ownership check exists to protect.
+            List<Long> accountIds = AlbumSpecification.parseAccountIds(albumFilterDTO.getAccountIds());
 
             for (Long accountId : accountIds) {
                 AccountDTO accountDTO = accountFeignClient.findById(accountId);

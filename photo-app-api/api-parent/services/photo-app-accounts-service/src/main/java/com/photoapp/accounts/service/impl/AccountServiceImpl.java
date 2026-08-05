@@ -116,14 +116,14 @@ public class AccountServiceImpl implements AccountService {
     public Page<AccountDTO> findAll(Map<String, String> filters) {
         log.debug("Finding all accounts filters={}", filters);
         AccountFilterDTO accountFilterDTO = mapToFilter(filters, AccountFilterDTO.class);
-        String currentUserId = currentUserService.getCurrentUserId();
         boolean isAdmin = currentUserService.isAdmin();
         if (!isAdmin) {
+            Long currentUserId = requireCurrentUserId();
             if (accountFilterDTO.getUserId() != null &&
-                    !accountFilterDTO.getUserId().equals(Long.valueOf(currentUserId))) {
+                    !accountFilterDTO.getUserId().equals(currentUserId)) {
                 throw new ApplicationException("You can only list your own accounts", HttpStatus.FORBIDDEN);
             } else {
-                accountFilterDTO.setUserId(Long.valueOf(currentUserId));
+                accountFilterDTO.setUserId(currentUserId);
             }
         }
         Page<AccountDTO> result = accountRepository.findAll(fromFilter(accountFilterDTO), mapToPageable(filters))
@@ -166,6 +166,38 @@ public class AccountServiceImpl implements AccountService {
                 }, () -> {
                     throw new ApplicationException("Account not found", HttpStatus.NOT_FOUND);
                 });
+    }
+
+    /*
+        The caller's own id, as a number, or a 401.
+
+        Previously this was an inline Long.valueOf(currentUserService.getCurrentUserId()).
+        getCurrentUserId() returns null whenever the principal is not a CustomUserPrincipal,
+        and it also returns whatever the JWT's "sub" claim contains, which is not guaranteed
+        numeric. Either case threw NumberFormatException and reached the catch-all as a 500.
+
+        Not unreachable: the path rule for /accounts/** only guarantees an authenticated
+        principal with ROLE_USER or ROLE_ADMIN. A signature-valid token carrying a scope but
+        no "sub" claim satisfies that and still yields a null id here - verified by minting
+        exactly such a token against the shared HMAC secret.
+
+        401, not 400 or 403: the request carried a token that failed to establish WHO the
+        caller is. That is an authentication failure, and re-authenticating is the fix.
+        403 would wrongly imply a known identity lacking permission, and 400 would wrongly
+        blame the query string, which is fine.
+     */
+    private Long requireCurrentUserId() {
+        String currentUserId = currentUserService.getCurrentUserId();
+        if (currentUserId == null || currentUserId.isBlank()) {
+            log.warn("MISSING_PRINCIPAL_ID - authenticated request carries no usable user id");
+            throw new ApplicationException("Could not determine the authenticated user", HttpStatus.UNAUTHORIZED);
+        }
+        try {
+            return Long.valueOf(currentUserId);
+        } catch (NumberFormatException ex) {
+            log.warn("NON_NUMERIC_PRINCIPAL_ID - subject '{}' is not a valid user id", currentUserId);
+            throw new ApplicationException("Could not determine the authenticated user", HttpStatus.UNAUTHORIZED);
+        }
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -21,10 +22,12 @@ import java.util.stream.Collectors;
 public class JwtClaimsParser {
 
     private final SecretKey secretKey;
+    private final Clock clock;
 
-    public JwtClaimsParser(@Value("${photoapp.jwt.secret}") String base64Secret) {
+    public JwtClaimsParser(@Value("${photoapp.jwt.secret}") String base64Secret, Clock clock) {
         byte[] secretKeyBytes = Decoders.BASE64.decode(base64Secret);
         this.secretKey = Keys.hmacShaKeyFor(secretKeyBytes);
+        this.clock = clock;
     }
 
     @SuppressWarnings("unchecked")
@@ -57,9 +60,10 @@ public class JwtClaimsParser {
         Jwt<?, ?> parsedJwt = jwtParser.parse(jwt.replace("Bearer ", ""));
         Claims claims = (Claims) parsedJwt.getPayload();
 
-        // Validate token expiration
+        // Validate token expiration. Date.from(clock.instant()) is the same epoch
+        // millisecond new Date() produced, so the comparison is unchanged.
         Date expiration = claims.getExpiration();
-        if (expiration != null && expiration.before(new Date())) {
+        if (expiration != null && expiration.before(Date.from(clock.instant()))) {
             throw new io.jsonwebtoken.ExpiredJwtException(null, claims, "Token expired");
         }
 

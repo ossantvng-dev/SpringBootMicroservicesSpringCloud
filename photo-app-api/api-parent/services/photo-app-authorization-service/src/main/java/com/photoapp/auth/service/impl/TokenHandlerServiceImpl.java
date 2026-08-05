@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,12 +31,20 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
     private final Map<String, RefreshTokenDataDTO> refreshTokens = new ConcurrentHashMap<>();
     private final UserFeignClient userFeignClient;
     private final JwtTokenProvider jwtTokenProvider;
+    /*
+        Clock.systemUTC().millis() is specified as equivalent to System.currentTimeMillis(),
+        which is what every call site below used, so production behaviour is unchanged.
+        Lombok's @AllArgsConstructor picks this up: refreshTokens is an initialised final
+        field and is excluded, so the generated constructor is
+        (UserFeignClient, JwtTokenProvider, Clock) - still plain constructor injection.
+     */
+    private final Clock clock;
 
     @Override
     public String generateRefreshToken(String userId) {
         log.info("REFRESH TOKEN generation started userId={}", userId);
         String token = UUID.randomUUID().toString();
-        long expiryTime = System.currentTimeMillis() + REFRESH_TOKEN_VALIDITY;
+        long expiryTime = clock.millis() + REFRESH_TOKEN_VALIDITY;
         refreshTokens.put(token, new RefreshTokenDataDTO(userId, expiryTime));
         log.info("REFRESH TOKEN generated userId={}", userId);
         return token;
@@ -52,7 +61,7 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
             throw new ApplicationException("Invalid or expired refresh token", HttpStatus.UNAUTHORIZED);
         }
 
-        if (data.getExpiryTime() <= System.currentTimeMillis()) {
+        if (data.getExpiryTime() <= clock.millis()) {
             log.warn("REFRESH TOKEN expired userId={}", data.getUserId());
             throw new ApplicationException("Invalid or expired refresh token", HttpStatus.UNAUTHORIZED);
         }
@@ -83,7 +92,7 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
                 refreshTokenRequestDTO.getRefreshToken(),
                 "Bearer",
                 jwtTokenProvider.getValidityInMillis() / 1000,
-                (data.getExpiryTime() - System.currentTimeMillis()) / 1000
+                (data.getExpiryTime() - clock.millis()) / 1000
         );
     }
 
@@ -93,7 +102,7 @@ public class TokenHandlerServiceImpl implements TokenHandlerService {
         RefreshTokenDataDTO data = refreshTokens.get(refreshToken);
         if (data != null) {
             // set as expired
-            data.setExpiryTime(System.currentTimeMillis());
+            data.setExpiryTime(clock.millis());
             refreshTokens.put(refreshToken, data);
             log.info("REFRESH TOKEN revoked userId={}", data.getUserId());
         } else  {

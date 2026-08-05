@@ -982,3 +982,49 @@ container restart is enough. The five business services were restarted and the
 three that returned 500 immediately afterwards were transient: Eureka
 registration and the load-balancer cache had not caught up. A retry seconds
 later returned 200 from all five.
+
+
+[2026-08-05 | testing-plan] POST /auth/refresh cannot work without an access token
+-----------------------------------------------------------------------------------
+Found incidentally while smoke-testing the Clock refactor. PRE-EXISTING - not
+caused by that change, and reproduced against code that predates it.
+
+SYMPTOM
+  POST /auth/refresh with only {"refreshToken": "..."}     -> 503
+  POST /auth/refresh with the SAME body plus a valid
+    Authorization: Bearer <accessToken> header             -> 200
+
+CAUSE
+TokenHandlerServiceImpl.refreshToken calls
+userFeignClient.findById(...) -> GET /users/{id}, which is
+@PreAuthorize("hasRole('ADMIN') or hasRole('USER')"). FeignAuthInterceptor
+propagates the INBOUND Authorization header, and /auth/refresh is a public
+endpoint that a client would normally call WITHOUT one - because the whole point
+of a refresh token is to get a new access token when the old one is gone or
+expired. With no header to forward the downstream call arrives anonymous,
+users-service answers 401, CustomFeignErrorDecoder turns that into
+ApplicationException(401), the circuit breaker counts it as a failure, retries
+exhaust, and the fallback reports 503 "photo-app-users-service is not available".
+
+The 503 is actively misleading: users-service is healthy and the failure is an
+authorization problem, not availability. That is a second-order finding worth
+noting on its own - a fallback that reports "service unavailable" for a 401
+hides the real cause.
+
+CONFIRMED PRE-EXISTING
+Verified against the running stack. None of the 2026-08-05 changes touch Feign
+auth propagation or the security chain; the only edit to TokenHandlerServiceImpl
+was System.currentTimeMillis() -> clock.millis(), and the with-header call
+returns 200 with the expected expiresIn=86400, so the Clock path itself is fine.
+
+POSSIBLE FIXES (decide, do not assume)
+  - Have the refresh flow call users-service with a service-to-service
+    credential rather than relying on the caller's token.
+  - Or drop the findById call: the refresh token record already carries the
+    userId, so the active-user re-check is the only thing needing it - and that
+    check could move to a dedicated internal endpoint.
+  - Either way, teach CustomFeignErrorDecoder/the fallbacks to distinguish
+    "downstream rejected us" from "downstream is down", so a 401 does not
+    surface as a 503.
+Priority: HIGH - the refresh flow is unusable as designed for its actual use
+case, and the whole point of Phase 4 of testing-plan.md is catching exactly this.
