@@ -97,7 +97,11 @@ class GlobalExceptionHandlerResolutionTest {
     void resolvesToTheExpectedHandler(Exception exception, String expectedHandlerMethod) {
         Method resolved = resolver.resolveMethod(exception);
 
-        assertThat(resolved).isNotNull();
+        assertThat(resolved)
+                .as("Expected a handler method to be resolved for %s, but none was found",
+                        exception.getClass().getSimpleName())
+                .isNotNull();
+
         assertThat(resolved.getName()).isEqualTo(expectedHandlerMethod);
     }
 
@@ -118,11 +122,23 @@ class GlobalExceptionHandlerResolutionTest {
     void authorizationDeniedNeverReachesTheCatchAll() {
         Method resolved = resolver.resolveMethod(new AuthorizationDeniedException("Access Denied"));
 
+        assertThat(resolved)
+                .as("Expected a handler method to be resolved for AuthorizationDeniedException, "
+                        + "but none was found")
+                .isNotNull();
+
         assertThat(resolved.getName())
                 .isEqualTo("accessDeniedHandler")
                 .isNotEqualTo("genericExceptionHandler");
-        assertThat(resolved.getAnnotation(ExceptionHandler.class).value())
-                .containsExactly(AccessDeniedException.class);
+
+        ExceptionHandler annotation = resolved.getAnnotation(ExceptionHandler.class);
+
+        assertThat(annotation)
+                .as("Expected the resolved method %s to carry an @ExceptionHandler annotation, "
+                        + "but it had none", resolved.getName())
+                .isNotNull();
+
+        assertThat(annotation.value()).containsExactly(AccessDeniedException.class);
     }
 
     /**
