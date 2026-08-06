@@ -2,6 +2,7 @@ package com.photoapp.security.model;
 
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -31,8 +32,19 @@ public class CustomUserPrincipal implements UserDetails {
         return authorities;
     }
 
+    /*
+        @Nullable, matching UserDetails.getPassword() - the interface declares it nullable and
+        this class must not narrow it. Two construction paths, and only one carries a password:
+        CustomUserDetailsService supplies the real hash during login, while JwtFilter builds the
+        principal from an already-verified token and passes null, because at that point there is
+        no password to check and nothing asks for one.
+
+        This annotation previously said @NonNull, which was a contract this class could not keep.
+        Latent rather than live - nothing in the project calls getPassword() on a principal - but
+        it advertised a guarantee that the JWT path breaks on every authenticated request.
+     */
     @Override
-    @NonNull
+    @Nullable
     public String getPassword() {
         return password;
     }

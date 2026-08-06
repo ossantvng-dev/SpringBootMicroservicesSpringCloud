@@ -62,6 +62,13 @@ class GlobalExceptionHandlerWebMvcTest {
 
     // ------------------------------------------------- pre-existing handlers
 
+    /**
+     * Verifies the full round trip for the exception every service's business layer throws:
+     * a controller raises `ApplicationException("User not found", NOT_FOUND)`, and the client
+     * receives HTTP 404 with a complete `ApiErrorDTO` — status echoed in the body, reason
+     * phrase, the message the service chose, the request path, and a timestamp. This is the
+     * contract every other error response in the system is measured against.
+     */
     @Test
     void applicationExceptionKeepsItsStatusEndToEnd() throws Exception {
         mockMvc.perform(get("/probe/not-found"))
@@ -73,9 +80,17 @@ class GlobalExceptionHandlerWebMvcTest {
                 .andExpect(jsonPath("$.timeStamp").exists());
     }
 
-    /*
-        The Step 8 regression, end to end: an AuthorizationDeniedException raised inside the
-        DispatcherServlet must come back as 403, not 500.
+    /**
+     * The Step 8 regression guard, end to end. Verifies that when a handler method rejects an
+     * authenticated but unauthorized caller — the shape `@PreAuthorize` produces on a ROLE_USER
+     * token hitting an ADMIN-only endpoint — the client gets **403 Forbidden**, not the 500
+     * this used to return. Because the denial is thrown *inside* the DispatcherServlet it never
+     * reaches Spring Security's `ExceptionTranslationFilter`; this advice is the only thing
+     * standing between it and the catch-all.
+     *
+     * <p>Also asserts the logging half: exactly `ACCESS_DENIED` at WARN, with no
+     * `UNHANDLED_EXCEPTION` and nothing at ERROR. A role denial is an expected outcome, and
+     * logging it as a fault would bury real ones.
      */
     @Test
     @DisplayName("@PreAuthorize-shaped denial returns 403, not 500")
@@ -90,6 +105,13 @@ class GlobalExceptionHandlerWebMvcTest {
         }
     }
 
+    /**
+     * The control case for all the 4xx work below. Verifies that an exception which really is
+     * a server fault — an `IllegalStateException` escaping a controller — still returns 500 and
+     * still logs `UNHANDLED_EXCEPTION` at ERROR. Narrowing client errors away from the
+     * catch-all is only correct if the catch-all keeps doing its job for genuine faults; without
+     * this test, a change that silenced ERROR logging everywhere would look like an improvement.
+     */
     @Test
     void genuineFaultsStillReturn500() throws Exception {
         try (LogCapture logs = LogCapture.on(GlobalExceptionHandler.class)) {
@@ -105,7 +127,18 @@ class GlobalExceptionHandlerWebMvcTest {
 
     // ------------------------------------------- the three 2026-08-06 cases
 
-    /* GET /users/abc - roughly 20 {id} endpoints across the five services had this shape. */
+    /**
+     * Verifies that a client asking for `GET /probe/abc` where the endpoint declares
+     * `@PathVariable Long id` gets **400 Bad Request** naming the offending parameter and the
+     * type expected — not the 500 this returned before 2026-08-06. Roughly 20 `{id}` endpoints
+     * across the five services have this shape, so a single mistyped id in any URL was a server
+     * error.
+     *
+     * <p>Driven as a real request rather than by constructing the exception, because the thing
+     * being proved is that Spring's conversion failure *is* a `MethodArgumentTypeMismatchException`
+     * and *does* reach this advice — the assumption that was wrong. Also asserts the log is
+     * `TYPE_MISMATCH` at WARN with nothing at ERROR.
+     */
     @Test
     @DisplayName("unparseable path variable returns 400, not 500")
     void unparseablePathVariableReturns400() throws Exception {
@@ -121,7 +154,14 @@ class GlobalExceptionHandlerWebMvcTest {
         }
     }
 
-    /* PATCH /users/1/activate?activate=maybe */
+    /**
+     * The query-parameter half of the same defect: `PATCH /probe/1/activate?activate=maybe`
+     * against a `boolean @RequestParam` must return **400**, naming `activate` and `boolean`.
+     * Kept as its own test rather than folded into the path-variable case because they look
+     * like different bugs from the outside — a caller sees one as a bad URL and the other as a
+     * bad query string — while in fact path variables and query parameters share a single
+     * conversion path and one handler fixes both. This test is what proves that.
+     */
     @Test
     @DisplayName("un-convertible query parameter returns 400, not 500")
     void unconvertibleQueryParameterReturns400() throws Exception {
@@ -134,6 +174,13 @@ class GlobalExceptionHandlerWebMvcTest {
         }
     }
 
+    /**
+     * Verifies that posting a truncated JSON body (`{"broken`) returns **400** with the generic
+     * "Malformed request body", not 500. The message is deliberately generic: Jackson's own
+     * message names the target class and parser state, which is useful in a log and should not
+     * be echoed to an unauthenticated caller. The test asserts the real reason still reaches
+     * the log at WARN under `MALFORMED_REQUEST_BODY`, so nothing is lost for debugging.
+     */
     @Test
     @DisplayName("malformed request body returns 400, not 500")
     void malformedBodyReturns400() throws Exception {
@@ -148,6 +195,13 @@ class GlobalExceptionHandlerWebMvcTest {
         }
     }
 
+    /**
+     * Verifies that calling an existing path with a verb it does not support — `DELETE /probe`
+     * where only `POST` is mapped — returns **405 Method Not Allowed** naming the rejected
+     * method, not 500. Distinct from the cases above in one way that matters: this exception is
+     * raised by the handler *mapping*, before any controller method is selected, so it proves
+     * the advice is consulted even when Spring never resolved a handler at all.
+     */
     @Test
     @DisplayName("wrong HTTP method returns 405, not 500")
     void wrongMethodReturns405() throws Exception {

@@ -69,7 +69,8 @@ class GlobalExceptionHandlerResolutionTest {
                         "accessDeniedHandler"),
                 Arguments.of(new AuthorizationDeniedException("Access Denied"),
                         "accessDeniedHandler"),
-                Arguments.of(new MethodArgumentTypeMismatchException("abc", Long.class, "id", null, null),
+                Arguments.of(new MethodArgumentTypeMismatchException(
+                                "abc", Long.class, "id", aMethodParameter(), null),
                         "typeMismatchHandler"),
                 Arguments.of(new NoResourceFoundException(HttpMethod.GET, "/nope", "No static resource nope."),
                         "noResourceFoundHandler"),
@@ -83,6 +84,14 @@ class GlobalExceptionHandlerResolutionTest {
         );
     }
 
+    /**
+     * Verifies that for each of the thirteen exception shapes a running service can actually
+     * produce, Spring selects the handler intended for it — and that the two deliberately
+     * unmapped shapes (`IllegalStateException`, `NullPointerException`) still reach the
+     * catch-all. Resolution is by closest match in the exception hierarchy, not by declaration
+     * order, so a new handler catching too broad a type would steal traffic from a narrower one
+     * and show up here as the wrong method name.
+     */
     @ParameterizedTest(name = "{0} -> {1}")
     @MethodSource("exceptionsAndTheirHandlers")
     void resolvesToTheExpectedHandler(Exception exception, String expectedHandlerMethod) {
@@ -92,10 +101,17 @@ class GlobalExceptionHandlerResolutionTest {
         assertThat(resolved.getName()).isEqualTo(expectedHandlerMethod);
     }
 
-    /*
-        Stated as its own test rather than left implicit in the table above, because this exact
-        pairing is what regressed: the assertion that matters is not only "resolves to #6" but
-        "does NOT resolve to #7".
+    /**
+     * The Step 8 regression guard. Verifies that an authenticated-but-unauthorized request —
+     * a ROLE_USER token on an ADMIN-only endpoint, which `@PreAuthorize` rejects by throwing
+     * `AuthorizationDeniedException` — resolves to `accessDeniedHandler` and **not** to the
+     * generic catch-all. That exact pairing is what regressed in production: the 403 handler
+     * was correct all along, it was simply never reached, so every role denial came back as a
+     * 500. Also asserts the resolved method is the one registered for `AccessDeniedException`,
+     * so a future handler that returned 403 by some other route would not quietly satisfy this.
+     *
+     * <p>Stated separately from the table above because the assertion that matters is not only
+     * "resolves to #6" but "does NOT resolve to #7".
      */
     @Test
     @DisplayName("@PreAuthorize denial resolves to accessDeniedHandler, NOT the catch-all")
@@ -109,9 +125,15 @@ class GlobalExceptionHandlerResolutionTest {
                 .containsExactly(AccessDeniedException.class);
     }
 
-    /*
-        Completeness guard. Adding an @ExceptionHandler without adding it to the table above
-        fails here, so this suite cannot silently fall behind the class it describes.
+    /**
+     * Verifies the suite has not fallen behind the class it describes: reflects over
+     * `GlobalExceptionHandler`, collects every `@ExceptionHandler` method, and fails unless the
+     * resolution table above names exactly that set. Adding a handler to production code
+     * without adding a case here therefore breaks the build rather than passing silently with
+     * an untested handler.
+     *
+     * <p>Not hypothetical — this test failed on its first run because `validationExceptionHandler`
+     * had been left out of the table.
      */
     @Test
     @DisplayName("every @ExceptionHandler on the advice is covered by this test")

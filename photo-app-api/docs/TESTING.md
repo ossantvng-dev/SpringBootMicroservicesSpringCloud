@@ -93,6 +93,46 @@ run `mvn test`) or fails on a machine without Docker.
 Beyond the suffix, name for what is under test and how: `UserControllerWebMvcTest`,
 `UserServiceImplTest`, `UserRepositoryIT`.
 
+### Every `@Test` method gets a Javadoc comment
+
+**Required convention, from Phase 2 onward.** Every test method carries a short Javadoc block
+saying what scenario it exercises and what outcome it expects — in plain language, describing the
+*situation*, not restating the method name.
+
+```java
+/**
+ * The Step 8 regression guard. Verifies that an authenticated but unauthorized request —
+ * a ROLE_USER token on an ADMIN-only endpoint — resolves to `accessDeniedHandler` and not
+ * to the generic catch-all. That exact pairing is what regressed: the 403 handler was
+ * correct all along, it was simply never reached, so every role denial came back as a 500.
+ */
+@Test
+void authorizationDeniedNeverReachesTheCatchAll() { ... }
+```
+
+Not this:
+
+```java
+/** Tests that authorization denied never reaches the catch-all. */   // says nothing new
+```
+
+Say what a reader cannot get from the code. Worth a sentence each time:
+
+- **the concrete scenario** — "a ROLE_USER token on an ADMIN-only endpoint", not "an unauthorized
+  request"
+- **why the test exists**, when it is not obvious — a past defect, a branch that would otherwise
+  be uncovered, an assertion that looks redundant but is load-bearing
+- **why a choice was made** — a real `Validator` instead of a mock, two violations instead of
+  one, a case split into two tests that look like duplicates
+
+The reason is specific to this codebase: several tests here exist because of defects whose
+*symptom* was nowhere near their cause. `returns403ForTheAuthorizationDeniedSubclass` looks like
+a redundant copy of `returns403` until you know that `@PreAuthorize` throws a subclass by a
+different route, and that the subclass is the one that broke. A test whose purpose is invisible
+gets "simplified" away by the next person, taking the regression guard with it.
+
+This applies to all future phases, not only the suite that introduced it.
+
 ---
 
 ## 4. Running tests
