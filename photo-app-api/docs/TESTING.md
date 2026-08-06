@@ -7,9 +7,10 @@ This is the **living reference**. For the phased plan, the full inventory of wha
 and current progress, see [plans/testing-plan.md](plans/testing-plan.md) — that document is the
 planning record, this one is the day-to-day guide.
 
-> **Current state:** Phase 1 (infrastructure) is complete. Phases 2–8 are outstanding, so most
-> modules have no behavioural tests yet. If you are adding the first test to a module, this
-> document tells you where to put it; the plan tells you what is worth writing.
+> **Current state:** Phases 1 (infrastructure) and 2 (exception handling) are complete. Phases
+> 3–8 are outstanding, so most modules still have no behavioural tests. If you are adding the
+> first test to a module, this document tells you where to put it; the plan tells you what is
+> worth writing.
 
 ---
 
@@ -333,8 +334,8 @@ condition true, or a `switch` with only some cases. Hover the diamond marker in 
 JaCoCo tells you exactly which branches were missed, e.g. *"1 of 2 branches missed"*.
 
 For this codebase that matters more than the percentage: `CustomFeignErrorDecoder` has five
-branches, `UserSpecification` has six date-range branches, and `GlobalExceptionHandler` has seven
-handlers. A class can read 100% *line* coverage while half its branches have never run.
+branches, `UserSpecification` has six date-range branches, and `GlobalExceptionHandler` has
+eleven handlers. A class can read 100% *line* coverage while half its branches have never run.
 
 The columns in the table view are `Missed Instructions`, `Missed Branches`, `Cxty`, `Lines`,
 `Methods`, `Classes`. Sort by **Missed Branches** — that is the column that finds untested logic.
@@ -383,7 +384,7 @@ their suites use plain JUnit.
 
 ### Worked example — Phase 2
 
-After writing the exception-handler tests:
+Phase 2 is done, so this one can be reproduced rather than imagined:
 
 ```bash
 cd photo-app-api/api-parent
@@ -391,23 +392,27 @@ mvn verify -pl libraries/photo-app-commons
 start libraries/photo-app-commons/target/site/jacoco/index.html
 ```
 
-Drill into `com.photoapp.commons.exception` → `GlobalExceptionHandler` and confirm **all seven
-handler methods are green**:
+Drill into `com.photoapp.commons.exception` → `GlobalExceptionHandler`. All **eleven** handler
+methods are green, and so is `buildResponse` — the shared body builder, worth checking separately
+because partial coverage there would mean a status or body path never ran:
 
-| # | Handler | Expect |
-|---|---|---|
-| 1 | `applicationExceptionHandler` | green |
-| 2 | `validationExceptionHandler` | green |
-| 3 | `constraintViolationHandler` | green |
-| 4 | `dataAccessExceptionHandler` | green |
-| 5 | `optimisticLockExceptionHandler` | green |
-| 6 | `accessDeniedHandler` | green — **the Step 8 fix** |
-| 7 | `genericExceptionHandler` | green |
+```
+GlobalExceptionHandler   0 of 293 instructions missed   0 of 2 branches missed
+                         72/72 lines   18/18 methods   0 missed complexity
+```
 
-Then check `buildResponse` for **yellow**: it is shared by all seven, so partial branch coverage
-there means a status or body path never ran.
+Handlers #1–#7 are the original set (#6 `accessDeniedHandler` being the Step 8 fix); #8–#11
+(`typeMismatchHandler`, `noResourceFoundHandler`, `messageNotReadableHandler`,
+`methodNotSupportedHandler`) were added *by* Phase 2 after the Phase 1 control test showed
+mistyped URLs returning 500.
 
-This is a **double-check on top of the assertions, not a substitute for them.** Green only proves
+**The report earned its place here.** The suite passed on its first full run, and JaCoCo still
+showed one method uncovered: `lambda$constraintViolationHandler$1`, the `"; "` that joins
+multiple violations. The test payload had a single constrained field, so `reduce` never called
+the join at all — an untested path in a green suite. That is the failure mode this section
+exists to catch, and it is invisible without opening the report.
+
+It remains a **double-check on top of the assertions, not a substitute for them.** Green only proves
 a line executed — it says nothing about whether you asserted the right status or the right
 `ApiErrorDTO` shape. A handler can be fully green and still be returning 500 where it should
 return 403, which is precisely how the Step 8 defect survived. Read the report to find what you

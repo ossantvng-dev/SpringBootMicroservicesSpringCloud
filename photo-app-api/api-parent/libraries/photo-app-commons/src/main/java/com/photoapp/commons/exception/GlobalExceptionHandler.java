@@ -9,9 +9,13 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 
@@ -64,6 +68,90 @@ public class GlobalExceptionHandler {
                 errors);
 
         return buildResponse(errors, HttpStatus.BAD_REQUEST, request.getRequestURI());
+    }
+
+    /*
+        The four handlers below all cover framework-thrown CLIENT input errors. Before they
+        existed every one of them fell through to the #7 catch-all and was reported as a 500
+        logged at ERROR with UNHANDLED_EXCEPTION and a full stack trace - measured against the
+        running stack on 2026-08-05 (8/8 type-mismatch and no-handler cases) and again on
+        2026-08-06 before this change (all five shapes below).
+
+        A mistyped id in a URL is not a server fault, so: correct 4xx status, and WARN rather
+        than ERROR, matching the other client-error handlers above. The log level is half the
+        fix - ERROR here meant a client typo was indistinguishable from a real fault in Kibana.
+     */
+
+    /*
+        GET /users/abc against @PathVariable Long, and ?activate=maybe against boolean, are
+        both this exception - path variables and query parameters share one conversion path.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> typeMismatchHandler(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        String requiredType = ex.getRequiredType() != null
+                ? ex.getRequiredType().getSimpleName()
+                : "the expected type";
+        String message = "Parameter '" + ex.getName() + "' must be of type " + requiredType;
+
+        log.warn("TYPE_MISMATCH path={} parameter={} value={} requiredType={}",
+                request.getRequestURI(),
+                ex.getName(),
+                ex.getValue(),
+                requiredType);
+
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request.getRequestURI());
+    }
+
+    /*
+        Spring MVC's last resort for an unmapped path: once no @RequestMapping matches, the
+        request falls through to the static-resource handler, which throws this. A malformed
+        URL is a 404, not a 500.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<?> noResourceFoundHandler(
+            NoResourceFoundException ex,
+            HttpServletRequest request) {
+
+        log.warn("RESOURCE_NOT_FOUND path={} method={}",
+                request.getRequestURI(),
+                request.getMethod());
+
+        return buildResponse("Resource not found", HttpStatus.NOT_FOUND, request.getRequestURI());
+    }
+
+    /*
+        Unparseable or absent request body. The exception's own message carries Jackson
+        internals (parser state, target class names), so it is logged but not returned.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> messageNotReadableHandler(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+
+        log.warn("MALFORMED_REQUEST_BODY path={} message={}",
+                request.getRequestURI(),
+                ex.getMessage());
+
+        return buildResponse("Malformed request body", HttpStatus.BAD_REQUEST, request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<?> methodNotSupportedHandler(
+            HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+
+        log.warn("METHOD_NOT_ALLOWED path={} method={}",
+                request.getRequestURI(),
+                ex.getMethod());
+
+        return buildResponse(
+                "Method " + ex.getMethod() + " is not supported for this endpoint",
+                HttpStatus.METHOD_NOT_ALLOWED,
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(DataAccessException.class)

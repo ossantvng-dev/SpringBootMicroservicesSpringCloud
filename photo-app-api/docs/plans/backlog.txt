@@ -1151,3 +1151,41 @@ Then extend the Phase 2 suite to cover each, since the handler ORDER is what the
 Step 8 lesson was about.
 Priority: HIGH. Reachable by any client on any typed endpoint, and it pollutes the error
 signal that the observability stack depends on.
+
+
+  *** RESOLVED 2026-08-06 — testing-plan Phase 2. ***
+  All four handlers added and covered. Re-measured against the running stack after
+  rebuilding the five service images:
+
+    GET /users/abc                            500 -> 400  TYPE_MISMATCH @WARN
+    GET /users/1/does-not-exist               500 -> 404  RESOURCE_NOT_FOUND @WARN
+    PATCH /users/1/activate?activate=maybe    500 -> 400  TYPE_MISMATCH @WARN
+    POST /users  body {"broken                500 -> 400  MALFORMED_REQUEST_BODY @WARN
+    DELETE /auth/login                        500 -> 405  METHOD_NOT_ALLOWED @WARN
+
+  Sub-classes D (malformed body) and E (wrong method) were listed above as "not yet
+  measured" — both were measured at 500 before the fix, confirming the mechanism.
+
+  The observability half is fixed too: zero events at level ERROR across users-service and
+  authorization-service for the whole sequence, where previously each produced an
+  UNHANDLED_EXCEPTION at ERROR with a full stack trace.
+
+  Regression-checked on the same stack: 403 for a ROLE_USER token on ADMIN-only GET /users
+  (the Step 8 case), 200 on the happy path, 404 via ApplicationException, and 400 from
+  PaginationUtil all unchanged.
+
+
+[2026-08-06 | testing-plan Phase 2] LOW — 405 responses omit the Allow header
+----------------------------------------------------------------------------------------
+methodNotSupportedHandler returns 405 through the shared buildResponse, which sets no
+headers. RFC 9110 §15.5.6 requires a 405 response to carry an Allow header listing the
+methods the resource does support; HttpRequestMethodNotSupportedException already exposes
+them via getSupportedHttpMethods().
+
+Not done in Phase 2 because buildResponse is shared by all eleven handlers and adding a
+per-handler header would mean either a second builder or an optional-headers parameter
+threaded through every call site. Deferred deliberately rather than gold-plating the
+handler that was being fixed.
+
+Priority: LOW. Correctness-of-protocol issue, not a functional one — no client in this
+system reads Allow, and the status and body are already correct.

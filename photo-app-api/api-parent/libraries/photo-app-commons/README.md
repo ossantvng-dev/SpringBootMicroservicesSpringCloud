@@ -42,6 +42,20 @@ catch-all, which is what turns authorization failures into a `403` with an `ACCE
 line at WARN instead of the `500` they used to produce. Reordering it re-breaks that everywhere
 at once.
 
+Eleven handlers. The last four — `MethodArgumentTypeMismatchException` (400),
+`NoResourceFoundException` (404), `HttpMessageNotReadableException` (400) and
+`HttpRequestMethodNotSupportedException` (405) — were added on 2026-08-06 because every one of
+them was reaching the catch-all and coming back as a **500 logged at ERROR with a stack trace**.
+`GET /users/abc` was a 500. The status was the visible half of the bug; the other half was that
+ordinary client typos were filling the logs with fake server faults.
+
+The suite is in this module's own `src/test`: 54 tests across `GlobalExceptionHandlerTest`
+(behaviour), `GlobalExceptionHandlerResolutionTest` (which handler Spring *picks* — the Step 8
+regression) and `GlobalExceptionHandlerWebMvcTest` (real requests through a real
+DispatcherServlet). Plain JUnit + Mockito: this module cannot depend on `photo-app-test-support`,
+which depends on it. **If you add an `@ExceptionHandler`, the resolution test fails until you add
+it to the table there** — that guard is intentional.
+
 ## Dependencies — deliberately narrow
 
 `spring-boot-starter-data-jpa` was replaced with the three pieces actually needed:
@@ -53,7 +67,14 @@ No cycle is possible: the entity library depends on nothing internal.
 
 ## Consumed by
 
-users, accounts, albums, photos. **Not** authorization-service, which owns its own DTOs.
+All five business services. users, accounts, albums and photos declare it directly;
+**authorization-service gets it transitively through `photo-app-feign-lib`** and
+component-scans `com.photoapp.commons`, so it picks up `GlobalExceptionHandler` even though it
+owns its own DTOs and uses none of the mappers.
+
+That transitive path is easy to miss and is not cosmetic: `DELETE /auth/login` returns an
+`ApiErrorDTO` produced by this advice. **Not** the gateway, which scans only
+`com.photoapp.gateway` and `com.photoapp.security`.
 
 ## Not generic — on purpose
 

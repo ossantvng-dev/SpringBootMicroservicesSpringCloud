@@ -1,6 +1,6 @@
 # Testing Plan — comprehensive unit and integration testing
 
-**Status:** Phase 1 complete (2026-08-05). Phases 2-8 outstanding.
+**Status:** Phase 1 complete (2026-08-05). Phase 2 complete (2026-08-06). Phases 3-8 outstanding.
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -127,10 +127,13 @@ the aggregating Swagger UI, so it gets integration-level tests only (§2.6), nev
 assertions**, plus 5 public-access assertions. This is the Step 8 bug class and the highest-value
 block in the plan.
 
-## 1.2 `GlobalExceptionHandler` — 7 handlers, one shared advice
+## 1.2 `GlobalExceptionHandler` — 11 handlers, one shared advice
 
-Single `@RestControllerAdvice` in `photo-app-commons`, consumed by all five services. **Order is
-load-bearing**, so tests must pin it.
+*(7 at inventory time; #8-11 added by Phase 2 on 2026-08-06.)*
+
+Single `@RestControllerAdvice` in `photo-app-commons`, consumed by all five services — **not** by
+the gateway, which component-scans only `com.photoapp.gateway` and `com.photoapp.security`.
+**Order is load-bearing**, so tests must pin it.
 
 | # | Handler | Catches | Status | Log line |
 |---|---|---|---|---|
@@ -141,6 +144,10 @@ load-bearing**, so tests must pin it.
 | 5 | `optimisticLockExceptionHandler` | `OptimisticLockException` | 409 | `OPTIMISTIC_LOCK_CONFLICT` @WARN |
 | 6 | `accessDeniedHandler` | `AccessDeniedException` | **403** | `ACCESS_DENIED` @WARN |
 | 7 | `genericExceptionHandler` | `Exception` | 500 | `UNHANDLED_EXCEPTION` @ERROR |
+| 8 | `typeMismatchHandler` | `MethodArgumentTypeMismatchException` | 400 | `TYPE_MISMATCH` @WARN |
+| 9 | `noResourceFoundHandler` | `NoResourceFoundException` | 404 | `RESOURCE_NOT_FOUND` @WARN |
+| 10 | `messageNotReadableHandler` | `HttpMessageNotReadableException` | 400 | `MALFORMED_REQUEST_BODY` @WARN |
+| 11 | `methodNotSupportedHandler` | `HttpRequestMethodNotSupportedException` | 405 | `METHOD_NOT_ALLOWED` @WARN |
 
 All produce `ApiErrorDTO` = `{httpStatus, error, message, path, timeStamp}`.
 
@@ -516,7 +523,7 @@ Nothing below works until this is right.
 **Exit:** `mvn verify` runs green with a Testcontainers MySQL, and the control test proves
 security is genuinely enforced.
 
-## Phase 2 — Exception handling ⬜ *(highest priority)*
+## Phase 2 — Exception handling ✅ DONE 2026-08-06 *(one item deferred)*
 
 > Phase 1 surfaced a large new target for this phase: MethodArgumentTypeMismatchException,
 > NoResourceFoundException and un-convertible query parameters ALL fall through to the 500
@@ -525,16 +532,66 @@ security is genuinely enforced.
 
 The Step 8 bug lived here. One shared advice, so one suite covers all five services.
 
-- ⬜ All 7 handlers: exact status + full `ApiErrorDTO` shape (ignoring `timeStamp` value)
-- ⬜ **`AccessDeniedException` resolves to #6, not the #7 catch-all** — the Step 8 regression test
-- ⬜ `ApplicationException` propagates its own status across 400/403/404/409/503
-- ⬜ Assert the log markers (`ACCESS_DENIED` @WARN, `UNHANDLED_EXCEPTION` @ERROR)
-- ⬜ Add and test handlers for MethodArgumentTypeMismatchException (400),
+- ✅ All handlers: exact status + full `ApiErrorDTO` shape (ignoring `timeStamp` value)
+- ✅ **`AccessDeniedException` resolves to #6, not the #7 catch-all** — the Step 8 regression test
+- ✅ `ApplicationException` propagates its own status across 400/403/404/409/503
+- ✅ Assert the log markers (`ACCESS_DENIED` @WARN, `UNHANDLED_EXCEPTION` @ERROR)
+- ✅ Add and test handlers for MethodArgumentTypeMismatchException (400),
   NoResourceFoundException (404), HttpMessageNotReadableException (400) and
-  HttpRequestMethodNotSupportedException (405) - all currently 500
-- ⬜ Regression-test the three §2.4 defects fixed on 2026-08-05 (already fixed, not discovery)
+  HttpRequestMethodNotSupportedException (405) - all previously 500
+- ⬜ Regression-test the three §2.4 defects fixed on 2026-08-05 — **deferred**. `PaginationUtil`
+  is a commons class and belongs in this module's suite; `AlbumSpecification` and
+  `AccountServiceImpl.findAll` are service classes and their tests must live in the albums and
+  accounts modules, which have no suites yet. Folded into Phases 3 and 7.
 
-**Exit:** every handler branch covered; handler ordering pinned by test.
+**Exit:** every handler branch covered; handler ordering pinned by test. ✅
+
+### What was built
+
+54 tests in `libraries/photo-app-commons/src/test`, plain JUnit + Mockito + AssertJ. Commons
+cannot use `photo-app-test-support` (decision 2), so the module took `spring-boot-starter-test`
+directly and builds what it needs locally.
+
+| File | What it proves |
+|---|---|
+| `GlobalExceptionHandlerTest` | Per handler: status, full `ApiErrorDTO` shape, log marker, log **level**, and whether a stack trace was attached |
+| `GlobalExceptionHandlerResolutionTest` | Which handler Spring *picks* — via the real `ExceptionHandlerMethodResolver`, plus a guard that fails if an `@ExceptionHandler` is added without a test |
+| `GlobalExceptionHandlerWebMvcTest` | Real requests through a real DispatcherServlet, so the framework decides which exception a malformed request produces |
+| `support/LogCapture` | Logback `ListAppender` helper — half of what the advice does is invisible in the response body |
+
+**Three layers, because one is not enough.** Calling `accessDeniedHandler` directly would have
+passed throughout the Step 8 defect — that handler always worked, it was simply never reached.
+Resolution has to be asserted separately from behaviour. And asserting resolution still assumes
+`GET /users/abc` produces a `MethodArgumentTypeMismatchException` in the first place, which is
+exactly the assumption that was wrong; hence the end-to-end layer.
+
+### Four handlers added
+
+`typeMismatchHandler` (400), `noResourceFoundHandler` (404), `messageNotReadableHandler` (400),
+`methodNotSupportedHandler` (405). All log at **WARN** with their own marker, not at ERROR with
+`UNHANDLED_EXCEPTION` — a mistyped id in a URL is a client error, not a server fault, and
+logging it as one buried genuine faults in noise.
+
+Verified with curl against the running stack before and after:
+
+| Request | Before | After |
+|---|---|---|
+| `GET /users/abc` | 500 `UNHANDLED_EXCEPTION` @ERROR | 400 `TYPE_MISMATCH` @WARN |
+| `GET /users/1/does-not-exist` | 500 `UNHANDLED_EXCEPTION` @ERROR | 404 `RESOURCE_NOT_FOUND` @WARN |
+| `PATCH /users/1/activate?activate=maybe` | 500 `UNHANDLED_EXCEPTION` @ERROR | 400 `TYPE_MISMATCH` @WARN |
+| `POST /users` with `{"broken` | 500 `UNHANDLED_EXCEPTION` @ERROR | 400 `MALFORMED_REQUEST_BODY` @WARN |
+| `DELETE /auth/login` | 500 `UNHANDLED_EXCEPTION` @ERROR | 405 `METHOD_NOT_ALLOWED` @WARN |
+
+### Coverage
+
+`mvn verify -pl libraries/photo-app-commons` — `GlobalExceptionHandler` at **293/293
+instructions, 72/72 lines, 18/18 methods, 2/2 branches, 0 missed complexity**.
+
+Two branches only existed because two of them were written for this phase, and JaCoCo earned its
+place twice: it caught `lambda$constraintViolationHandler$1` (the `"; "` join) sitting uncovered
+because the test payload had a single constrained field, and the completeness guard in the
+resolution test caught `validationExceptionHandler` missing from the resolution table. Both were
+real gaps in a suite that was otherwise passing.
 
 ## Phase 3 — Authorization matrix ⬜
 

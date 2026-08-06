@@ -91,10 +91,14 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Tests -->
+        <!-- Tests.
+             Deliberately NOT photo-app-test-support: that module depends on this one, and
+             Maven rejects module cycles regardless of scope. This library's suite therefore
+             builds what it needs locally from the plain starter - JUnit 5, AssertJ, Mockito
+             and spring-test's standalone MockMvc. See docs/TESTING.md §1. -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
