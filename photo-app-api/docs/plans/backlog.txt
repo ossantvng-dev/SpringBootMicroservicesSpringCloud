@@ -1189,3 +1189,148 @@ handler that was being fixed.
 
 Priority: LOW. Correctness-of-protocol issue, not a functional one — no client in this
 system reads Allow, and the status and body are already correct.
+
+
+[2026-08-06 | testing-plan Phase 3] HIGH — an expired token locks a client out of /auth
+*** FIXED 2026-08-07 — see the resolution block at the end of this entry. ***
+----------------------------------------------------------------------------------------
+All three /auth endpoints returned 401 when the caller sent an EXPIRED token, even though
+/auth/** is permitAll. Found by AuthorizationControllerAuthorizationTest, which pinned the
+behaviour as a characterization test until the fix landed; that test is now the regression
+guard (expiredTokensDoNotBlockAnyAuthEndpoint).
+
+Mechanism. JwtFilter runs ahead of the authorization rules and treats ExpiredJwtException
+differently from every other failure:
+
+    catch (ExpiredJwtException e)  -> sendError(401) and RETURN, chain never continues
+    catch (Exception e)            -> clear context, fall through, chain continues
+
+Because the expired branch returns without calling filterChain.doFilter, the permitAll rule
+for /auth/** is never consulted. That is why a malformed token does NOT block login but an
+expired one does.
+
+Why it matters. /auth/refresh is the damaging case. Its own contract, written on
+TokenHandlerService#refreshToken, says:
+
+    "MUST work with no Authorization header. A client refreshes precisely because its
+     access token is missing or expired, so requiring one defeats the endpoint."
+
+The filter defeats it whenever the client also SENDS the expired token - the default
+behaviour of essentially every HTTP client interceptor, which attaches the stored token to
+every outgoing request. The user is then wedged: refresh 401s, and the login they would
+retry instead 401s for the same reason. Recovery requires clearing local storage by hand.
+
+Severity is HIGH on user impact and LOW on security - nothing is wrongly ADMITTED, the
+failure is over-rejection. There is no data exposure.
+
+Likely fix. Treat expiry like every other invalid token: clear the context, log at WARN,
+and continue the chain, letting authorizeHttpRequests decide. Protected paths then still
+401 (via the entry point) while permitted paths proceed. The current sendError also
+bypasses GlobalExceptionHandler, so the 401 body is a container error page rather than
+ApiErrorDTO - worth fixing in the same change.
+
+Not attempted here: Phase 3's scope is asserting the authorization boundary, not changing
+the filter, and this deserves its own before/after measurement against the running stack.
+
+  *** CONFIRMED AGAINST THE LIVE STACK 2026-08-07. ***
+
+  Method. Registered a probe user through the public POST /users (id 101, phase3probe) and
+  logged in for a real refresh token, rather than guessing a seeded password. Minted the
+  expired access token with the same TestJwt fixture the characterization test uses, so curl
+  sent exactly what the test asserts against. Control first: a VALID minted token returned
+  200 on GET /users/101, proving TestJwt.SECRET is the production secret and the expired
+  token is therefore genuinely production-signed, not merely malformed.
+
+  The paired result, same refresh token, same second, ONLY the header differing:
+
+    POST /auth/refresh  + expired Authorization header   -> 401
+    POST /auth/refresh  + no Authorization header        -> 200, new access token issued
+
+  The 401 came first, so it left the refresh token unconsumed - the 200 that followed on the
+  same token proves the credential was valid throughout and the header was the only cause.
+
+  All three endpoints, each paired against its own no-header control:
+
+    POST /auth/login    expired -> 401   |  no header -> 200
+    POST /auth/refresh  expired -> 401   |  no header -> 200
+    POST /auth/revoke   expired -> 401   |  no header -> 200
+
+  Two details the slice test could not show:
+
+  1. The GATEWAY rejects, not the authorization service. All three JwtFilter WARNs are
+     logged by service=photo-app-api-gateway, and the authorization service logged only the
+     three control requests - the rejected ones never reached it. The fix belongs in
+     JwtFilter (shared), but the blast radius is the edge.
+
+  2. The 401 body is Spring's default error shape, not ApiErrorDTO:
+
+       {"timestamp":"2026-08-07T04:30:56.794Z","status":401,
+        "error":"Unauthorized","path":"/auth/refresh"}
+
+     confirming sendError bypasses GlobalExceptionHandler entirely.
+
+  Logging is at WARN, not ERROR, so the observability half is already correct - unlike the
+  Phase 2 defects, this one does not pollute the error signal. Only the status and the
+  short-circuit are wrong.
+
+
+  *** RESOLVED 2026-08-07. ***
+
+  The fix, in JwtFilter.doFilterInternal - four lines removed, no new ones:
+
+    catch (ExpiredJwtException e) {
+        SecurityContextHolder.clearContext();
+        log.warn("Expired JWT detected ...");
+    -   response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+    -   return;
+    }
+
+  Expiry is now handled exactly like every other token failure: clear the context, log, and
+  continue the chain. The filter's job is to establish an identity when one is presented, not
+  to decide what an anonymous request may reach - authorizeHttpRequests decides that, and it
+  runs after this filter. Deliberately narrow: no change to token lifetimes, refresh
+  semantics, rotation or storage. Those are gathered in jwt-token-requirements.md.
+
+  Re-measured against the rebuilt stack (gateway, authorization- and users-service images
+  rebuilt from the fixed security-lib):
+
+    permitAll, WITH an expired token           before   after
+      POST /auth/login                           401      200
+      POST /auth/refresh                         401      200
+      POST /auth/revoke                          401      200
+
+    protected paths - must NOT have loosened   before   after
+      GET /users/101   expired token             401      401
+      GET /users/101   no token                  401      401
+      GET /users/101   valid token               200      200
+      GET /users       valid ROLE_USER token     403      403   (Step 8 guard)
+      GET /accounts    expired token             401      401
+      GET /albums      expired token             401      401
+      GET /photos      expired token             401      401
+
+  The protected half is the half worth stating: the whole risk of this change was loosening
+  something. Nothing loosened. Protected paths still reject an expired token with 401; they
+  now reach it through authorizeHttpRequests and the authenticationEntryPoint rather than by
+  the filter short-circuiting, which is the mechanism that was supposed to decide it all along.
+
+  Still logged at WARN by JwtFilter, and zero ERROR-level events across the three services
+  for the whole verification sequence. (Two ERRORs appeared during the restart itself - a
+  Feign 503 from the authorization service while users-service had not yet registered with
+  Eureka - unrelated to this change and absent from every post-warmup run.)
+
+  Full reactor: 292 tests, BUILD SUCCESS.
+
+  ---- Adjacent, NOT fixed here ----
+
+  The generic catch in the same method still logs at ERROR:
+
+      catch (Exception e) { ... log.error("Invalid JWT for request path={} ...") }
+
+  A malformed or forged token is a CLIENT error, and Phase 2 established the convention that
+  those log at WARN with their own marker so genuine faults stay visible in Kibana. This means
+  anyone spraying junk tokens at the gateway can generate ERROR-level noise at will. Left
+  alone because the brief for this fix was explicitly narrow; it is a one-word change and
+  worth doing next time this file is open.
+
+  Priority: LOW. Observability only - the status is already correct (401 via the normal
+  authorization path), and no request is wrongly admitted or refused.

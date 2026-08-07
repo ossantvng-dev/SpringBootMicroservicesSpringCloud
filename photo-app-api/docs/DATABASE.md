@@ -192,6 +192,31 @@ All seeded users share one BCrypt hash, so they all have the same password. The 
 Every table carries `id`, `version` (optimistic locking), `created_at` and `updated_at`,
 matching `BaseEntity` in `photo-app-entity-model-lib`.
 
+## Connecting with an external SQL client
+
+DBeaver, MySQL Workbench or any JDBC client connects directly — `docker-compose.yml` publishes
+`3306:3306`, so no proxy, tunnel or `docker exec` is needed. It is a stock `mysql:8.4` instance.
+
+| Setting | Value |
+|---|---|
+| Host | `localhost` |
+| Port | `3306` |
+| Database | `photo_app` (or whatever `MYSQL_DATABASE` is set to) |
+| Driver | MySQL 8.x — the standard `com.mysql.cj.jdbc.Driver` |
+
+JDBC URL: `jdbc:mysql://localhost:3306/photo_app`
+
+**Credentials live in `.env`** and are deliberately not reproduced here. Use `MYSQL_USER` /
+`MYSQL_PASSWORD` for the application account, or `MYSQL_ROOT_PASSWORD` for root. That file is
+gitignored; keep it that way and do not paste its values into tickets, screenshots or this doc.
+
+Only works while `photo-app-mysql` is up — start the stack with `bash tools/local/stack.sh up`.
+The container publishing the port is the whole mechanism, so a stopped stack means a refused
+connection, not a misconfigured client.
+
+> Local dev inspection only. Production access patterns — RDS, a bastion host, an SSH or SSM
+> tunnel, least-privilege read-only accounts — are a separate concern and are not covered here.
+
 ## See also
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — how the services relate to this schema

@@ -51,11 +51,29 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 log.info("JWT validated successfully userId={} username={}", userId, username);
 
+            /*
+                Every failure below is handled the same way: leave the SecurityContext empty and
+                let the chain continue. This filter's job is to establish an identity when one
+                is presented, NOT to decide what an anonymous request is allowed to reach - that
+                is authorizeHttpRequests' job, and it runs after this.
+
+                Expiry used to be special-cased with sendError(401) + return, which short-circuited
+                the chain before the authorization rules were ever consulted. Measured against the
+                running stack on 2026-08-07: that made all three permitAll /auth endpoints answer
+                401 whenever the caller happened to send a stale token. POST /auth/refresh with an
+                expired header returned 401 while the same refresh token with no header returned
+                200 a second later - and refresh is precisely the endpoint a client calls BECAUSE
+                its access token expired, with the stale token still attached by its interceptor.
+                A user whose session lapsed could not refresh and could not log back in.
+
+                Protected paths are unaffected: no authentication in the context means
+                authorizeHttpRequests denies, the authenticationEntryPoint answers 401, and the
+                caller sees the same status as before - reached through the mechanism that is
+                supposed to decide it.
+             */
             } catch (io.jsonwebtoken.ExpiredJwtException e) {
                 SecurityContextHolder.clearContext();
                 log.warn("Expired JWT detected for request path={} message={}", request.getRequestURI(), e.getMessage());
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
-                return;
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
                 log.error("Invalid JWT for request path={} error={}", request.getRequestURI(), e.getMessage());

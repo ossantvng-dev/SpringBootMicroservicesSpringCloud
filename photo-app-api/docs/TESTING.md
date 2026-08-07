@@ -7,10 +7,11 @@ This is the **living reference**. For the phased plan, the full inventory of wha
 and current progress, see [plans/testing-plan.md](plans/testing-plan.md) — that document is the
 planning record, this one is the day-to-day guide.
 
-> **Current state:** Phases 1 (infrastructure) and 2 (exception handling) are complete. Phases
-> 3–8 are outstanding, so most modules still have no behavioural tests. If you are adding the
-> first test to a module, this document tells you where to put it; the plan tells you what is
-> worth writing.
+> **Current state:** Phases 1 (infrastructure), 2 (exception handling) and 3 (the authorization
+> matrix) are complete — 292 tests. Every controller now has an authorization suite; none has a
+> behavioural one yet, so Phases 4–8 are outstanding and the service, repository and mapper
+> layers are still untested. If you are adding the first test to a module, this document tells
+> you where to put it; the plan tells you what is worth writing.
 
 ---
 
@@ -308,6 +309,38 @@ does not have: a `USER` token on an `ADMIN` endpoint is **403** (not 401, not 20
 
 **If that test fails, fix the configuration — do not weaken the test.** A failure there means
 nothing else in the suite can be trusted.
+
+### The two things a `@WebMvcTest` needs before it can test security at all
+
+Learned the hard way in Phase 3. Both are already wired; this is here so the next person does not
+spend an afternoon on the same two failures.
+
+**1. `spring-boot-security-test` must be on the classpath.** Boot 4 moved the security
+auto-configuration out of `spring-boot-autoconfigure`, and the `@WebMvcTest` slice no longer
+lists any of it — *that* artifact is what contributes `ServletWebSecurityAutoConfiguration`
+(supplying the `HttpSecurity` bean `SecurityConfiguration#securityFilterChain` takes as a
+parameter) and `SecurityMockMvcAutoConfiguration` (putting the chain in front of MockMvc).
+Without it the slice has **no security chain whatsoever** — a level below the wrong-chain case
+above. It comes in through `photo-app-test-support`, so you get it for free.
+
+**2. Declare a nested `@Configuration` and name it in `@ContextConfiguration`:**
+
+```java
+@WebMvcTest
+@ContextConfiguration(classes = MyControllerAuthorizationTest.SliceContext.class)
+@Import({MyController.class, PhotoAppSecuritySliceConfig.class})
+class MyControllerAuthorizationTest {
+
+    @Configuration
+    static class SliceContext { }
+```
+
+Otherwise Boot walks up the package and finds the real `…Application` class, whose
+`@EnableFeignClients` and `@EnableJpaAuditing` demand a Feign infrastructure and a JPA metamodel
+that a web slice never builds. Naming it explicitly matters over relying on nested-class
+detection: `SpringBootContextLoader` does not detect nested `@Configuration` classes the way the
+plain loader does, so `@Nested` inner test classes fall back to the package scan and find the
+application class anyway. Declared, it is inherited.
 
 ---
 

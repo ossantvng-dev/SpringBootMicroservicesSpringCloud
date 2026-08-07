@@ -1,6 +1,7 @@
 # Testing Plan — comprehensive unit and integration testing
 
-**Status:** Phase 1 complete (2026-08-05). Phase 2 complete (2026-08-06). Phases 3-8 outstanding.
+**Status:** Phase 1 complete (2026-08-05). Phases 2 and 3 complete (2026-08-06). Phases 4-8
+outstanding. 292 tests across seven modules.
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -593,19 +594,125 @@ because the test payload had a single constrained field, and the completeness gu
 resolution test caught `validationExceptionHandler` missing from the resolution table. Both were
 real gaps in a suite that was otherwise passing.
 
-## Phase 3 — Authorization matrix ⬜
+## Phase 3 — Authorization matrix ✅ DONE 2026-08-06 *(one item moved to Phase 7)*
 
-96 assertions across 32 protected endpoints. Table-driven via `@ParameterizedTest`, not 96
-hand-written methods.
+Table-driven via `@ParameterizedTest`, not hand-written methods. **238 tests**, one suite per
+controller plus a path-rule suite for the gateway.
 
-- ⬜ Per endpoint: no token → 401, wrong role → 403, correct role → through
-- ⬜ Both roles where `ADMIN or USER` is allowed
-- ⬜ Public endpoints reachable anonymously (`POST /users`, `GET /users/username/{u}`, all 3 `/auth/*`)
-- ⬜ Ownership scoping: non-admin restricted to own data (`canAccessResource`, `findAll` scoping)
-- ⬜ Expired token → 401; malformed token → 401
-- ⬜ Method-level `@PreAuthorize` narrower than the path rule (e.g. `GET /users` is ADMIN-only)
+- ✅ Per endpoint: no token → 401, wrong role → 403, correct role → through
+- ✅ Both roles where `ADMIN or USER` is allowed
+- ✅ Public endpoints reachable anonymously (`POST /users`, `GET /users/username/{u}`, all 3 `/auth/*`)
+- ⬜ Ownership scoping: non-admin restricted to own data — **moved to Phase 7**, see below
+- ✅ Expired token → 401; malformed token → 401; wrong-signature token → 401
+- ✅ Method-level `@PreAuthorize` narrower than the path rule (e.g. `GET /users` is ADMIN-only)
+- ✅ Unknown role (`ROLE_GUEST`) → 403 — the path-rule layer, added beyond the original scope
 
-**Exit:** every `@PreAuthorize` endpoint covered at all three levels.
+**Exit:** every `@PreAuthorize` endpoint covered at all three levels. ✅
+
+### Inventory, reconciled against the codebase
+
+The count of 32 from Phase 1's analysis still holds exactly. Nothing added or removed since;
+Phase 2's four new exception handlers introduced no endpoints, as expected.
+
+| Controller | Protected | ADMIN-only | ADMIN or USER | Public |
+|---|---|---|---|---|
+| `UserController` | 8 | 6 | 2 | 2 |
+| `AccountController` | 8 | 3 | 5 | 0 |
+| `AlbumController` | 8 | 1 | 7 | 0 |
+| `PhotoController` | 8 | 1 | 7 | 0 |
+| `AuthorizationController` | 0 | — | — | 3 |
+| API gateway | 0 | — | — | — |
+| **Total** | **32** | **11** | **21** | **5** |
+
+The gateway has no controllers at all: it contributes zero protected endpoints and its entire
+authorization surface is the path rules it applies before proxying. `GatewayPathAuthorizationTest`
+covers that layer and includes a guard that fails if a controller is ever added there.
+
+### What was built
+
+| Suite | Tests |
+|---|---|
+| `UserControllerAuthorizationTest` | 55 |
+| `AccountControllerAuthorizationTest` | 50 |
+| `AlbumControllerAuthorizationTest` | 50 |
+| `PhotoControllerAuthorizationTest` | 50 |
+| `AuthorizationControllerAuthorizationTest` | 11 |
+| `GatewayPathAuthorizationTest` | 22 |
+
+160 of these are authorization assertions on the 32 protected endpoints — well past the 96 the
+plan estimated, because the matrix grew two states: an unknown-role case (denied by the path
+rule rather than method security) and a both-roles case, the account shape that hid the Step 8
+defect for months.
+
+Shared fixtures added to `photo-app-test-support`: `ProtectedEndpoint` (one row of the matrix)
+and `ControllerEndpoints` (reflection over a controller). Each suite uses the latter to assert
+its table names **exactly** the controller's `@PreAuthorize` methods, and that no endpoint is
+unprotected by accident — the same completeness guard that caught a missing handler in Phase 2.
+
+### The Boot 4 finding that would have made this vacuous
+
+`spring-boot-security-test` was missing from the classpath. In Boot 4 the security
+auto-configuration moved out of `spring-boot-autoconfigure`, and the `@WebMvcTest` slice in
+`spring-boot-webmvc-test` no longer lists any of it — **that artifact** is what contributes
+`ServletWebSecurityAutoConfiguration` (which supplies the `HttpSecurity` bean
+`SecurityConfiguration#securityFilterChain` takes as a parameter) and
+`SecurityMockMvcAutoConfiguration` (which puts the chain in front of MockMvc).
+
+Without it a `@WebMvcTest` has **no security chain whatsoever**. Here it failed loudly, because
+this project defines its own chain and the missing bean is a hard error — but only for that
+reason. A slice relying on Boot's default chain would have come up completely unsecured and
+every assertion in this phase would have passed against nothing. Phase 1's control test guards
+the *wrong-chain* case; this was the *no-chain* case, one layer beneath it.
+
+Added to `photo-app-test-support` so all six suites inherit it.
+
+### Coverage
+
+`mvn verify` across the six modules. All **37** controller handler methods at **100%
+instructions** — every endpoint in the system is now exercised by an authorized request.
+
+Branch coverage on those methods is **0/0**, and that is structural rather than a gap worth
+closing: `@PreAuthorize` does not compile to a branch in the controller. It is an annotation
+read at runtime by `AuthorizationManagerBeforeMethodInterceptor`, which evaluates the SpEL
+expression in a proxy outside the class. **JaCoCo therefore cannot evidence authorization
+coverage from a controller report at all** — there is nothing in that bytecode to cover. The
+evidence for this phase is the matrix itself, not the coverage number.
+
+The security code that *is* instrumentable lives in `photo-app-security-lib` — `JwtFilter`'s
+header/expiry/parse-failure branches and `SecurityConfiguration`'s rule chain. These suites
+execute it on every request, but JaCoCo reports only a module's own `target/classes` (the
+scoping note from Phase 2), so none of that execution is attributed anywhere. A
+`photo-app-security-lib` suite is where measurable security-branch coverage would come from;
+it does not exist yet and is not in any phase. Worth adding to Phase 7.
+
+### Defect found
+
+**HIGH — an expired token locks a client out of `/auth`.** All three `/auth` endpoints return
+401 when the caller sends an expired token, despite `/auth/**` being `permitAll`. `JwtFilter`
+handles `ExpiredJwtException` by calling `sendError(401)` and returning *without continuing the
+chain*, so the permit rule is never consulted; every other invalid-token shape falls through and
+proceeds, which is why a malformed token does not block login but an expired one does.
+
+`/auth/refresh` is the damaging case — its own contract says it must work when the access token
+has expired, and the filter defeats that whenever the client also sends the stale token, which
+is what every HTTP client interceptor does by default.
+
+**Confirmed against the live stack on 2026-08-07.** Same refresh token, same second, only the
+header differing: `POST /auth/refresh` with an expired `Authorization` header → **401**; with no
+header → **200**. The 401 ran first and left the token unconsumed, so the 200 that followed
+proves the credential was valid all along. All three `/auth` endpoints behave identically, each
+paired against its own no-header control. The rejection happens at the **gateway** — the
+authorization service never received the refused requests. Pinned as a characterization test
+rather than fixed; full write-up in `backlog.txt`.
+
+### Ownership scoping — moved to Phase 7
+
+`canAccessResource` is called 20 times across the four `*ServiceImpl` classes and **zero** times
+in any controller. It is a service-layer concern, and every suite in this phase mocks the
+service layer by design, so a controller slice test cannot reach it: mocking the service is
+exactly what removes the code under test. It belongs with the service-impl suites in Phase 7.
+
+Listing it under Phase 3 was an error in the original plan, not a change of scope.
 
 ## Phase 4 — Feign and resilience ⬜
 
