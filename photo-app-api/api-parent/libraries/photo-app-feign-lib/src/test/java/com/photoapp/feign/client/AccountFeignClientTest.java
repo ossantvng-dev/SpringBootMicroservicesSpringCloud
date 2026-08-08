@@ -7,7 +7,7 @@ import com.photoapp.feign.harness.AbstractFeignClientTest;
 import com.photoapp.feign.harness.DownstreamBodies;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.http.HttpStatus;
 
 import java.util.Map;
@@ -92,9 +92,9 @@ class AccountFeignClientTest extends AbstractFeignClientTest {
         stubFor(get(urlPathEqualTo("/accounts"))
                 .willReturn(aResponse().withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(DownstreamBodies.pageOf(DownstreamBodies.ACCOUNT_DTO))));
+                        .withBody(DownstreamBodies.pagedResponseOf(DownstreamBodies.ACCOUNT_DTO))));
 
-        Page<AccountDTO> page = accountFeignClient.findAll(Map.of("userId", "42"));
+        PagedResponseDTO<AccountDTO> page = accountFeignClient.findAll(Map.of("userId", "42"));
 
         assertThat(page).isNotNull();
         assertThat(page.getTotalElements()).isEqualTo(1);

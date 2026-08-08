@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
+import static com.photoapp.test.support.fixtures.TestPages.emptyPagedResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -290,7 +290,7 @@ class AccountControllerAuthorizationTest {
         /** Verifies GET /accounts collects arbitrary query parameters into the filter map. */
         @Test
         void findAllForwardsTheFilterMap() throws Exception {
-            when(accountService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+            when(accountService.findAll(any())).thenReturn(emptyPagedResponse());
 
             mockMvc.perform(asAdmin(HttpMethod.GET, "/accounts?page=1&size=5"))
                     .andExpect(status().isOk());
@@ -384,7 +384,7 @@ class AccountControllerAuthorizationTest {
         when(accountService.changeAccountName(anyLong(), anyString())).thenReturn(new AccountDTO());
         when(accountService.changeAccountType(anyLong(), any())).thenReturn(new AccountDTO());
         when(accountService.findById(anyLong())).thenReturn(new AccountDTO());
-        when(accountService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+        when(accountService.findAll(any())).thenReturn(emptyPagedResponse());
         when(accountService.activateOrDeactivate(anyLong(), anyBoolean())).thenReturn(new AccountDTO());
     }
 }

@@ -1552,3 +1552,81 @@ Replace HttpStatus.valueOf(int) with HttpStatus.resolve(int) and handle null in 
 default branch, keeping the raw int in the message.
 
 Priority: LOW.
+
+
+[2026-08-08 | testing-plan Phase 5] PagedResponseDTO implemented — every paginated
+endpoint now returns an explicit, flat wire contract              [DONE 2026-08-08]
+----------------------------------------------------------------------------------------
+Decided in Step 5, never built. testing-plan.md recorded its absence as a fact
+("there is no PagedResponseDTO"). Implemented during Phase 5, before the rest of
+the mapper tests, because there is no frontend consuming this API yet - so the
+response shape could change with no client-breaking risk, and that window closes
+the moment one exists.
+
+WHAT WAS RETURNED BEFORE
+A raw Spring Data Page, i.e. a serialised PageImpl: sixteen fields across three
+nesting levels, including a `sort` object inside a `pageable` object, plus
+`first`, `last`, `numberOfElements` and `empty` - all derivable from four numbers.
+It is an implementation class, not a contract, and Spring itself warns about it:
+
+  "Serializing PageImpl instances as-is is not supported, meaning that there is no
+   guarantee about the stability of the resulting JSON structure!"
+
+Confirmed in spring-data-commons 4.0.5 (WarningLoggingModifier). Note it is logged
+ONCE PER JVM, on the first PageImpl serialisation - which is why an idle service
+shows zero occurrences and the count is not, by itself, evidence of anything.
+
+WHAT IS RETURNED NOW
+Five flat fields, owned by this project:
+
+  { "totalElements": 100, "totalPages": 20, "pageNumber": 0, "pageSize": 5,
+    "content": [ ... ] }
+
+Live on all four paginated endpoints (verified 2026-08-08):
+
+  GET /users?page=0&size=5    -> totalElements 100,  totalPages 20
+  GET /accounts?page=1&size=4 -> totalElements 199,  totalPages 50,  pageNumber 1
+  GET /albums?page=0&size=2   -> totalElements 597,  totalPages 299
+  GET /photos?page=0&size=2   -> totalElements 5970, totalPages 2985
+
+Counts match the Liquibase seed data exactly. Zero "Serializing PageImpl"
+occurrences across all four services after exercising every paginated endpoint.
+
+THE PART THAT NEEDED CARE - THE FEIGN COUPLING
+Three Feign clients declared `Page<T> findAll(...)`, and TWO of those are live:
+UserServiceImpl#deleteById calls accounts findAll and albums findAll to collect the
+ids it then cascades through. Changing the service response without changing the
+clients would have broken user deletion at runtime and nowhere else - the delete
+would fail after the lookup, mid-cascade.
+
+Changed in lockstep: the three client signatures, their two fallbacks, and the two
+call sites in UserServiceImpl (Page.map -> getContent().stream().map).
+
+Verified end to end on the running stack: created a probe user with an account and
+an album, deleted the user, and confirmed all five users-service circuit breakers
+went from 0 to 1 buffered call with 0 failures - so every hop of the cascade
+executed against the new shape. All three entities gone afterwards, 404 on each.
+
+INCIDENTAL BENEFIT
+PagedResponseDTO is an ordinary bean with a no-arg constructor. Page is not, and
+only deserialised over Feign because Spring Cloud's pageJacksonModule happened to
+be registered. That dependency is gone.
+
+THE PATTERN, since this is intended for the backend template generator
+  - PagedResponseDTO<T> in commons, with a static from(Page<T>) factory
+  - PagedResponseMapper, a @Mapper with a generic default method, so services
+    inject it like the other eight mappers instead of calling a static
+  - services map first and wrap second:
+        pagedResponseMapper.toPagedResponse(repo.findAll(spec, pageable),
+                                            mapper::toDTO)
+    which keeps entities away from the serialiser and keeps the DTO free of any
+    knowledge of mappers
+  - MapStruct generates NOTHING for it, and cannot: PagedResponseDTO<T> is generic
+    over an element type known only at the call site, and Page is an interface with
+    no settable properties. Both methods are `default`. This is documented on the
+    interface so nobody tries to "fix" it.
+
+Tested by PagedResponseMapperTest (10 tests): field-by-field mapping on a page
+deliberately built so no two fields share a value, empty page, single page, partial
+last page, order preservation, immutability of content, both overloads agreeing,
+and null handling.

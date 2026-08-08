@@ -3,7 +3,7 @@ package com.photoapp.albums.service;
 import com.photoapp.albums.dto.CreateAlbumInputDTO;
 import com.photoapp.albums.dto.UpdateAlbumInputDTO;
 import com.photoapp.commons.dto.album.AlbumDTO;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +14,7 @@ public interface AlbumService {
 
     AlbumDTO findById(Long id);
 
-    Page<AlbumDTO> findAll(Map<String, String> filters);
+    PagedResponseDTO<AlbumDTO> findAll(Map<String, String> filters);
 
     AlbumDTO update(Long id, UpdateAlbumInputDTO input);
 

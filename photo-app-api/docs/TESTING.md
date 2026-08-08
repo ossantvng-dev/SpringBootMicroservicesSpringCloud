@@ -8,11 +8,11 @@ and current progress, see [plans/testing-plan.md](plans/testing-plan.md) — tha
 planning record, this one is the day-to-day guide.
 
 > **Current state:** Phases 1 (infrastructure), 2 (exception handling), 3 (the authorization
-> matrix) and 4 (Feign and resilience) are complete — **527 tests**. Every controller has an
-> authorization suite and the whole Feign layer is covered end to end; none of the controllers
-> has a *behavioural* suite yet, so Phases 5–8 are outstanding and the service, repository and
-> mapper layers are still untested. If you are adding the first test to a module, this document
-> tells you where to put it; the plan tells you what is worth writing.
+> matrix), 4 (Feign and resilience) and 5 (mappers) are complete — **597 tests**. Every controller
+> has an authorization suite, the whole Feign layer is covered end to end, and all nine mappers
+> are tested; none of the controllers has a *behavioural* suite yet, so Phases 6–8 are outstanding
+> and the service and repository layers are still untested. If you are adding the first test to a
+> module, this document tells you where to put it; the plan tells you what is worth writing.
 
 ---
 
@@ -24,9 +24,9 @@ Two pieces, and the split matters:
 api-parent/libraries/photo-app-test-support/     ← fixtures ONLY, no @Test classes
     src/main/java/com/photoapp/test/support/
         security/     TestJwt, TestPrincipals, @WithMockPhotoAppUser
-        fixtures/     TestEntities
+        fixtures/     TestEntities, TestPages
         persistence/  MySqlContainerSupport
-        web/          PhotoAppSecuritySliceConfig
+        web/          PhotoAppSecuritySliceConfig, ProtectedEndpoint, ControllerEndpoints
 
 <each module>/src/test/java/...                  ← the actual @Test classes live here
 ```

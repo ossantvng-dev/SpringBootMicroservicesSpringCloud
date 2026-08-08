@@ -15,7 +15,8 @@ import com.photoapp.security.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.photoapp.commons.mapper.AccountMapper;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
+import com.photoapp.commons.mapper.PagedResponseMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
+    private final PagedResponseMapper pagedResponseMapper;
     private final AlbumFeignClient albumFeignClient;
     private final UserFeignClient userFeignClient;
     private final CurrentUserService currentUserService;
@@ -113,7 +115,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AccountDTO> findAll(Map<String, String> filters) {
+    public PagedResponseDTO<AccountDTO> findAll(Map<String, String> filters) {
         log.debug("Finding all accounts filters={}", filters);
         AccountFilterDTO accountFilterDTO = mapToFilter(filters, AccountFilterDTO.class);
         boolean isAdmin = currentUserService.isAdmin();
@@ -126,8 +128,10 @@ public class AccountServiceImpl implements AccountService {
                 accountFilterDTO.setUserId(currentUserId);
             }
         }
-        Page<AccountDTO> result = accountRepository.findAll(fromFilter(accountFilterDTO), mapToPageable(filters))
-                .map(account -> accountMapper.toDTO(account));
+        PagedResponseDTO<AccountDTO> result = pagedResponseMapper.toPagedResponse(
+                accountRepository.findAll(fromFilter(accountFilterDTO), mapToPageable(filters)),
+                accountMapper::toDTO
+        );
         log.info("Accounts listed successfully count={}", result.getTotalElements());
         return result;
     }

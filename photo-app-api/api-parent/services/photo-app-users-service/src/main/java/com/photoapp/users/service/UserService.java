@@ -5,7 +5,7 @@ import com.photoapp.entity.User;
 import com.photoapp.users.dto.CreateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserInputDTO;
 import com.photoapp.users.dto.UpdateUserRolesInputDTO;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 
 import java.util.Map;
 
@@ -21,7 +21,7 @@ public interface UserService {
 
     User findByUsernameAndActiveUser(String username, boolean activeUser);
 
-    Page<UserDTO> findAll(Map<String, String> filters);
+    PagedResponseDTO<UserDTO> findAll(Map<String, String> filters);
 
     UserDTO activateOrDeactivate(Long id, boolean activate);
 

@@ -80,28 +80,35 @@ public final class DownstreamBodies {
               "updatedAt": "2026-01-02T03:04:05"
             }""";
 
-    /** A Spring Data {@code Page} on the wire, as the paged endpoints return it. */
-    public static String pageOf(String contentJson) {
+    /**
+     * A {@code PagedResponseDTO} on the wire, as every paginated endpoint returns it since
+     * 2026-08-08.
+     *
+     * <p>Five flat fields. This replaced a hand-written {@code PageImpl} body — sixteen fields
+     * across three nesting levels, including a {@code sort} object inside a {@code pageable}
+     * object — which is the shape Spring serialises a raw {@code Page} to and warns about. That
+     * the fixture shrank this much is the clearest measure of what the change bought.
+     */
+    public static String pagedResponseOf(String contentJson) {
         return """
                 {
-                  "content": [%s],
-                  "number": 0,
-                  "size": 20,
                   "totalElements": 1,
                   "totalPages": 1,
-                  "first": true,
-                  "last": true,
-                  "numberOfElements": 1,
-                  "empty": false,
-                  "sort": { "sorted": false, "unsorted": true, "empty": true },
-                  "pageable": {
-                    "pageNumber": 0,
-                    "pageSize": 20,
-                    "offset": 0,
-                    "paged": true,
-                    "unpaged": false,
-                    "sort": { "sorted": false, "unsorted": true, "empty": true }
-                  }
+                  "pageNumber": 0,
+                  "pageSize": 20,
+                  "content": [%s]
                 }""".formatted(contentJson);
+    }
+
+    /** An empty page, for the no-results path. */
+    public static String emptyPagedResponse() {
+        return """
+                {
+                  "totalElements": 0,
+                  "totalPages": 0,
+                  "pageNumber": 0,
+                  "pageSize": 20,
+                  "content": []
+                }""";
     }
 }

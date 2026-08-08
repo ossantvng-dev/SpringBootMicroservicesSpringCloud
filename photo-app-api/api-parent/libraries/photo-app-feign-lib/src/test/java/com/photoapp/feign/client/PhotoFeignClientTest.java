@@ -6,7 +6,7 @@ import com.photoapp.feign.harness.AbstractFeignClientTest;
 import com.photoapp.feign.harness.DownstreamBodies;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -62,9 +62,9 @@ class PhotoFeignClientTest extends AbstractFeignClientTest {
         stubFor(get(urlPathEqualTo("/photos"))
                 .willReturn(aResponse().withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(DownstreamBodies.pageOf(DownstreamBodies.PHOTO_DTO))));
+                        .withBody(DownstreamBodies.pagedResponseOf(DownstreamBodies.PHOTO_DTO))));
 
-        Page<PhotoDTO> page = photoFeignClient.findAll(Map.of("albumId", "11"));
+        PagedResponseDTO<PhotoDTO> page = photoFeignClient.findAll(Map.of("albumId", "11"));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent().getFirst().getFileName()).isEqualTo("note-g.png");

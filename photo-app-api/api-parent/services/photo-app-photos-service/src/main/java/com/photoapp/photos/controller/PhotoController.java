@@ -7,7 +7,7 @@ import com.photoapp.photos.service.PhotoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +44,7 @@ public class PhotoController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
-    public ResponseEntity<Page<PhotoDTO>> findAll(@RequestParam Map<String, String> filters) {
+    public ResponseEntity<PagedResponseDTO<PhotoDTO>> findAll(@RequestParam Map<String, String> filters) {
         log.debug("HTTP GET /photos - findAll request received filters={}", filters);
         var result = photoService.findAll(filters);
         log.info("Photos listed successfully count={}", result.getTotalElements());

@@ -3,7 +3,7 @@ package com.photoapp.accounts.service;
 import com.photoapp.commons.dto.account.AccountDTO;
 import com.photoapp.commons.dto.account.AccountTypeDTO;
 import com.photoapp.commons.dto.account.CreateAccountInputDTO;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 
 import java.util.Map;
 
@@ -17,7 +17,7 @@ public interface AccountService {
 
     AccountDTO findById(Long accountId);
 
-    Page<AccountDTO> findAll(Map<String, String> filters);
+    PagedResponseDTO<AccountDTO> findAll(Map<String, String> filters);
 
     AccountDTO activateOrDeactivate(Long accountId, boolean activate);
 

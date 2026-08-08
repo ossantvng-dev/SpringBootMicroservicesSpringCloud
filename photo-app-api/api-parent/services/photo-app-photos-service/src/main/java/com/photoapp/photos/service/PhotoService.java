@@ -3,7 +3,7 @@ package com.photoapp.photos.service;
 import com.photoapp.commons.dto.photo.PhotoDTO;
 import com.photoapp.photos.dto.CreatePhotoInputDTO;
 import com.photoapp.photos.dto.UpdatePhotoInputDTO;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +14,7 @@ public interface PhotoService {
 
     PhotoDTO findById(Long id);
 
-    Page<PhotoDTO> findAll(Map<String, String> filters);
+    PagedResponseDTO<PhotoDTO> findAll(Map<String, String> filters);
 
     PhotoDTO update(Long id, UpdatePhotoInputDTO input);
 

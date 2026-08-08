@@ -1,7 +1,7 @@
 # Testing Plan — comprehensive unit and integration testing
 
 **Status:** Phase 1 complete (2026-08-05). Phases 2 and 3 complete (2026-08-06). Phase 4 complete
-(2026-08-07). Phases 5-8 outstanding. **527 tests across eight modules.**
+(2026-08-07). Phase 5 complete (2026-08-08). Phases 6-8 outstanding. **597 tests across eight modules.**
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -957,18 +957,97 @@ What Phase 4 *does* cover is the mechanism underneath them:
 refresh fix was built around — **any Feign call reachable from a public endpoint must target a
 public downstream endpoint**, because nothing in this system will invent a credential.
 
-## Phase 5 — Mappers ⬜
+## Phase 5 — Mappers ✅ DONE (2026-08-08)
 
-Cheap, fast, and one of these bugs already shipped.
+Cheap, fast, and one of these bugs already shipped. **70 tests across five modules**, plus a new
+shared DTO the phase turned out to need.
 
-- ⬜ All 8 mappers, every method
-- ⬜ **`AccountMapper.toDTO` — `accountType → accountTypeDTO`**, the regression test for the
+- ✅ All 8 mappers, every method — **9 now**, counting `PagedResponseMapper`
+- ✅ **`AccountMapper.toDTO` — `accountType → accountTypeDTO`**, the regression test for the
   silent-null bug
-- ⬜ `ignore = true` targets are genuinely not carried (`passwordHash`, `roles`, `active*`)
-- ⬜ Null inputs and empty collections
-- ⬜ `RoleMapper.toDTOs(Set)` collection mapping
+- ✅ `ignore = true` targets are genuinely not carried (`passwordHash`, `roles`, `active*`)
+- ✅ Null inputs and empty collections
+- ✅ `RoleMapper.toDTOs(Set)` collection mapping
+- ✅ Round-trip assertions, and a guard on `ReportingPolicy.ERROR` itself
 
-**Exit:** every mapper method covered including the ignore assertions.
+**Exit:** every mapper method covered including the ignore assertions. ✅
+
+### Inventory, reconciled against the codebase
+
+**Exactly 8 `@Mapper` interfaces**, matching the Phase 1 count. A ninth —
+`PagedResponseMapper` — was added during the phase.
+
+| Module | Mappers |
+|---|---|
+| `photo-app-commons` | `AccountMapper`, `AlbumMapper`, `PhotoMapper`, `RoleMapper`, `UserMapper`, **`PagedResponseMapper`** |
+| `photo-app-users-service` | `UserInputMapper` |
+| `photo-app-albums-service` | `AlbumInputMapper` |
+| `photo-app-photos-service` | `PhotoInputMapper` |
+
+There is no `AccountInputMapper`: `AccountMapper` carries `toEntity(CreateAccountInputDTO)`
+itself, so accounts is the one domain whose create-mapping lives in commons rather than in the
+service. Asymmetric, harmless, and now recorded.
+
+### `ReportingPolicy.ERROR` — a compile-time guarantee that needed a runtime guard
+
+The brief asked for a test that field-name mismatches are caught at compile time. They are, and a
+test cannot assert that directly — a compile error is not observable from a passing test suite.
+What *is* worth asserting is the thing that would remove the guarantee:
+**`unmappedTargetPolicy = ERROR` is opt-in per mapper, and deleting it is silent.** MapStruct's
+default is `WARN`, so removing the attribute makes the build *more* likely to pass, not less, and
+the next unmapped field goes back to being quietly null. `MapperConventionsTest` fails if any
+mapper drops it.
+
+Getting that guard to work took three attempts, all of which failed **silently**, and the
+sequence is recorded in the test's Javadoc because the next person will try them in the same
+order:
+
+1. `ClassPathScanningCandidateComponentProvider` — its default `isCandidateComponent` rejects
+   interfaces. Found zero mappers.
+2. Reflection — `org.mapstruct.Mapper` is `@Retention(RetentionPolicy.CLASS)`, so it never reaches
+   the reflection API. `getAnnotation(Mapper.class)` returns null for every mapper in the project.
+3. Spring's ASM `MetadataReader` — does not surface `RuntimeInvisibleAnnotations` either. Verified
+   directly: every mapper interface reports an empty annotation list.
+
+All three produced an empty collection, which would have left every parameterised assertion
+passing on zero arguments. `theScanFindsEveryMapperInThisLibrary` is what caught each one, and it
+is the reason that test exists. The declaration is source-level, so the guard reads the source —
+not a workaround, the only place the fact lives.
+
+### Coverage
+
+`photo-app-commons`, mapper package:
+
+| Class | Instructions | Branches |
+|---|---|---|
+| `AlbumMapperImpl` | 52/52 | 2/2 |
+| `UserMapperImpl` | 65/65 | 2/2 |
+| `PhotoMapperImpl` | 46/46 | 2/2 |
+| `PagedResponseMapper` | 22/22 | 4/4 |
+| `RoleMapperImpl` | 96/110 | 16/18 |
+| `AccountMapperImpl` | 114/128 | 12/14 |
+
+The two gaps are the same thing in both classes and are **structurally uncoverable**: MapStruct
+generates `default: throw new IllegalArgumentException("Unexpected enum constant: " + …)` for each
+enum switch, and the tests are parameterised with `@EnumSource` over every constant, so the arm
+cannot be reached without an enum value that does not exist. Reaching 100% here would mean
+deleting the `@EnumSource` coverage that makes the enums safe in the first place.
+
+### Two things the phase turned up
+
+**`BaseEntity.equals` makes multi-element entity Sets untestable without Hibernate.** It calls
+`Hibernate.getClass(...)` to see through proxies, and `hashCode` returns a constant 31 — so every
+entity collides in a hash bucket and *any* two-element `Set` invokes `equals`.
+`photo-app-entity-model-lib` declares `spring-boot-starter-data-jpa` as `provided` on purpose
+("entities only, no runtime ownership"), so Hibernate does not propagate to `photo-app-commons`
+and the call fails with `NoClassDefFoundError`. Fixed by adding `hibernate-core` at **test** scope
+to commons, which is what lets `UserMapperTest` assert the two-role case — the account shape that
+hid the Step 8 authorization defect for months.
+
+**MapStruct injects a `uses` mapper into an `@Autowired` field, not a constructor.** The generated
+`UserMapperImpl` has only a no-arg constructor, so a plain unit test has to set `roleMapper`
+reflectively. Worth knowing before reaching for a Spring context to test one method in a library
+that has no application class.
 
 ## Phase 6 — Repository and persistence ⬜
 
@@ -993,8 +1072,12 @@ Deliberately last: lowest defect-finding value, and largely covered incidentally
 "correct role → through" leg.
 
 - ⬜ CRUD per controller: create/read/update/delete
-- ⬜ List endpoints — assert the **concrete serialised `Page<T>` shape** (there is no
-  `PagedResponseDTO`; `Page<T>` JSON is historically unstable across Spring versions)
+- ⬜ List endpoints — assert the serialised **`PagedResponseDTO`** shape.
+  → **Updated 2026-08-08.** This used to read "there is no `PagedResponseDTO`; `Page<T>` JSON is
+  historically unstable across Spring versions". There is one now: it was implemented during
+  Phase 5 and every paginated endpoint returns it. The instability that note warned about is the
+  reason it exists, and the shape is now five flat fields this project owns rather than whatever
+  `PageImpl` serialises to.
 - ⬜ Validation failures → 400 with field detail. **`@Valid` appears on exactly 8 request bodies**
   (users 3, albums 2, photos 2, accounts 1) — and on **none** of the three `/auth/*` endpoints, so
   `LoginRequestDTO` is not bean-validated at all. Confirm whether that is intended (§4, Q9)

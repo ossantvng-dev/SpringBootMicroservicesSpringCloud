@@ -21,8 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import static com.photoapp.test.support.fixtures.TestPages.emptyPagedResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -396,7 +395,7 @@ class UserControllerAuthorizationTest {
          */
         @Test
         void findAllForwardsTheFilterMap() throws Exception {
-            when(userService.findAll(any())).thenReturn(Page.empty());
+            when(userService.findAll(any())).thenReturn(emptyPagedResponse());
 
             mockMvc.perform(asAdmin(HttpMethod.GET, "/users?page=0&size=25"))
                     .andExpect(status().isOk());
@@ -548,7 +547,7 @@ class UserControllerAuthorizationTest {
         when(userService.findById(anyLong())).thenReturn(new UserDTO());
         when(userService.findByEmail(anyString())).thenReturn(new UserDTO());
         when(userService.existsById(anyLong())).thenReturn(true);
-        when(userService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+        when(userService.findAll(any())).thenReturn(emptyPagedResponse());
         when(userService.activateOrDeactivate(anyLong(), anyBoolean())).thenReturn(new UserDTO());
         when(userService.assignOrRemoveRole(anyLong(), any())).thenReturn(new UserDTO());
     }

@@ -18,7 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.photoapp.albums.mapper.AlbumInputMapper;
 import com.photoapp.commons.mapper.AlbumMapper;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
+import com.photoapp.commons.mapper.PagedResponseMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ public class AlbumServiceImpl implements AlbumService {
     private final PhotoFeignClient photoFeignClient;
     private final AlbumLimitsProperties albumLimitsProperties;
     private final AlbumMapper albumMapper;
+    private final PagedResponseMapper pagedResponseMapper;
     private final AlbumInputMapper albumInputMapper;
     private final CurrentUserService currentUserService;
 
@@ -101,7 +103,7 @@ public class AlbumServiceImpl implements AlbumService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AlbumDTO> findAll(Map<String, String> filters) {
+    public PagedResponseDTO<AlbumDTO> findAll(Map<String, String> filters) {
         log.debug("Finding all albums filters={}", filters);
         AlbumFilterDTO albumFilterDTO = mapToFilter(filters, AlbumFilterDTO.class);
         boolean isAdmin = currentUserService.isAdmin();
@@ -127,8 +129,10 @@ public class AlbumServiceImpl implements AlbumService {
             }
         }
 
-        Page<AlbumDTO> result = albumRepository.findAll(fromFilter(albumFilterDTO), mapToPageable(filters))
-                .map(album -> albumMapper.toDTO(album));
+        PagedResponseDTO<AlbumDTO> result = pagedResponseMapper.toPagedResponse(
+                albumRepository.findAll(fromFilter(albumFilterDTO), mapToPageable(filters)),
+                albumMapper::toDTO
+        );
         log.info("Albums listed successfully count={}", result.getTotalElements());
         return result;
     }

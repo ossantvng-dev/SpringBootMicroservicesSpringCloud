@@ -6,7 +6,7 @@ import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public interface AlbumFeignClient {
     @GetMapping("/albums")
     @Retry(name = "photo-app-albums-service-findAll")
     @CircuitBreaker(name = "photo-app-albums-service-findAll", fallbackMethod = "findAllFallback")
-    Page<AlbumDTO> findAll(@RequestParam("filters") Map<String, String> filters);
+    PagedResponseDTO<AlbumDTO> findAll(@RequestParam("filters") Map<String, String> filters);
 
     @PatchMapping("/albums/{id}/activate")
     AlbumDTO activateOrDeactivate(@PathVariable("id") Long id, @RequestParam("activate") boolean activate);
@@ -50,7 +50,7 @@ public interface AlbumFeignClient {
         throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findById");
     }
 
-    default Page<AlbumDTO> findAllFallback(Map<String,String> filters, Throwable t) {
+    default PagedResponseDTO<AlbumDTO> findAllFallback(Map<String,String> filters, Throwable t) {
         throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findAll");
     }
 

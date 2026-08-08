@@ -61,7 +61,7 @@ class FeignFallbacksTest {
             throw new UnsupportedOperationException();
         }
 
-        public org.springframework.data.domain.Page<com.photoapp.commons.dto.account.AccountDTO>
+        public com.photoapp.commons.dto.PagedResponseDTO<com.photoapp.commons.dto.account.AccountDTO>
         findAll(Map<String, String> filters) {
             throw new UnsupportedOperationException();
         }
@@ -84,7 +84,7 @@ class FeignFallbacksTest {
             throw new UnsupportedOperationException();
         }
 
-        public org.springframework.data.domain.Page<com.photoapp.commons.dto.album.AlbumDTO>
+        public com.photoapp.commons.dto.PagedResponseDTO<com.photoapp.commons.dto.album.AlbumDTO>
         findAll(Map<String, String> filters) {
             throw new UnsupportedOperationException();
         }
@@ -111,7 +111,7 @@ class FeignFallbacksTest {
             throw new UnsupportedOperationException();
         }
 
-        public org.springframework.data.domain.Page<com.photoapp.commons.dto.photo.PhotoDTO>
+        public com.photoapp.commons.dto.PagedResponseDTO<com.photoapp.commons.dto.photo.PhotoDTO>
         findAll(Map<String, String> filters) {
             throw new UnsupportedOperationException();
         }

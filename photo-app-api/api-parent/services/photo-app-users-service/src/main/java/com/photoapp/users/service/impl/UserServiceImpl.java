@@ -24,7 +24,8 @@ import com.photoapp.users.repository.UserRepository;
 import com.photoapp.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
+import com.photoapp.commons.mapper.PagedResponseMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
+    private final PagedResponseMapper pagedResponseMapper;
     private final UserInputMapper userInputMapper;
     private final PasswordEncoder passwordEncoder;
     private final AccountFeignClient accountFeignClient;
@@ -130,12 +132,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserDTO> findAll(Map<String, String> filters) {
+    public PagedResponseDTO<UserDTO> findAll(Map<String, String> filters) {
         log.debug("Finding all users filters={}", filters);
-        Page<UserDTO> result = userRepository.findAll(
-                fromFilter(mapToFilter(filters, UserFilterDTO.class)),
-                mapToPageable(filters)
-        ).map(userMapper::toDTO);
+        PagedResponseDTO<UserDTO> result = pagedResponseMapper.toPagedResponse(
+                userRepository.findAll(
+                        fromFilter(mapToFilter(filters, UserFilterDTO.class)),
+                        mapToPageable(filters)
+                ),
+                userMapper::toDTO
+        );
         log.info("Users listed successfully count={}", result.getTotalElements());
         return result;
     }
@@ -191,8 +196,15 @@ public class UserServiceImpl implements UserService {
             throw new ApplicationException("User not found", HttpStatus.NOT_FOUND);
         }
 
+        /*
+            These two findAll calls are easy to miss when auditing which Feign methods are live:
+            the receiver and the method sit on different lines, so a single-line grep for
+            "accountFeignClient.findAll(" matches nothing. Both are load-bearing - they collect
+            the ids the cascade below deletes.
+         */
         List<Long> accountIds = accountFeignClient
                 .findAll(Map.of("userId", String.valueOf(id)))
+                .getContent().stream()
                 .map(AccountDTO::getId)
                 .toList();
 
@@ -203,6 +215,7 @@ public class UserServiceImpl implements UserService {
         if (!accountIds.isEmpty()) {
             List<Long> albumIds = albumFeignClient
                     .findAll(Map.of("accountIds", accountIdsFilterParam))
+                    .getContent().stream()
                     .map(AlbumDTO::getId)
                     .toList();
 

@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
+import static com.photoapp.test.support.fixtures.TestPages.emptyPagedResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -265,7 +265,7 @@ class AlbumControllerAuthorizationTest {
         /** Verifies GET /albums collects arbitrary query parameters into the filter map. */
         @Test
         void findAllForwardsTheFilterMap() throws Exception {
-            when(albumService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+            when(albumService.findAll(any())).thenReturn(emptyPagedResponse());
 
             mockMvc.perform(asAdmin(HttpMethod.GET, "/albums?accountIds=1&page=0"))
                     .andExpect(status().isOk());
@@ -377,7 +377,7 @@ class AlbumControllerAuthorizationTest {
     private void stubEverything() {
         when(albumService.create(any())).thenReturn(AlbumDTO.builder().id(1L).build());
         when(albumService.findById(anyLong())).thenReturn(new AlbumDTO());
-        when(albumService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+        when(albumService.findAll(any())).thenReturn(emptyPagedResponse());
         when(albumService.countByAccountId(anyLong())).thenReturn(0L);
         when(albumService.update(anyLong(), any())).thenReturn(new AlbumDTO());
         when(albumService.activateOrDeactivate(anyLong(), anyBoolean())).thenReturn(new AlbumDTO());

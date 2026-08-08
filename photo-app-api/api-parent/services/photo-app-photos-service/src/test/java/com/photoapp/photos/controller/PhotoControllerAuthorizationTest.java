@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
+import static com.photoapp.test.support.fixtures.TestPages.emptyPagedResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -262,7 +262,7 @@ class PhotoControllerAuthorizationTest {
         /** Verifies GET /photos collects arbitrary query parameters into the filter map. */
         @Test
         void findAllForwardsTheFilterMap() throws Exception {
-            when(photoService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+            when(photoService.findAll(any())).thenReturn(emptyPagedResponse());
 
             mockMvc.perform(asAdmin(HttpMethod.GET, "/photos?albumId=2&size=10"))
                     .andExpect(status().isOk());
@@ -388,7 +388,7 @@ class PhotoControllerAuthorizationTest {
     private void stubEverything() {
         when(photoService.create(any())).thenReturn(photoWithId(1L));
         when(photoService.findById(anyLong())).thenReturn(new PhotoDTO());
-        when(photoService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+        when(photoService.findAll(any())).thenReturn(emptyPagedResponse());
         when(photoService.countByAlbumIdIn(any())).thenReturn(0L);
         when(photoService.update(anyLong(), any())).thenReturn(new PhotoDTO());
         when(photoService.activateOrDeactivate(anyLong(), anyBoolean())).thenReturn(new PhotoDTO());

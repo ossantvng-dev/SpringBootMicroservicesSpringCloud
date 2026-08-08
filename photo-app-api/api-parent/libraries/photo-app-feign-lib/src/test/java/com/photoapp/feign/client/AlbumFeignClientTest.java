@@ -6,7 +6,7 @@ import com.photoapp.feign.harness.AbstractFeignClientTest;
 import com.photoapp.feign.harness.DownstreamBodies;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -77,9 +77,9 @@ class AlbumFeignClientTest extends AbstractFeignClientTest {
         stubFor(get(urlPathEqualTo("/albums"))
                 .willReturn(aResponse().withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(DownstreamBodies.pageOf(DownstreamBodies.ALBUM_DTO))));
+                        .withBody(DownstreamBodies.pagedResponseOf(DownstreamBodies.ALBUM_DTO))));
 
-        Page<AlbumDTO> page = albumFeignClient.findAll(Map.of("accountId", "7"));
+        PagedResponseDTO<AlbumDTO> page = albumFeignClient.findAll(Map.of("accountId", "7"));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent().getFirst().getTitle()).isEqualTo("Analytical Engine");

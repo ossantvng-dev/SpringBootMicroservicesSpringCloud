@@ -102,6 +102,24 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Needed to put more than ONE entity in a Set in a test.
+
+             BaseEntity.equals calls Hibernate.getClass(...) to see through proxies, and
+             BaseEntity.hashCode returns a constant 31 - so every entity collides in a hash
+             bucket and any 2-element Set invokes equals. entity-model-lib declares
+             spring-boot-starter-data-jpa as `provided` on purpose ("entities only, no runtime
+             ownership"), which means Hibernate does NOT propagate here and the call fails with
+             NoClassDefFoundError.
+
+             Test scope only: this does not give commons runtime ownership of JPA, it just lets
+             UserMapperTest assert the two-role case - the account shape that hid the Step 8
+             authorization defect for months. -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- =================================================================== -->

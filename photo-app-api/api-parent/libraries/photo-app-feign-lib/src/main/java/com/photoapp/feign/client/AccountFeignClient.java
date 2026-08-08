@@ -6,7 +6,7 @@ import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,7 +27,7 @@ public interface AccountFeignClient {
     @GetMapping("/accounts")
     @Retry(name = "photo-app-accounts-service-findAll")
     @CircuitBreaker(name = "photo-app-accounts-service-findAll", fallbackMethod = "findAllFallback")
-    Page<AccountDTO> findAll(@RequestParam("filters") Map<String, String> filters);
+    PagedResponseDTO<AccountDTO> findAll(@RequestParam("filters") Map<String, String> filters);
 
     @PatchMapping("/accounts/{id}/activate")
     AccountDTO activateOrDeactivate(@PathVariable("id") Long id, @RequestParam("activate") boolean activate);
@@ -40,7 +40,7 @@ public interface AccountFeignClient {
     @Retry(name = "photo-app-accounts-service-deleteByUserId")
     void deleteByUserId(@PathVariable("userId") Long userId);
 
-    default Page<AccountDTO> findAllFallback(Map<String,String> filters, Throwable t) {
+    default PagedResponseDTO<AccountDTO> findAllFallback(Map<String,String> filters, Throwable t) {
         throw FeignFallbacks.translate(t, ERROR_TEMPLATE, "findAll");
     }
 

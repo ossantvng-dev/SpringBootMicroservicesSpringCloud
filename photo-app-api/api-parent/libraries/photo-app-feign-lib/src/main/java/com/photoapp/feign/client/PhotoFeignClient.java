@@ -6,7 +6,7 @@ import com.photoapp.feign.configuration.FeignConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.data.domain.Page;
+import com.photoapp.commons.dto.PagedResponseDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,7 +24,7 @@ public interface PhotoFeignClient {
     PhotoDTO findById(@PathVariable("id") Long id);
 
     @GetMapping("/photos")
-    Page<PhotoDTO> findAll(@RequestParam("filters") Map<String, String> filters);
+    PagedResponseDTO<PhotoDTO> findAll(@RequestParam("filters") Map<String, String> filters);
 
     @PatchMapping("/photos/{id}/activate")
     PhotoDTO activateOrDeactivate(@PathVariable("id") Long id, @RequestParam("activate") boolean activate);
