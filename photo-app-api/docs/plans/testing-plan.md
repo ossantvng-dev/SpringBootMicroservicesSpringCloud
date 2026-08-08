@@ -1,7 +1,7 @@
 # Testing Plan — comprehensive unit and integration testing
 
-**Status:** Phase 1 complete (2026-08-05). Phases 2 and 3 complete (2026-08-06). Phases 4-8
-outstanding. 292 tests across seven modules.
+**Status:** Phase 1 complete (2026-08-05). Phases 2 and 3 complete (2026-08-06). Phase 4 complete
+(2026-08-07). Phases 5-8 outstanding. **526 tests across eight modules.**
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -714,18 +714,193 @@ exactly what removes the code under test. It belongs with the service-impl suite
 
 Listing it under Phase 3 was an error in the original plan, not a change of scope.
 
-## Phase 4 — Feign and resilience ⬜
+## Phase 4 — Feign and resilience ✅ DONE (2026-08-07)
 
-- ⬜ WireMock stubs per client; success paths
-- ⬜ `CustomFeignErrorDecoder` — all five branches (401/403/404/503/other)
-- ⬜ All 12 fallbacks **throw** `ApplicationException` with 503
-- ⬜ `FeignAuthInterceptor` forwards the header; **and no-ops without a request context**
-- ⬜ Circuit breaker closed → open → half-open — against **test-only config**, not production values (§3, Q3)
-- ⬜ Retry attempt count and backoff
-- ⬜ Live paths end-to-end: accounts→users `isActive`, accounts→albums `countByAccountId`,
+**222 tests in `photo-app-feign-lib`.** 100% JaCoCo on every class in the module — including
+branches, which Phase 3 could not measure at all.
+
+- ✅ WireMock stubs per client; success paths for all 20 methods
+- ✅ `CustomFeignErrorDecoder` — all five branches (401/403/404/503/other)
+- ✅ All 12 fallbacks **throw** `ApplicationException` with 503
+- ✅ `FeignAuthInterceptor` forwards the header; **and no-ops without a request context**
+- ✅ Circuit breaker closed → open → half-open → closed — against **test-only config** (§3, Q3)
+- ✅ Retry attempt count and backoff
+- ✅ Live paths end-to-end: accounts→users `isActive`, accounts→albums `countByAccountId`,
   authorization→users `findByUsernameAndActiveUser`
+- ✅ Regression guards for both 2026-08-05 fixes, plus the inverse property they put at risk
 
-**Exit:** every annotated method's fallback asserted; decoder fully covered.
+**Exit:** every annotated method's fallback asserted; decoder fully covered. ✅
+
+### Inventory, reconciled against the codebase
+
+**4 clients, 20 remote methods, 12 fallbacks** — exactly the numbers this phase was scoped
+against. `FeignClientInventoryTest` re-derives all three by reflection on every build, so the
+count cannot drift away from the suites silently.
+
+| Client | Methods | With `@CircuitBreaker` + `@Retry` + fallback | Unannotated |
+|---|---|---|---|
+| `UserFeignClient` | 3 | 3 | 0 |
+| `AccountFeignClient` | 5 | 3 | 2 |
+| `AlbumFeignClient` | 6 | 4 | 2 |
+| `PhotoFeignClient` | 6 | 2 | 4 |
+| **Total** | **20** | **12** | **8** |
+
+Two things the reconciliation turned up that the plan had not recorded:
+
+**Eleven of the twenty methods have no call site anywhere in the reactor.** All three `findAll`,
+all three `activateOrDeactivate`, all three `deleteById`, `PhotoFeignClient#findById`, and
+`UserFeignClient#findById`. That last one is the call the 2026-08-05 refresh fix removed — and
+its circuit-breaker instance is still declared in the config repo for the authorization service.
+Confirmed live: `photo-app-users-service-findById` reports `bufferedCalls: 0` on a running
+authorization service that has served logins.
+
+**The eight unannotated methods are inconsistent in a way that looks accidental.** `findById` is
+protected on the account and album clients but not the photo client; `findAll` is protected on
+two clients and not the third. Nothing is broken today because none of the eight is called.
+`FeignClientInventoryTest#theUnprotectedMethodsAreKnown` pins the list, so adding annotations to
+any of them is a deliberate act that also forces the method into the resilience matrix.
+
+### What was built
+
+| Suite | Tests | What it covers |
+|---|---|---|
+| `FeignResilienceMatrixTest` | 85 | 7 properties × the 12 protected methods |
+| `FeignFallbacksTest` | 39 | all 12 fallbacks × 3 properties, plus `translate` directly |
+| `CustomFeignErrorDecoderTest` | 17 | all five branches, method-key propagation, one characterization |
+| `DownstreamFailurePredicateTest` | 18 | the predicate in isolation, including cause-chain walking |
+| `FeignClientInventoryTest` | 13 | the completeness guards |
+| `CircuitBreakerStateTransitionTest` | 11 | the state machine on test-only instances |
+| `AlbumFeignClientTest` / `PhotoFeignClientTest` | 7 each | success paths, encoding, deserialisation |
+| `AccountFeignClientTest` | 6 | as above, plus the no-fallback asymmetry |
+| `RetryBehaviourTest` | 6 | attempt counts, backoff shape, recovery |
+| `UserFeignClientTest` | 5 | success paths |
+| `FeignAuthInterceptorTest` | 5 | header forwarding, no-context no-op, both end-to-end |
+| `PatchVerbCharacterizationTest` | 3 | a defect, pinned |
+
+The matrix is the centre of the phase: seven properties asserted uniformly across all twelve
+protected methods rather than hand-written per client, because twelve × seven is eighty-four
+cases and the one written by hand that gets skipped is always the one that breaks.
+
+### The regression guards, and the property they put at risk
+
+Three of the seven matrix properties guard the 2026-08-05 fix (`DownstreamFailurePredicate` +
+`FeignFallbacks.translate`): six consecutive downstream 404s leave the circuit **closed**, a 4xx
+is **not retried**, and a 4xx **reaches the caller with its own status**. A fourth repeats the
+first two for 403, because the predicate keys off `is4xxClientError()` rather than off any one
+status.
+
+The other three exist because those four could all be satisfied by a predicate that had become
+*too* permissive — one returning `false` for everything would pass every guard above while the
+circuit breaker had quietly become decorative. So: a genuine 5xx **does** open the circuit and
+**does** produce 503; a transport failure (no status in the cause chain at all — the predicate's
+default branch) does the same; and an open circuit **stops contacting the downstream** while
+still answering 503 rather than leaking `CallNotPermittedException`.
+
+**Confirmed live on 2026-08-07.** Six logins with an unknown username through the gateway, each
+answered 401 — then a valid login immediately after, answered **200**. Before the fix the sixth
+would have opened the circuit and the valid login would have been 503. The authorization
+service's own actuator afterwards:
+
+```
+"photo-app-users-service-findByUsernameAndActiveUser":
+    {"bufferedCalls":8,"failedCalls":0,"failureRate":"0.0%","state":"CLOSED"}
+```
+
+Eight calls recorded — well past `minimumNumberOfCalls=5` — and zero counted as failures. That
+is the fix, measured on the running system rather than inferred from a green suite.
+
+### Coverage — and the contrast with Phase 3
+
+`photo-app-feign-lib`, from `target/site/jacoco/jacoco.xml`:
+
+| Counter | Covered | Missed |
+|---|---|---|
+| Instruction | 266 | **0** |
+| Branch | 21 | **0** |
+| Line | 58 | **0** |
+| Method | 24 | **0** |
+| Class | 9 | **0** |
+
+Unlike Phase 3, the branch number here is real and worth reading. `@PreAuthorize` compiles to an
+annotation, not a branch, so JaCoCo reported 0/0 branches on every controller and could not
+evidence authorization coverage at all. Feign's resilience layer is ordinary Java: the decoder's
+switch is 5 branches, `DownstreamFailurePredicate` 6, `FeignFallbacks` 6, `FeignAuthInterceptor`
+4. All 21 are covered, so coverage is actual evidence here rather than a proxy for it.
+
+The 24 methods include all 12 fallbacks — interface `default` methods are the only executable
+code on the client interfaces, so "12 of 12 methods covered" on those four classes *is* the
+Phase 4 exit criterion, reported by the tool.
+
+### Harness fidelity — two things that would have made this vacuous
+
+Same lesson as Phase 3's `spring-boot-security-test`: a slice that quietly loses the component
+under test passes everything.
+
+**1. No `Encoder` at all without `spring-boot-data-commons`.** Every client failed to build with
+`No bean found of type interface feign.codec.Encoder`. `FeignClientsConfiguration#feignEncoder`
+is `@ConditionalOnMissingClass("org.springframework.data.domain.Pageable")`, and
+`spring-data-commons` arrives transitively through `photo-app-commons` — so that bean is *always*
+skipped in this reactor. The replacement lives in `FeignClientsConfiguration$SpringDataConfiguration`,
+which needs `DataWebProperties` from `spring-boot-data-commons`. The five services inherit it
+from `spring-boot-starter-data-jpa`; a library with no JPA has to ask.
+
+**2. `WebEnvironment.MOCK`, not `NONE`.** The encoder and decoder are built from the
+`HttpMessageConverters` bean, which the web auto-configuration does not contribute when the
+application type is `none`.
+
+Also required and easy to miss: `aspectjweaver`. `@CircuitBreaker` and `@Retry` are Spring AOP
+annotations, and without it Spring never registers `AnnotationAwareAspectJAutoProxyCreator` — the
+aspects are silently never applied, and every resilience assertion in this phase would pass
+against a bare Feign call. The services get it from `spring-boot-starter-data-jpa` →
+`spring-aspects`.
+
+And one deliberate *omission*: no PATCH-capable transport on the test classpath. See below.
+
+### Aspect ordering, measured
+
+`circuit-breaker-aspect-order=1`, `retry-aspect-order=2`, so the **breaker is outermost and the
+retry runs inside it**. Measured, not assumed: one logical call against a downstream returning
+500 delivers three requests and records **one** breaker failure, not three. This is why
+`minimumNumberOfCalls=5` means five *logical* calls rather than five attempts, and why
+`RetryBehaviourTest#aCallThatRecoversOnTheThirdAttemptSucceeds` can assert the breaker recorded
+zero failures for a call that failed twice on the wire.
+
+### Defects found
+
+Three, all characterized rather than fixed, all written up in [backlog.txt](backlog.txt).
+
+**MEDIUM — PATCH is unreachable over Feign's default client.** All three `activateOrDeactivate`
+methods throw `ProtocolException: Invalid HTTP method: PATCH` before a socket is opened;
+`java.net.HttpURLConnection` has never allowed the verb. Not a harness artefact: Spring Cloud
+only swaps the transport when `feign.hc5.ApacheHttp5Client` is on the classpath, and `feign-hc5`
+is absent from all five service images (checked inside each), with no okhttp, no custom
+`feign.Client` bean, and no `spring.cloud.openfeign.httpclient.*` property anywhere. Invisible
+because none of the three has a caller. The fix is a production dependency change across all
+five services, which is not a testing-phase decision.
+
+**LOW — a transport failure reaches the downstream six times, not three.** `HttpURLConnection`
+silently retries an idempotent request once on a mid-flight connection failure, doubling
+Resilience4j's three attempts. Nothing reports the real number. A decoded 5xx is *not* doubled —
+the amplification lands specifically on the unreachable-downstream case.
+
+**LOW — a non-standard status escapes `CustomFeignErrorDecoder` as `IllegalArgumentException`.**
+`HttpStatus.valueOf` runs before the switch and rejects unregistered codes, so the fallback finds
+no `ApplicationException` in the chain and reports 503. Not reachable from this system today.
+
+### The 2026-08-05 refresh assertions — deferred to Phase 7
+
+The "Two fixes from 2026-08-05" section below also asks Phase 4 to assert that refresh succeeds
+with no Authorization header, that a deactivated user is refused, that a revoked or unknown
+refresh token is refused, and that a reissued token carries **current** roles rather than the
+roles frozen at login.
+
+Those are `TokenHandlerServiceImpl` behaviours, not Feign behaviours — they need the token store
+and the service, and they sit above the client interface this phase tests. They belong with the
+service-impl suites in Phase 7, alongside the ownership-scoping work moved there from Phase 3.
+What Phase 4 *does* cover is the mechanism underneath them:
+`FeignAuthInterceptorTest#anInboundRequestWithoutATokenForwardsNothing` pins the constraint the
+refresh fix was built around — **any Feign call reachable from a public endpoint must target a
+public downstream endpoint**, because nothing in this system will invent a credential.
 
 ## Phase 5 — Mappers ⬜
 
@@ -855,6 +1030,10 @@ class of defect this initiative exists to catch. Neither has a test.
   *Phase 4 must assert: refresh succeeds with NO Authorization header; a deactivated user is
   refused; a revoked or unknown refresh token is refused; and the reissued token carries CURRENT
   roles rather than the roles frozen at login.*
+  → **Moved to Phase 7 (2026-08-07).** These are `TokenHandlerServiceImpl` behaviours, not Feign
+  behaviours: they need the token store and the service, and sit above the client interface
+  Phase 4 tests. Phase 4 covers the mechanism underneath them — see its "deferred to Phase 7"
+  note.
 
 - **A downstream 4xx tripped the circuit breaker and was flattened to 503.** Measured: five
   logins with unknown usernames opened the users-service circuit, after which a *valid* login
@@ -866,3 +1045,8 @@ class of defect this initiative exists to catch. Neither has a test.
   not retried; a downstream 4xx reaches the caller with its own status; and a genuine 5xx or
   connection failure still opens the circuit and still produces 503. That last one matters — it is
   the property the predicate could most easily break.*
+  → **✅ DONE 2026-08-07.** All four, asserted against every one of the twelve protected methods
+  in `FeignResilienceMatrixTest`, plus a fifth for 403 and a sixth proving an open circuit stops
+  contacting the downstream. Reproduced live through the gateway as well: six unknown-username
+  logins → 401 each, valid login immediately after → 200, breaker `CLOSED` with 8 buffered calls
+  and 0 failures.

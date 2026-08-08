@@ -7,11 +7,12 @@ This is the **living reference**. For the phased plan, the full inventory of wha
 and current progress, see [plans/testing-plan.md](plans/testing-plan.md) — that document is the
 planning record, this one is the day-to-day guide.
 
-> **Current state:** Phases 1 (infrastructure), 2 (exception handling) and 3 (the authorization
-> matrix) are complete — 292 tests. Every controller now has an authorization suite; none has a
-> behavioural one yet, so Phases 4–8 are outstanding and the service, repository and mapper
-> layers are still untested. If you are adding the first test to a module, this document tells
-> you where to put it; the plan tells you what is worth writing.
+> **Current state:** Phases 1 (infrastructure), 2 (exception handling), 3 (the authorization
+> matrix) and 4 (Feign and resilience) are complete — **526 tests**. Every controller has an
+> authorization suite and the whole Feign layer is covered end to end; none of the controllers
+> has a *behavioural* suite yet, so Phases 5–8 are outstanding and the service, repository and
+> mapper layers are still untested. If you are adding the first test to a module, this document
+> tells you where to put it; the plan tells you what is worth writing.
 
 ---
 
@@ -341,6 +342,41 @@ that a web slice never builds. Naming it explicitly matters over relying on nest
 detection: `SpringBootContextLoader` does not detect nested `@Configuration` classes the way the
 plain loader does, so `@Nested` inner test classes fall back to the package scan and find the
 application class anyway. Declared, it is inherited.
+
+### The three things a Feign test needs before it can test resilience at all
+
+The same failure mode, one layer down. Learned in Phase 4; all three are already wired in
+`photo-app-feign-lib`'s pom, and `AbstractFeignClientTest` is the harness to extend.
+
+**1. `spring-boot-data-commons`.** Without it the context does not start at all — every client
+fails with `No bean found of type interface feign.codec.Encoder`. `FeignClientsConfiguration`'s
+plain encoder is `@ConditionalOnMissingClass(Pageable.class)`, and `spring-data-commons` reaches
+every module through `photo-app-commons`, so that bean is *always* skipped here. The replacement
+lives in a nested config that needs `DataWebProperties`. Loud, at least — unlike the next two.
+
+**2. `aspectjweaver`.** `@CircuitBreaker` and `@Retry` are Spring AOP annotations. Without this,
+Spring never registers `AnnotationAwareAspectJAutoProxyCreator`, the Resilience4j aspects are
+never applied, and every resilience assertion passes against a bare Feign call. **Silent.** The
+services inherit it from `spring-boot-starter-data-jpa` → `spring-aspects`; a library with no JPA
+has to ask.
+
+**3. `WebEnvironment.MOCK`, not `NONE`.** The encoder and decoder are built from the
+`HttpMessageConverters` bean, which the web auto-configuration skips when the application type is
+`none`.
+
+And one thing to deliberately **not** add: a PATCH-capable Feign transport (`feign-hc5`, okhttp).
+Production runs `feign.Client$Default`, and putting a better transport on the test classpath
+would make the three `activateOrDeactivate` methods pass here while still failing in production.
+See the PATCH item in [plans/backlog.txt](plans/backlog.txt).
+
+**Stub at the HTTP boundary, not at the interface.** `CustomFeignErrorDecoder`, `FeignFallbacks`,
+`DownstreamFailurePredicate` and both aspects all sit *below* the client interface, so a Mockito
+mock of `UserFeignClient` exercises none of them. WireMock over a real socket is what makes the
+assertions mean anything.
+
+**Reset the circuit breakers in `@BeforeEach`.** The registry is a context singleton and the
+context is cached across test classes, so a breaker opened by a failure test stays open and fails
+the next class's success-path test — in an order that depends on how JUnit sequences the suite.
 
 ---
 

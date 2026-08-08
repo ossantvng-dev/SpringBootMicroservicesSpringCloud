@@ -1334,3 +1334,131 @@ the filter, and this deserves its own before/after measurement against the runni
 
   Priority: LOW. Observability only - the status is already correct (401 via the normal
   authorization path), and no request is wrongly admitted or refused.
+
+
+[2026-08-07 | testing-plan Phase 4] MEDIUM — PATCH is unreachable over Feign's default
+client, so all three activateOrDeactivate methods cannot issue a request at all
+----------------------------------------------------------------------------------------
+Found by Phase 4's client suites. Characterized, not fixed.
+
+SYMPTOM
+  AccountFeignClient.activateOrDeactivate   PATCH /accounts/{id}/activate
+  AlbumFeignClient.activateOrDeactivate     PATCH /albums/{id}/activate
+  PhotoFeignClient.activateOrDeactivate     PATCH /photos/{id}/activate
+
+All three throw before a socket is opened:
+
+  feign.RetryableException: Invalid HTTP method: PATCH
+    executing PATCH http://photo-app-accounts-service/accounts/7/activate?activate=false
+  Caused by: java.net.ProtocolException: Invalid HTTP method: PATCH
+    at java.net.HttpURLConnection.setRequestMethod(HttpURLConnection.java:453)
+    at feign.Client$Default.convertAndSend(Client.java:176)
+
+The downstream never receives anything - asserted in the characterization test by
+checking WireMock's request journal is empty, which is what distinguishes "the
+request was refused" from "the request was never sent". So there is no downstream
+log line either; the failure is invisible on the callee's side.
+
+CAUSE
+java.net.HttpURLConnection validates the verb against a fixed whitelist that has
+never included PATCH. Feign uses it because feign.Client$Default is the fallback
+transport when nothing better is on the classpath.
+
+CONFIRMED TO BE PRODUCTION, NOT A TEST ARTEFACT (checked 2026-08-07)
+Spring Cloud only swaps the transport when feign.hc5.ApacheHttp5Client is present;
+plain httpclient5 does NOT satisfy HttpClient5FeignLoadBalancerConfiguration's
+@ConditionalOnClass. Verified inside all five running service images:
+  - feign-hc5           absent from all five (grep -c returned 0 for each)
+  - okhttp / feign-java11 / feign-http2   absent
+  - no module anywhere defines a feign.Client bean
+  - no spring.cloud.openfeign.httpclient.* property in the config repo
+httpclient5-5.5.2.jar IS in the images, but it arrives via other dependencies and
+is not the artifact the condition looks for. So production runs Client$Default.
+
+The feign-lib test module therefore deliberately does NOT put a PATCH-capable
+transport on its test classpath - a comment in its pom.xml says so. Adding one
+would make these three methods pass in the suite and still fail in production.
+
+WHY IT HAS NEVER BEEN SEEN
+Nothing calls any of the three. They are three of the eleven Feign methods with no
+call site anywhere in the reactor (see the Phase 4 inventory in testing-plan.md).
+The first caller would get a 500 that looks like a downstream fault and is not one.
+
+Note the SERVICES' own PATCH endpoints are fine - a normal HTTP client reaching
+PATCH /accounts/{id}/activate through the gateway works. Only the service-to-service
+Feign hop is affected.
+
+OPTIONS (decide, do not assume)
+  - Add io.github.openfeign:feign-hc5 as a dependency of photo-app-feign-lib. Fixes
+    all three at once and gains a connection pool, but moves EVERY Feign call in all
+    five services onto a new transport - a real blast radius for a latent bug in
+    three uncalled methods. Would also change the retry-amplification behaviour in
+    the item below.
+  - Or change the three methods to @PutMapping to match what the transport supports,
+    and add the matching @PutMapping to the three controllers. Smaller, but leaves a
+    verb chosen to work around a client limitation.
+  - Or delete all three methods, since nothing calls them.
+
+Priority: MEDIUM. Nothing is broken today because nothing calls them; this is a trap
+laid for whoever adds the first caller.
+
+
+[2026-08-07 | testing-plan Phase 4] LOW — a transport failure reaches the downstream
+six times, not the three that maxAttempts says
+----------------------------------------------------------------------------------------
+Found by Phase 4's retry suite. Measured, documented, not changed.
+
+MEASURED
+One logical Feign call against a downstream that resets the connection delivers SIX
+requests. Asserted in RetryBehaviourTest against WireMock's request journal.
+
+  resilience4j maxAttempts=3        x  HttpURLConnection's own retry-once  =  6
+
+java.net.HttpURLConnection silently retries an idempotent request once when the
+connection fails mid-flight. Resilience4j knows nothing about it, so neither its
+metrics nor the maxAttempts=3 setting in the config repo says the real number
+anywhere.
+
+NOT UNIFORM - and the asymmetry is the awkward part
+A decoded 5xx RESPONSE is attempted exactly three times (also asserted). The
+doubling happens only when the connection itself breaks - which is precisely the
+"downstream is unreachable or overwhelmed" case, where double the traffic is least
+affordable. With production's 2s->4s backoff the six attempts also stretch the
+caller's wait.
+
+Fixed automatically if the feign-hc5 option in the item above is taken, since
+HttpClient5 does not do this. Worth deciding the two together.
+
+Priority: LOW. Correctness is unaffected; this is load amplification on an already
+failing downstream, at the current traffic level of one developer.
+
+
+[2026-08-07 | testing-plan Phase 4] LOW — a non-standard downstream status escapes
+CustomFeignErrorDecoder as IllegalArgumentException
+----------------------------------------------------------------------------------------
+Found by Phase 4's decoder suite. Characterized, not fixed.
+
+CAUSE
+The first statement in decode() is HttpStatus.valueOf(response.status()), which
+throws IllegalArgumentException for any code not in the IANA-registered set - before
+the switch is reached. An ErrorDecoder is contractually supposed to RETURN the
+exception, not throw one.
+
+CONSEQUENCE
+A different exception goes up the stack than the fallbacks are written against:
+FeignFallbacks.translate finds no ApplicationException in the cause chain, falls to
+its default branch and reports 503. DownstreamFailurePredicate does the same and
+counts it toward opening the circuit. So a downstream emitting, say, 499 or a
+Cloudflare 52x would be reported as an outage regardless of what it meant.
+
+REACHABILITY
+Not reachable from this system today - all five services answer with standard codes.
+It needs a misbehaving proxy, a load balancer inserting its own status, or a future
+third-party downstream. Recorded so the behaviour is known rather than discovered
+during an incident.
+
+FIX IF TAKEN
+Replace HttpStatus.valueOf(int) with HttpStatus.resolve(int) and handle null in the
+default branch, keeping the raw int in the message.
+
+Priority: LOW.

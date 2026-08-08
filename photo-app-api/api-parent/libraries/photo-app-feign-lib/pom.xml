@@ -76,6 +76,76 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- The downstream service, for Phase 4. Stubbing at the HTTP boundary is the
+             whole point: a mocked Feign interface would prove nothing about the error
+             decoder, the fallbacks or the circuit breaker, since all three sit BELOW
+             the interface. -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Not needed by main: the services get it transitively from
+             spring-cloud-starter-netflix-eureka-client. Feign resolves "photo-app-users-service"
+             through the load balancer, so without this the test target is an unknown host.
+             SimpleDiscoveryClient (spring-cloud-commons, already present) supplies the
+             instance list from properties, standing in for Eureka. -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- @CircuitBreaker and @Retry are Spring AOP annotations, and Resilience4j's aspects
+             are @Aspect-annotated. Without aspectjweaver, Spring never registers
+             AnnotationAwareAspectJAutoProxyCreator, the aspects are never applied, and every
+             resilience assertion here would pass vacuously against a bare Feign call.
+             The five services inherit it from spring-boot-starter-data-jpa -> spring-aspects;
+             this library has no JPA, so it must ask. Confirmed present in the running
+             accounts-service image as aspectjweaver-1.9.25.1.jar. Note there is no
+             spring-boot-starter-aop on Boot 4 - the starter was dropped, and the BOM manages
+             org.aspectj:aspectjweaver directly. -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Supplies DataWebProperties, which FeignClientsConfiguration$SpringDataConfiguration
+             needs. That nested config is what contributes the Encoder once Spring Data is on the
+             classpath: the plain feignEncoder bean is @ConditionalOnMissingClass(Pageable) and
+             spring-data-commons arrives transitively through photo-app-commons, so it is always
+             skipped here. Without this artifact the config does not match, no Encoder is
+             registered at all, and every client fails to build with
+             "No bean found of type interface feign.codec.Encoder". The services get it from
+             spring-boot-starter-data-jpa (spring-boot-data-commons-4.0.6.jar, confirmed in the
+             running accounts-service image); this library has no JPA, so it must ask. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-commons</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- NOTE: deliberately NO feign-hc5 / okhttp here.
+             Spring Cloud only swaps in a different transport when feign.hc5.ApacheHttp5Client is
+             on the classpath; plain httpclient5 is not enough, and none of the five service images
+             carry feign-hc5 (checked in all five on 2026-08-07). So production runs on
+             feign.Client$Default, i.e. java.net.HttpURLConnection, and this harness must too -
+             adding a PATCH-capable transport here would hide the defect characterised in
+             PatchVerbCharacterizationTest instead of finding it. -->
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
