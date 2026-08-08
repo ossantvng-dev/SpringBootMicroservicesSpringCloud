@@ -747,12 +747,23 @@ count cannot drift away from the suites silently.
 
 Two things the reconciliation turned up that the plan had not recorded:
 
-**Eleven of the twenty methods have no call site anywhere in the reactor.** All three `findAll`,
-all three `activateOrDeactivate`, all three `deleteById`, `PhotoFeignClient#findById`, and
-`UserFeignClient#findById`. That last one is the call the 2026-08-05 refresh fix removed — and
-its circuit-breaker instance is still declared in the config repo for the authorization service.
-Confirmed live: `photo-app-users-service-findById` reports `bufferedCalls: 0` on a running
-authorization service that has served logins.
+**Nine of the twenty methods have no call site anywhere in the reactor.** All three
+`activateOrDeactivate`, all three `deleteById`, `PhotoFeignClient#findById`,
+`PhotoFeignClient#findAll`, and `UserFeignClient#findById`. That last one is the call the
+2026-08-05 refresh fix removed; its orphaned circuit-breaker instance was deleted from the config
+repo on 2026-08-07 after the running authorization service reported `bufferedCalls: 0` for it
+while actively serving logins.
+
+> **Corrected 2026-08-07.** This first read "eleven of the twenty", counting all three `findAll`
+> methods as uncalled. Two of them are called. `UserServiceImpl#deleteById` invokes
+> `AccountFeignClient#findAll` and then `AlbumFeignClient#findAll` to walk a user's accounts and
+> albums before cascading the delete — and it writes them as
+> `accountFeignClient` newline `.findAll(...)`, so a single-line grep for
+> `accountFeignClient.findAll(` matches nothing and the methods look dead. Only
+> `PhotoFeignClient#findAll` is genuinely uncalled. Caught while acting on the wrong conclusion:
+> the cleanup that was about to delete their config found the callers first. The lesson is
+> mechanical — **search for Feign call sites with a multiline pattern**, because fluent chains put
+> the receiver and the method on different lines.
 
 **The eight unannotated methods are inconsistent in a way that looks accidental.** `findById` is
 protected on the account and album clients but not the photo client; `findAll` is protected on

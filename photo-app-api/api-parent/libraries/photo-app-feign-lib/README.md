@@ -10,8 +10,8 @@ decoder that make them behave correctly.
 | Class | What |
 |---|---|
 | `UserFeignClient` | → users-service. 3 methods, 2 with live callers |
-| `AccountFeignClient` | → accounts-service. 5 methods, 2 with live callers |
-| `AlbumFeignClient` | → albums-service. 6 methods, 3 with live callers |
+| `AccountFeignClient` | → accounts-service. 5 methods, 3 with live callers |
+| `AlbumFeignClient` | → albums-service. 6 methods, 4 with live callers |
 | `PhotoFeignClient` | → photos-service. 6 methods, 2 with live callers |
 | `FeignAuthInterceptor` | Forwards the caller's JWT downstream |
 | `CustomFeignErrorDecoder` | Maps downstream HTTP errors to application exceptions |
@@ -22,7 +22,7 @@ decoder that make them behave correctly.
 
 ## The live calls
 
-Reconciled against the code on 2026-08-07 (testing-plan.md Phase 4). Nine of the twenty
+Reconciled against the code on 2026-08-07 (testing-plan.md Phase 4). Eleven of the twenty
 methods have a caller:
 
 ```
@@ -32,15 +32,25 @@ albums   ──► AccountFeignClient#findById                     ──► acc
 albums   ──► PhotoFeignClient#countByAlbumIds                ──► photos
 photos   ──► AlbumFeignClient#findById                       ──► albums
 photos   ──► AccountFeignClient#findById                     ──► accounts
-users    ──► AccountFeignClient#deleteByUserId               ──► accounts   ┐ delete
-users    ──► AlbumFeignClient#deleteByAccountIds             ──► albums     │ cascade
-users    ──► PhotoFeignClient#deleteByAlbumIds               ──► photos     ┘
 auth     ──► UserFeignClient#findByUsernameAndActiveUser     ──► users
+
+UserServiceImpl#deleteById, in order — the whole delete cascade:
+users    ──► AccountFeignClient#findAll                      ──► accounts   ┐ find the
+users    ──► AlbumFeignClient#findAll                        ──► albums     ┘ ids first
+users    ──► PhotoFeignClient#deleteByAlbumIds               ──► photos     ┐ then delete
+users    ──► AlbumFeignClient#deleteByAccountIds             ──► albums     │ deepest
+users    ──► AccountFeignClient#deleteByUserId               ──► accounts   ┘ first
 ```
 
-The remaining eleven — all three `findAll`, all three `activateOrDeactivate`, all three
-`deleteById`, `PhotoFeignClient#findById` and `UserFeignClient#findById` — are declared and
-uncalled. That is not harmless: it is how the PATCH transport defect stayed invisible.
+The remaining nine — all three `activateOrDeactivate`, all three `deleteById`,
+`PhotoFeignClient#findById`, `PhotoFeignClient#findAll` and `UserFeignClient#findById` — are
+declared and uncalled. That is not harmless: it is how the PATCH transport defect stayed
+invisible.
+
+> Watch out when checking this yourself: the two `findAll` calls are written as
+> `accountFeignClient` on one line and `.findAll(...)` on the next, so a single-line grep for
+> `accountFeignClient.findAll(` returns nothing and they look dead. They are not. Search with a
+> multiline pattern.
 
 ## Transport
 

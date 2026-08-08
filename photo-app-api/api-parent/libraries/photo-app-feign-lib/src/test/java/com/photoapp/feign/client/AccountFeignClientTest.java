@@ -81,8 +81,11 @@ class AccountFeignClientTest extends AbstractFeignClientTest {
      * {@code ?filters=…}; Feign flattens each entry into its own parameter, which is what the
      * receiving controller's own {@code @RequestParam Map} expects.
      *
-     * <p>Note this method has no caller anywhere in the reactor — see the inventory in
-     * testing-plan.md Phase 4.
+     * <p>This method has one caller, and it is not an obvious one: {@code UserServiceImpl#deleteById}
+     * uses it to collect the account ids belonging to a user about to be deleted, before cascading
+     * through albums and photos. So the {@code Page} deserialisation asserted here is on the
+     * delete path, where a failure would abort the cascade partway and leave orphaned rows behind
+     * a user that no longer exists.
      */
     @Test
     void findAllDeserialisesAPageAndFlattensTheFilterMap() {

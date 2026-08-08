@@ -64,7 +64,14 @@ class AlbumFeignClientTest extends AbstractFeignClientTest {
         assertThat(album.getActiveAlbum()).isTrue();
     }
 
-    /** Verifies the paged listing deserialises and flattens its filter map. No caller today. */
+    /**
+     * Verifies the paged listing deserialises and flattens its filter map.
+     *
+     * <p>Called from {@code UserServiceImpl#deleteById}, which uses it to find the albums belonging
+     * to a user's accounts before deleting their photos. It is the second hop of the delete
+     * cascade, so a decoding failure here strands photo rows under albums that are about to
+     * disappear.
+     */
     @Test
     void findAllDeserialisesAPageOfAlbums() {
         stubFor(get(urlPathEqualTo("/albums"))
