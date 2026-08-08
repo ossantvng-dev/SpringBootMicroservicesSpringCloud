@@ -137,6 +137,13 @@ class PhotoFeignClientTest extends AbstractFeignClientTest {
      * <p>Nothing calls it today, so nothing is broken right now — which is precisely why the
      * inconsistency would otherwise go unnoticed until the first caller appears. Pinning it makes
      * adding the annotations a deliberate act.
+     *
+     * <p>The single-request assertion doubles as the guard for
+     * {@code FeignTransportAutoConfiguration}. HttpClient 5's
+     * {@code DefaultHttpRequestRetryStrategy} retries 429 and 503 <em>responses</em> by default,
+     * so before transport-level retries were disabled on 2026-08-07 this stub was fetched twice —
+     * on a method with no {@code @Retry} at all. That is the clearest possible statement of the
+     * problem: a retry nobody configured, on a path where retrying was explicitly not asked for.
      */
     @Test
     void findByIdIsUnprotectedUnlikeItsSiblingsOnTheOtherClients() {

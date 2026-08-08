@@ -56,35 +56,39 @@ class RetryBehaviourTest extends AbstractFeignClientTest {
     }
 
     /**
-     * Verifies a transport failure is retried too — and pins the fact that it reaches the
-     * downstream <strong>six</strong> times, not three.
+     * REGRESSION GUARD for the retry-amplification defect fixed on 2026-08-07.
+     * See backlog.txt, "a transport failure reaches the downstream six times".
      *
-     * <p>Resilience4j accounts for three. The other factor of two comes from underneath it:
-     * {@code feign.Client$Default} is {@code java.net.HttpURLConnection}, and the JDK silently
-     * retries an idempotent request once when the connection fails mid-flight. So one logical call
-     * against an unreachable service delivers six requests, and neither Resilience4j's metrics nor
-     * the {@code maxAttempts=3} setting in the config repo says so anywhere.
+     * <p>Verifies a transport failure is attempted exactly three times — the configured
+     * {@code maxAttempts} — and not six.
      *
-     * <p>This is not the harness: nothing in the five service images replaces the default
-     * transport — see {@code PatchVerbCharacterizationTest} for that inventory. It matters because
-     * the amplification lands specifically on the "downstream is unreachable" case, which is the
-     * one where a struggling service can least afford double the traffic. Note that
-     * {@link #aGenuineFailureIsAttemptedExactlyThreeTimes} shows a decoded 500 is <em>not</em>
-     * doubled — the JDK only retries when the connection itself breaks, not when the server
-     * answers.
+     * <p>Until the five services declared {@code feign-hc5}, Feign ran on
+     * {@code java.net.HttpURLConnection}, which silently retries an idempotent request once when
+     * the connection fails mid-flight. Resilience4j knew nothing about it, so one logical call
+     * against an unreachable service delivered <strong>six</strong> requests while both its
+     * metrics and the {@code maxAttempts=3} setting in the config repo said three. The
+     * amplification landed specifically on the "downstream is unreachable" case — the one where a
+     * struggling service can least afford double the traffic — and with production's 2s→4s backoff
+     * it also stretched the caller's wait.
+     *
+     * <p>Paired deliberately with {@link #aGenuineFailureIsAttemptedExactlyThreeTimes}, which
+     * covers a decoded 500. That one was never doubled, because the JDK only retried when the
+     * connection itself broke rather than when the server answered — so the old behaviour was
+     * inconsistent between the two, and only the pair pins that they now agree.
      */
     @Test
-    @DisplayName("a transport failure reaches the downstream six times, not three")
-    void aTransportFailureIsRetriedAndSilentlyDoubledByTheJdkClient() {
+    @DisplayName("a transport failure reaches the downstream exactly three times")
+    void aTransportFailureIsAttemptedExactlyThreeTimes() {
         stubFor(get(urlEqualTo("/users/42/active"))
                 .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
         catchThrowable(() -> userFeignClient.isActive(42L));
 
         assertThat(DOWNSTREAM.getAllServeEvents())
-                .as("three Resilience4j attempts, each doubled by HttpURLConnection's own "
-                        + "retry-once-on-IOException for idempotent methods")
-                .hasSize(6);
+                .as("six here means the transport is retrying underneath Resilience4j again — "
+                        + "feign-hc5 has been dropped from the poms and Feign is back on "
+                        + "java.net.HttpURLConnection")
+                .hasSize(3);
     }
 
     /**

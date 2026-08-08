@@ -1,7 +1,7 @@
 # Testing Plan — comprehensive unit and integration testing
 
 **Status:** Phase 1 complete (2026-08-05). Phases 2 and 3 complete (2026-08-06). Phase 4 complete
-(2026-08-07). Phases 5-8 outstanding. **526 tests across eight modules.**
+(2026-08-07). Phases 5-8 outstanding. **527 tests across eight modules.**
 **Companion to:** [backlog.txt](backlog.txt) — the HIGH-priority testing initiative dated
 2026-08-02, which this plan expands. Decisions already recorded there (use `@SpringBootTest` /
 `@WebMvcTest` with MockMvc; Testcontainers with MySQL over H2) are treated as settled and are
@@ -716,7 +716,7 @@ Listing it under Phase 3 was an error in the original plan, not a change of scop
 
 ## Phase 4 — Feign and resilience ✅ DONE (2026-08-07)
 
-**222 tests in `photo-app-feign-lib`.** 100% JaCoCo on every class in the module — including
+**223 tests in `photo-app-feign-lib`.** 100% JaCoCo on every class in the module — including
 branches, which Phase 3 could not measure at all.
 
 - ✅ WireMock stubs per client; success paths for all 20 methods
@@ -775,7 +775,7 @@ any of them is a deliberate act that also forces the method into the resilience 
 | `RetryBehaviourTest` | 6 | attempt counts, backoff shape, recovery |
 | `UserFeignClientTest` | 5 | success paths |
 | `FeignAuthInterceptorTest` | 5 | header forwarding, no-context no-op, both end-to-end |
-| `PatchVerbCharacterizationTest` | 3 | a defect, pinned |
+| `PatchVerbTest` | 4 | the PATCH regression guard (was a characterization test) |
 
 The matrix is the centre of the phase: seven properties asserted uniformly across all twelve
 protected methods rather than hand-written per client, because twelve × seven is eighty-four
@@ -815,11 +815,14 @@ is the fix, measured on the running system rather than inferred from a green sui
 
 | Counter | Covered | Missed |
 |---|---|---|
-| Instruction | 266 | **0** |
+| Instruction | 275 | **0** |
 | Branch | 21 | **0** |
-| Line | 58 | **0** |
-| Method | 24 | **0** |
-| Class | 9 | **0** |
+| Line | 60 | **0** |
+| Method | 27 | **0** |
+| Class | 10 | **0** |
+
+(Measured after the transport follow-up below, which added `FeignTransportAutoConfiguration` —
+the tenth class.)
 
 Unlike Phase 3, the branch number here is real and worth reading. `@PreAuthorize` compiles to an
 annotation, not a branch, so JaCoCo reported 0/0 branches on every controller and could not
@@ -854,7 +857,9 @@ aspects are silently never applied, and every resilience assertion in this phase
 against a bare Feign call. The services get it from `spring-boot-starter-data-jpa` →
 `spring-aspects`.
 
-And one deliberate *omission*: no PATCH-capable transport on the test classpath. See below.
+And a fourth, added in the follow-up below: `feign-hc5`, so the suite runs the same transport the
+five services now ship. Whichever transport production uses, this module must use it — the PATCH
+and retry-count assertions are meaningless otherwise, and they would pass either way.
 
 ### Aspect ordering, measured
 
@@ -867,25 +872,64 @@ zero failures for a call that failed twice on the wire.
 
 ### Defects found
 
-Three, all characterized rather than fixed, all written up in [backlog.txt](backlog.txt).
+Three. Two were fixed on 2026-08-07 in the follow-up described below; the third is open. All
+three are written up in [backlog.txt](backlog.txt).
 
-**MEDIUM — PATCH is unreachable over Feign's default client.** All three `activateOrDeactivate`
-methods throw `ProtocolException: Invalid HTTP method: PATCH` before a socket is opened;
-`java.net.HttpURLConnection` has never allowed the verb. Not a harness artefact: Spring Cloud
-only swaps the transport when `feign.hc5.ApacheHttp5Client` is on the classpath, and `feign-hc5`
-is absent from all five service images (checked inside each), with no okhttp, no custom
+**MEDIUM — PATCH is unreachable over Feign's default client. FIXED.** All three
+`activateOrDeactivate` methods threw `ProtocolException: Invalid HTTP method: PATCH` before a
+socket was opened; `java.net.HttpURLConnection` has never allowed the verb. Not a harness
+artefact — `feign-hc5` was absent from all five service images, with no okhttp, no custom
 `feign.Client` bean, and no `spring.cloud.openfeign.httpclient.*` property anywhere. Invisible
-because none of the three has a caller. The fix is a production dependency change across all
-five services, which is not a testing-phase decision.
+because none of the three has a caller.
 
-**LOW — a transport failure reaches the downstream six times, not three.** `HttpURLConnection`
-silently retries an idempotent request once on a mid-flight connection failure, doubling
-Resilience4j's three attempts. Nothing reports the real number. A decoded 5xx is *not* doubled —
-the amplification lands specifically on the unreachable-downstream case.
+**LOW — a transport failure reaches the downstream six times, not three. FIXED.** One logical
+call against an unreachable downstream delivered six requests while `maxAttempts=3` and every
+metric said three. The amplification landed specifically on the unreachable-downstream case; a
+decoded 5xx was not doubled.
 
-**LOW — a non-standard status escapes `CustomFeignErrorDecoder` as `IllegalArgumentException`.**
-`HttpStatus.valueOf` runs before the switch and rejects unregistered codes, so the fallback finds
-no `ApplicationException` in the chain and reports 503. Not reachable from this system today.
+**LOW — a non-standard status escapes `CustomFeignErrorDecoder` as `IllegalArgumentException`.
+STILL OPEN.** `HttpStatus.valueOf` runs before the switch and rejects unregistered codes, so the
+fallback finds no `ApplicationException` in the chain and reports 503. Not reachable from this
+system today — every service answers with standard codes — so it is left for a misbehaving proxy
+or a future third-party downstream to make relevant.
+
+## Phase 4 follow-up — the transport change (2026-08-07)
+
+`io.github.openfeign:feign-hc5` added to all five business services, and to
+`photo-app-feign-lib` as `<optional>true</optional>` so the library compiles the auto-configuration
+below without forcing a transport on its consumers. Selection is by classpath presence alone —
+`HttpClient5FeignLoadBalancerConfiguration` is `@ConditionalOnClass(ApacheHttp5Client)` — so there
+is no bean and no property to inspect, and nothing fails loudly if the dependency is ever dropped.
+`PatchVerbTest` is the only thing that would notice.
+
+**The transport change alone did not fix the retry amplification, and the original diagnosis was
+wrong about why.** Measured immediately after adding `feign-hc5`, before anything else changed:
+
+| | before (`Client$Default`) | with `feign-hc5` | after disabling transport retries |
+|---|---|---|---|
+| unreachable downstream, `maxAttempts=3` | 6 | **6** | **3** |
+| downstream 500, `maxAttempts=3` | 3 | 3 | 3 |
+| downstream 503, method has **no** `@Retry` | 1 | **2** | **1** |
+
+HttpClient 5 has its own `DefaultHttpRequestRetryStrategy` — `maxRetries=1`, and its default
+retriable codes are 429 and 503. So the switch *moved* the amplification rather than removing it,
+and widened it: the old client only retried a broken connection, HC5 also retries 503 responses.
+The middle column's third row is the sharpest statement of the problem — a retry on a method where
+retrying was explicitly not asked for.
+
+The fix is `FeignTransportAutoConfiguration` in `photo-app-feign-lib`: an
+`HttpClientBuilderCustomizer` bean calling `disableAutomaticRetries()`, registered through
+`AutoConfiguration.imports` because none of the five services component-scans `com.photoapp.feign`.
+Resilience4j is now the only retry authority — one place to configure, one set of metrics, and
+`DownstreamFailurePredicate` actually consulted. The transport's retries were invisible to all
+three.
+
+The general lesson is worth more than the numbers: **two retry layers that do not know about each
+other is the defect, not the count either one picks.** Both transports had one; only measuring the
+downstream's request journal showed it.
+
+Also removed the same day: the orphaned `photo-app-users-service-findById` circuit-breaker and
+retry instances in the config repo, whose call the 2026-08-05 refresh fix had deleted.
 
 ### The 2026-08-05 refresh assertions — deferred to Phase 7
 

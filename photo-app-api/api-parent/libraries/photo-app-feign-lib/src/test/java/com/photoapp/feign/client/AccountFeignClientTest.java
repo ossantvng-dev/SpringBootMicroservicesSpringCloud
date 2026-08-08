@@ -160,8 +160,8 @@ class AccountFeignClientTest extends AbstractFeignClientTest {
      * is currently invisible. Pinning it means the next person to add resilience annotations here
      * sees this test fail and makes the change deliberately.
      *
-     * <p>{@code activateOrDeactivate} is the other unannotated method; it cannot reach a downstream
-     * at all on the current transport, which {@code PatchVerbCharacterizationTest} covers.
+     * <p>{@code activateOrDeactivate} is the other unannotated method; {@code PatchVerbTest} covers
+     * it, since its PATCH verb needs the {@code feign-hc5} transport to be reachable at all.
      */
     @Test
     void deleteByIdHasNoFallbackSoFailuresSurfaceRaw() {

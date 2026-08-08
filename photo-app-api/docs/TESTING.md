@@ -8,7 +8,7 @@ and current progress, see [plans/testing-plan.md](plans/testing-plan.md) — tha
 planning record, this one is the day-to-day guide.
 
 > **Current state:** Phases 1 (infrastructure), 2 (exception handling), 3 (the authorization
-> matrix) and 4 (Feign and resilience) are complete — **526 tests**. Every controller has an
+> matrix) and 4 (Feign and resilience) are complete — **527 tests**. Every controller has an
 > authorization suite and the whole Feign layer is covered end to end; none of the controllers
 > has a *behavioural* suite yet, so Phases 5–8 are outstanding and the service, repository and
 > mapper layers are still untested. If you are adding the first test to a module, this document

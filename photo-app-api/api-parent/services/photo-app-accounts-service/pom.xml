@@ -125,6 +125,22 @@
 			<artifactId>photo-app-feign-lib</artifactId>
 		</dependency>
 
+		<!-- Apache HttpClient 5 transport for Feign.
+		     No bean and no property is needed: Spring Cloud OpenFeign's
+		     HttpClient5FeignLoadBalancerConfiguration is @ConditionalOnClass(ApacheHttp5Client),
+		     so the presence of this artifact is what selects it.
+
+		     Without it Feign falls back to feign.Client$Default, i.e. java.net.HttpURLConnection,
+		     which (a) rejects PATCH outright - "ProtocolException: Invalid HTTP method: PATCH" -
+		     making all three activateOrDeactivate methods unreachable, and (b) silently retries
+		     an idempotent request once on a mid-flight connection failure, doubling
+		     Resilience4j's maxAttempts=3 to six requests against a downstream that is already
+		     unreachable. Both were measured in testing-plan.md Phase 4 and are fixed by this. -->
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-hc5</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>com.photoapp.security</groupId>
 			<artifactId>photo-app-security-lib</artifactId>

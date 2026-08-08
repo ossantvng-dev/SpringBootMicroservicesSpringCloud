@@ -127,13 +127,23 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- NOTE: deliberately NO feign-hc5 / okhttp here.
-             Spring Cloud only swaps in a different transport when feign.hc5.ApacheHttp5Client is
-             on the classpath; plain httpclient5 is not enough, and none of the five service images
-             carry feign-hc5 (checked in all five on 2026-08-07). So production runs on
-             feign.Client$Default, i.e. java.net.HttpURLConnection, and this harness must too -
-             adding a PATCH-capable transport here would hide the defect characterised in
-             PatchVerbCharacterizationTest instead of finding it. -->
+        <!-- The transport production runs on, and the reason it is OPTIONAL here.
+
+             The five business services declare feign-hc5 themselves (added 2026-08-07 to fix the
+             PATCH defect Phase 4 found). Optional means this library can COMPILE against it -
+             FeignTransportAutoConfiguration needs HttpClientBuilder to turn off HttpClient 5's
+             own retry strategy - without forcing the transport on anything that consumes the
+             library. The auto-configuration is @ConditionalOnClass, so it is simply inert if a
+             consumer has not asked for hc5.
+
+             Optional still puts it on THIS module's own test classpath, which is required: the
+             suite must run the same transport production does, or PatchVerbTest and
+             RetryBehaviourTest would be asserting the behaviour of a client nothing ships. -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-hc5</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>org.awaitility</groupId>

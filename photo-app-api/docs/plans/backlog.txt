@@ -1338,8 +1338,10 @@ the filter, and this deserves its own before/after measurement against the runni
 
 [2026-08-07 | testing-plan Phase 4] MEDIUM — PATCH is unreachable over Feign's default
 client, so all three activateOrDeactivate methods cannot issue a request at all
+                                                          *** FIXED 2026-08-07 ***
 ----------------------------------------------------------------------------------------
-Found by Phase 4's client suites. Characterized, not fixed.
+Found by Phase 4's client suites, fixed the same day. Resolution at the end of this
+entry.
 
 SYMPTOM
   AccountFeignClient.activateOrDeactivate   PATCH /accounts/{id}/activate
@@ -1402,11 +1404,49 @@ OPTIONS (decide, do not assume)
 Priority: MEDIUM. Nothing is broken today because nothing calls them; this is a trap
 laid for whoever adds the first caller.
 
+  ---- RESOLVED 2026-08-07 ----
+
+  io.github.openfeign:feign-hc5 added to all five business services' poms, plus
+  photo-app-feign-lib as <optional>true</optional> so the library can compile the
+  auto-configuration below without forcing a transport on its consumers.
+
+  No bean and no property selects the transport: Spring Cloud OpenFeign's
+  HttpClient5FeignLoadBalancerConfiguration is @ConditionalOnClass(ApacheHttp5Client),
+  so the artifact's presence is the whole mechanism. Verified in every running
+  container after the rebuild - the beans httpClient5 and hc5ConnectionManager are
+  present in all five, read from /actuator/beans:
+
+      users  accounts  albums  photos  authorization    ->  httpClient5 present in all 5
+
+  BEFORE / AFTER, PatchVerbTest (real socket, real transport, WireMock downstream):
+
+      PATCH /accounts/{id}/activate    ProtocolException ->  200, request delivered
+      PATCH /albums/{id}/activate      ProtocolException ->  200, request delivered
+      PATCH /photos/{id}/activate      ProtocolException ->  200, request delivered
+      WireMock request journal         EMPTY             ->  1 request each, correct
+                                                             verb and query param
+
+  The characterization test PatchVerbCharacterizationTest became PatchVerbTest and
+  now asserts the opposite. It is the ONLY thing that would notice feign-hc5 being
+  dropped from a pom, since the transport is selected silently by classpath presence
+  and nothing fails loudly when it is absent.
+
+  NOT verifiable through the live stack, and the reason is the defect itself: no
+  service calls any of the three Feign activateOrDeactivate methods, so there is no
+  request path that exercises the Feign PATCH hop end to end. The services' OWN
+  PATCH endpoints were never affected - PATCH /accounts/201/activate through the
+  gateway returned 200 both before and after, because that hop is plain HTTP and not
+  Feign. Proof for the Feign hop is PatchVerbTest, which uses the identical
+  transport, the identical @FeignClient interfaces and a real socket.
+
 
 [2026-08-07 | testing-plan Phase 4] LOW — a transport failure reaches the downstream
 six times, not the three that maxAttempts says
+                                                          *** FIXED 2026-08-07 ***
 ----------------------------------------------------------------------------------------
-Found by Phase 4's retry suite. Measured, documented, not changed.
+Found by Phase 4's retry suite, fixed the same day - but NOT by the change that was
+expected to fix it. Resolution at the end of this entry, including a correction to
+the diagnosis below.
 
 MEASURED
 One logical Feign call against a downstream that resets the connection delivers SIX
@@ -1431,6 +1471,56 @@ HttpClient5 does not do this. Worth deciding the two together.
 
 Priority: LOW. Correctness is unaffected; this is load amplification on an already
 failing downstream, at the current traffic level of one developer.
+
+  ---- CORRECTION TO THE ABOVE ----
+
+  "Fixed automatically if the feign-hc5 option is taken, since HttpClient5 does not
+  do this" was WRONG. Measured immediately after adding feign-hc5, before anything
+  else changed:
+
+      transport failure (connection reset), @Retry maxAttempts=3    ->  6 requests
+      downstream 503, on a method with NO @Retry at all             ->  2 requests
+
+  HttpClient 5 has its own DefaultHttpRequestRetryStrategy: maxRetries=1, and its
+  default retriableCodes are 429 and 503. So switching transport did not remove the
+  amplification, it MOVED it - and widened it, because the old client only retried
+  on a broken connection while HC5 also retries 503 RESPONSES. The second line above
+  is the sharper statement of the problem: a retry on a method where retrying was
+  explicitly not asked for.
+
+  Both transports retry underneath Resilience4j. The number either one picks is not
+  the issue; two retry layers that do not know about each other is.
+
+  ---- RESOLVED 2026-08-07 ----
+
+  New auto-configuration in photo-app-feign-lib:
+
+      com.photoapp.feign.configuration.FeignTransportAutoConfiguration
+          @ConditionalOnClass(ApacheHttp5Client)
+          @Bean HttpClientBuilderCustomizer -> builder.disableAutomaticRetries()
+
+  Registered through META-INF/spring/...AutoConfiguration.imports rather than
+  component scan, because none of the five services scans com.photoapp.feign - they
+  reach FeignConfiguration through each @FeignClient's configuration attribute
+  instead. HttpClientBuilderCustomizer is Spring Cloud OpenFeign's supported hook
+  into the CloseableHttpClient it builds, so this ADDS a bean rather than replacing
+  the client and inheriting responsibility for the rest of its configuration.
+
+  Resilience4j is now the only retry authority: one place to configure, one set of
+  metrics, and DownstreamFailurePredicate actually gets consulted. The transport's
+  retries were invisible to all three.
+
+  BEFORE / AFTER, measured in RetryBehaviourTest and PhotoFeignClientTest against
+  WireMock's request journal:
+
+      one logical call, downstream unreachable      6  ->  3   (= maxAttempts)
+      one logical call, downstream returns 500      3  ->  3   (unchanged)
+      one call, 503, method has no @Retry           2  ->  1   (HC5-only regression,
+                                                                introduced and
+                                                                removed the same day)
+
+  Verified in every running container: the bean noTransportLevelRetries is present in
+  all five services, read from /actuator/beans after the rebuild.
 
 
 [2026-08-07 | testing-plan Phase 4] LOW — a non-standard downstream status escapes
